@@ -26,6 +26,7 @@ import {
 } from "@/features/automation/automation-github-write.client";
 import { getProductionCommitShaFromEnv } from "@/features/automation/automation-production";
 import { enrichTasksWithProductionStatus } from "@/features/automation/automation-production.enrichment";
+import { findActiveBuilderHintsByIssueNumbers } from "@/features/agent-os/agent-run.read.service";
 import { buildAgentSummaryCards } from "@/features/agent-os/agent-summary";
 import {
   attachFactoryLoopSnapshot,
@@ -258,6 +259,19 @@ export async function getAutomationDashboard(
       productionCheckedAt,
     } = await getCachedAutomationTasks(config.repoSlug, view)();
     const writeAction = await resolveWriteActionState();
+
+    let laneBoardActiveBuilderHints: AutomationDashboardResponse["laneBoardActiveBuilderHints"];
+    if (laneBoardTasks && laneBoardTasks.length > 0) {
+      try {
+        const hintMap = await findActiveBuilderHintsByIssueNumbers(
+          laneBoardTasks.map((task) => task.issueNumber),
+        );
+        laneBoardActiveBuilderHints = Object.fromEntries(hintMap);
+      } catch (hintError) {
+        console.error("[getAutomationDashboard] lane board AgentRun hints", hintError);
+      }
+    }
+
     return {
       configured: true,
       configMessage: null,
@@ -265,6 +279,7 @@ export async function getAutomationDashboard(
       summary: buildSummary(tasks, dataCompleteness, view),
       tasks,
       laneBoardTasks: laneBoardTasks ?? undefined,
+      laneBoardActiveBuilderHints,
       agentSummary: agentSummary ?? undefined,
       fetchedAt: new Date().toISOString(),
       view,

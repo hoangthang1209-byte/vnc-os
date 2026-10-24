@@ -606,9 +606,23 @@ describe("automation lane board", () => {
       }),
     ]);
 
-    const summary = buildLaneBoardSummary(board);
+    const summary = buildLaneBoardSummary(board, {
+      nowMs: Date.parse("2026-10-24T12:00:00.000Z"),
+      hintsByIssueNumber: new Map([
+        [
+          83,
+          {
+            kind: "agent_run",
+            status: "RUNNING",
+            lastHeartbeatAt: "2026-10-24T11:55:00.000Z",
+          },
+        ],
+      ]),
+    });
     assert.equal(summary.totalLanes, 7);
     assert.equal(summary.runningCount, 1);
+    assert.equal(summary.runningCountHasUnknown, false);
+    assert.equal(summary.pipelineInProgressCount, 0);
     assert.equal(summary.blockedOrNeedsFixCount, 1);
     assert.equal(summary.productionCount, 1);
 

@@ -4,6 +4,7 @@ import type {
   AgentSummaryCard,
   AgentTaskPriority,
 } from "@/features/agent-os/agent.types";
+import type { LaneActiveBuilderRunHint } from "@/features/automation/automation-lane-active-builder";
 import type { AutomationFactoryLoopSnapshot } from "@/features/automation/automation-factory-loop";
 
 export type NormalizedTaskStatus =
@@ -168,4 +169,6 @@ export type AutomationDashboardResponse = {
   productionCheckedAt: string | null;
   /** Per-agent workload snapshot for open tasks (active view). */
   agentSummary?: AgentSummaryCard[];
+  /** AgentRun heartbeat hints keyed by GitHub issue number (active view lane board). */
+  laneBoardActiveBuilderHints?: Record<number, LaneActiveBuilderRunHint>;
 };

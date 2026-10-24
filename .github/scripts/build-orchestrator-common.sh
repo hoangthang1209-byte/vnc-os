@@ -2,6 +2,11 @@
 # Shared helpers for ATTD event-driven build/repair orchestration (Phase F1b).
 set -euo pipefail
 
+if [[ -n "${BUILD_ORCHESTRATOR_COMMON_LOADED:-}" ]]; then
+  return 0 2>/dev/null || exit 0
+fi
+BUILD_ORCHESTRATOR_COMMON_LOADED=1
+
 ORCHESTRATOR_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=.github/scripts/task-status-common.sh
 source "${ORCHESTRATOR_SCRIPT_DIR}/task-status-common.sh"

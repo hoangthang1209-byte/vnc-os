@@ -2,6 +2,11 @@
 # Shared helpers for ATTD GitHub task status label automation (Phase F1a).
 set -euo pipefail
 
+if [[ -n "${TASK_STATUS_COMMON_LOADED:-}" ]]; then
+  return 0 2>/dev/null || exit 0
+fi
+TASK_STATUS_COMMON_LOADED=1
+
 readonly STATUS_LABEL_PREFIX="status:"
 readonly STALLED_COMMENT='TASK_STALLED: No linked PR was created within 45 minutes after BUILD_APPROVED.'
 readonly BUILD_APPROVED_AUTHOR="${BUILD_APPROVED_AUTHOR:-${GITHUB_REPOSITORY_OWNER:-}}"

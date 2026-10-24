@@ -2,6 +2,11 @@
 # Continuous autonomous factory loop: merge → production exact-SHA verify → smoke → claim next task.
 set -euo pipefail
 
+if [[ -n "${CONTINUOUS_ORCHESTRATOR_COMMON_LOADED:-}" ]]; then
+  return 0 2>/dev/null || exit 0
+fi
+CONTINUOUS_ORCHESTRATOR_COMMON_LOADED=1
+
 CONTINUOUS_ORCHESTRATOR_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=.github/scripts/review-orchestrator-common.sh
 source "${CONTINUOUS_ORCHESTRATOR_SCRIPT_DIR}/review-orchestrator-common.sh"

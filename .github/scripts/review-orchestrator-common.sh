@@ -2,6 +2,11 @@
 # Exact-head independent reviewer orchestration for ATTD Agent OS / software factory PRs.
 set -euo pipefail
 
+if [[ -n "${REVIEW_ORCHESTRATOR_COMMON_LOADED:-}" ]]; then
+  return 0 2>/dev/null || exit 0
+fi
+REVIEW_ORCHESTRATOR_COMMON_LOADED=1
+
 REVIEW_ORCHESTRATOR_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=.github/scripts/build-orchestrator-common.sh
 source "${REVIEW_ORCHESTRATOR_SCRIPT_DIR}/build-orchestrator-common.sh"

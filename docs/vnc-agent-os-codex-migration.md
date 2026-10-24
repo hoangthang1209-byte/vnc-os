@@ -52,3 +52,13 @@ Do not merge the Cursor-specific orchestration without redesign; these paths and
 
 ## Costs
 ChatGPT Plus is the sole targeted personal AI subscription. Actual available Codex/Work quotas must be checked in the product. Usage-based OpenAI APIs, Vercel, GitHub Actions and Neon are separate; set budget alerts before enabling any external API runner.
+
+## Pilot implementation on PR #238
+
+- `execution-lifecycle.ts` implements a pure provider-neutral evidence contract and maps its stages onto the existing AgentRun persistence statuses. No Prisma changes.
+- A claim is QUEUED in the existing run model. BUILDING needs a provider, execution reference, matching lease and start time. Expired leases stop at WAIT_HUMAN. GitHub comments cannot call this contract by themselves.
+- A new PR head invalidates CI/review. Stale evidence cannot merge, repairs are bounded, and completion requires both production READY and smoke evidence for the exact merge SHA.
+- `/api/health` reports only service, environment and deployment commit with no caching or database access. This supports exact-SHA release verification without exposing credentials.
+- The reducer is a tested domain contract, **not yet wired to a durable executor adapter or a scheduled worker**. Callers must verify external identities before applying events. No public endpoint accepts arbitrary lifecycle events.
+- Interactive Work source execution and GitHub writes are available in this pilot. Codex Cloud task dispatch and independent GitHub review remain unverified until real service responses exist. No API runner or added subscription is configured.
+- Cursor retirement is deferred until this pilot passes review, deployment and authenticated smoke. No legacy Cursor dispatch is invoked by the pilot.

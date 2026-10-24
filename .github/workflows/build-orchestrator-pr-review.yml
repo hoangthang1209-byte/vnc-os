@@ -5,7 +5,11 @@ on:
     types: [submitted]
 
 permissions:
+  checks: read
+  statuses: read
+  deployments: read
   contents: read
+  actions: write
   issues: write
   pull-requests: write
 

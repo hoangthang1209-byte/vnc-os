@@ -6,9 +6,13 @@ on:
   workflow_dispatch:
 
 permissions:
+  checks: read
+  statuses: read
+  deployments: read
   contents: read
   issues: write
   pull-requests: write
+  actions: write
 
 jobs:
   scan-factory-pull-requests:

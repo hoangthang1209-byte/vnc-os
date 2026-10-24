@@ -2,9 +2,13 @@
 # Exact-head independent reviewer orchestration for ATTD Agent OS / software factory PRs.
 set -euo pipefail
 
+if [ "${VNC_REVIEW_ORCHESTRATOR_COMMON_LOADED:-}" = "1" ]; then return 0; fi
+VNC_REVIEW_ORCHESTRATOR_COMMON_LOADED=1
+
 REVIEW_ORCHESTRATOR_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=.github/scripts/build-orchestrator-common.sh
 source "${REVIEW_ORCHESTRATOR_SCRIPT_DIR}/build-orchestrator-common.sh"
+source "${REVIEW_ORCHESTRATOR_SCRIPT_DIR}/native-agent-dispatch.sh"
 
 readonly REVIEW_ORCHESTRATOR_MARKER_PREFIX="REVIEW_ORCHESTRATOR_IDEMPOTENCY:"
 readonly REVIEW_ORCHESTRATOR_REQUESTED_PREFIX="REVIEW_ORCHESTRATOR_REQUESTED:"
@@ -31,8 +35,16 @@ pull_request_is_draft() {
 }
 
 commit_ci_state_for_sha() {
-  local head_sha="$1"
-  gh api "repos/${GITHUB_REPOSITORY}/commits/${head_sha}/status" --jq '.state' 2>/dev/null || printf 'unknown'
+  local head_sha="$1" checks statuses
+  checks="$(gh api "repos/${GITHUB_REPOSITORY}/commits/${head_sha}/check-runs?per_page=100" 2>/dev/null)" || { printf 'unknown'; return; }
+  statuses="$(gh api "repos/${GITHUB_REPOSITORY}/commits/${head_sha}/status" 2>/dev/null)" || { printf 'unknown'; return; }
+  jq -nr --argjson checks "$checks" --argjson statuses "$statuses" '
+    [$checks.check_runs[] | select(.name == "Verify" and .app.slug == "github-actions")] | sort_by(.id) | last as $verify
+    | if $verify == null then "unknown"
+      elif $verify.status != "completed" then "pending"
+      elif $verify.conclusion != "success" then "failure"
+      elif any($statuses.statuses[]?; .state != "success") then "pending"
+      else "success" end'
 }
 
 commit_ci_is_green() {
@@ -108,7 +120,8 @@ find_independent_review_for_head_sha() {
         | select(.commit_id == $head)
         | select((.body // "") | length > 0)
         | select(
-            ((.body // "") | contains("CURSOR_AUTOMATION_ID:"))
+            ((((.body // "") | contains("AGENT_RUNTIME_ID:")) and .user.login == "github-actions[bot]")
+            or ((.body // "") | contains("CURSOR_AUTOMATION_ID:")))
             and ((.body // "") | contains("Independent ATTD PR Review"))
           )
       ] | length > 0
@@ -191,6 +204,10 @@ request_independent_review_for_head() {
 ${REVIEW_ORCHESTRATOR_REQUESTED_PREFIX} Queue Independent ATTD PR Review for exact head \`${head_sha}\`.
 
 PR_HEAD_SHA: \`${head_sha}\`"
+  if ! dispatch_native_agent_task review "$pull_number" "$head_sha"; then
+    echo "Review queued; native runtime not configured or dispatch failed. No review result claimed."
+  fi
+
 }
 
 handle_exact_head_review_orchestration() {

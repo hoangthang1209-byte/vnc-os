@@ -106,8 +106,12 @@ gh() {
       fi
       ;;
     api)
+      if [[ "$2" == *"/check-runs?"* ]]; then
+        jq -n --arg conclusion "$MOCK_CI_STATE" '{check_runs:[{id:1,name:"Verify",app:{slug:"github-actions"},status:"completed",conclusion:$conclusion}]}'
+        return 0
+      fi
       if [[ "$2" == *"/status" ]]; then
-        printf '%s' "$MOCK_CI_STATE"
+        jq -n --arg state "$MOCK_CI_STATE" '{statuses:[{state:$state}]}'
         return 0
       fi
       if [[ "$2" == *"/reviews" ]]; then

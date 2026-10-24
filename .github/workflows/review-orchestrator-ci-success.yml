@@ -6,9 +6,13 @@ on:
     types: [completed]
 
 permissions:
+  checks: read
+  statuses: read
+  deployments: read
   contents: read
   issues: write
   pull-requests: write
+  actions: write
 
 concurrency:
   group: review-orchestrator-ci-pr-${{ github.event.workflow_run.pull_requests[0].number }}-sha-${{ github.event.workflow_run.head_sha }}

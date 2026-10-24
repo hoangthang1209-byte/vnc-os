@@ -134,3 +134,14 @@ No P0/P1 findings.
     assert.match(stalled.reason ?? "", /REVIEW_ORCHESTRATOR_STALLED/);
   });
 });
+
+it("accepts a native review marker for the exact head without requiring Cursor", () => {
+  const body = "AGENT_RUNTIME_ID: github-codex\n## Independent ATTD PR Review\n- P0: 0\n- P1: 0\n- P2: 0\n- P3: 0";
+  assert.equal(resolveExactHeadReviewGate({headSha: "native-sha", reviews: [{commitId: "native-sha", body, state: "COMMENTED"}]}).reviewStatus, "approved");
+  assert.equal(resolveExactHeadReviewGate({headSha: "new-sha", reviews: [{commitId: "native-sha", body, state: "COMMENTED"}]}).reviewStatus, "stale");
+});
+
+it("native review counts cannot be overridden by quoted finding text", () => {
+  const body = "AGENT_RUNTIME_ID: github-codex\n## Independent ATTD PR Review\n- P0: 0\n- P1: 2\n- P2: 0\n- P3: 0\nQuoted text: No P0/P1 findings";
+  assert.equal(resolveExactHeadReviewGate({headSha: "native-sha", reviews: [{commitId: "native-sha", body, state: "COMMENTED"}]}).reviewStatus, "changes_requested");
+});

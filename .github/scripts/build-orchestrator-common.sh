@@ -2,6 +2,9 @@
 # Shared helpers for ATTD event-driven build/repair orchestration (Phase F1b).
 set -euo pipefail
 
+if [ "${VNC_BUILD_ORCHESTRATOR_COMMON_LOADED:-}" = "1" ]; then return 0; fi
+VNC_BUILD_ORCHESTRATOR_COMMON_LOADED=1
+
 ORCHESTRATOR_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=.github/scripts/task-status-common.sh
 source "${ORCHESTRATOR_SCRIPT_DIR}/task-status-common.sh"
@@ -73,12 +76,27 @@ is_orchestrator_build_approved_author() {
 
 is_attd_pr_reviewer_review() {
   local body="$1"
-  [[ "$body" == *"CURSOR_AUTOMATION_ID:"* ]] && [[ "$body" == *"Independent ATTD PR Review"* ]]
+  [[ "$body" == *"AGENT_RUNTIME_ID:"* || "$body" == *"CURSOR_AUTOMATION_ID:"* ]] && [[ "$body" == *"Independent ATTD PR Review"* ]]
 }
 
 parse_review_severity_counts() {
   local body="$1"
   local p0=0 p1=0 p2=0 p3=0
+
+  # Native counts are controller-generated. Never let quoted finding text reset them.
+  if [[ "$body" == *"AGENT_RUNTIME_ID:"* ]]; then
+    local severity value counts=()
+    for severity in P0 P1 P2 P3; do
+      value="$(printf '%s\n' "$body" | sed -n "s/^- $severity: \([0-9][0-9]*\)$/\1/p" | head -1)"
+      if [[ ! "$value" =~ ^[0-9]+$ ]]; then
+        printf '1 1 1 0'
+        return
+      fi
+      counts+=("$value")
+    done
+    printf '%s %s %s %s' "${counts[@]}"
+    return
+  fi
 
   if [[ "$body" =~ No[[:space:]]P0/P1[[:space:]]findings ]]; then
     p0=0

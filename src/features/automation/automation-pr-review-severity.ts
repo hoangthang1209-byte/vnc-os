@@ -43,6 +43,14 @@ function countFindingsInSection(body: string, severity: "P0" | "P1" | "P2" | "P3
 
 /** Mirrors `parse_review_severity_counts` in build-orchestrator-common.sh. */
 export function parseAttdPrReviewSeverityCounts(body: string): AttdPrReviewSeverityCounts {
+  if (body.includes("AGENT_RUNTIME_ID:")) {
+    const counts = ["P0", "P1", "P2", "P3"].map((severity) => {
+      const match = body.match(new RegExp(`^- ${severity}: (\\d+)$`, "m"));
+      return match ? Number.parseInt(match[1], 10) : 1;
+    });
+    return { p0: counts[0], p1: counts[1], p2: counts[2], p3: counts[3] };
+  }
+
   let p0 = 0;
   let p1 = 0;
 

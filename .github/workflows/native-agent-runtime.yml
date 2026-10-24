@@ -1,0 +1,217 @@
+name: Native Agent Runtime
+run-name: Native ${{ inputs.mode }} ${{ inputs.number }} sha-${{ inputs.expected_sha || 'none' }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        required: true
+        type: choice
+        options: [build, review]
+      number:
+        description: Approved issue number or PR number
+        required: true
+        type: string
+      expected_sha:
+        description: Exact PR head for review; unused for build
+        required: false
+        default: ''
+        type: string
+
+permissions:
+  contents: read
+  checks: read
+  statuses: read
+  issues: read
+  pull-requests: read
+  actions: read
+
+# One executor at a time; identical requests queue and revalidate live state.
+concurrency:
+  group: vnc-native-agent-runtime
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    if: >-
+      github.ref == 'refs/heads/main' && vars.AGENT_RUNTIME_ENABLED == 'true' &&
+      (github.actor == github.repository_owner || github.actor == 'github-actions[bot]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      sha: ${{ steps.task.outputs.sha }}
+      branch: ${{ steps.task.outputs.branch }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: main
+          persist-credentials: false
+      - name: Check runtime credentials without exposing them
+        env:
+          RUNTIME_KEY: ${{ secrets.OPENAI_API_KEY }}
+          CODEX_VERSION: ${{ vars.AGENT_CODEX_VERSION }}
+        run: |
+          test -n "$RUNTIME_KEY" || { echo 'BLOCKED: OPENAI_API_KEY is not configured'; exit 1; }
+          [[ "$CODEX_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo 'BLOCKED: pin AGENT_CODEX_VERSION'; exit 1; }
+      - name: Validate live task and prepare prompt
+        id: task
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BUILD_APPROVED_AUTHOR: ${{ github.repository_owner }}
+          MODE: ${{ inputs.mode }}
+          NUMBER: ${{ inputs.number }}
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+        run: python3 .github/scripts/native-agent-runtime.py prepare "$MODE" "$NUMBER" "$EXPECTED_SHA"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: native-task
+          path: task-prompt.txt
+          retention-days: 1
+
+  record-run:
+    needs: prepare
+    if: inputs.mode == 'build'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: main
+          persist-credentials: false
+      - name: Record real workflow run and lease
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BUILD_APPROVED_AUTHOR: ${{ github.repository_owner }}
+          ISSUE_NUMBER: ${{ inputs.number }}
+        run: |
+          source .github/scripts/continuous-orchestrator-common.sh
+          ensure_continuous_orchestrator_labels
+          gh issue comment "$ISSUE_NUMBER" --body "AGENT_RUNTIME_RUN_ID: $GITHUB_RUN_ID
+          Native GitHub runner accepted the approved task."
+          set_issue_status_label "$ISSUE_NUMBER" status:building
+          CONTINUOUS_BUILDER_LEASE_MINUTES=40 record_builder_lease "$ISSUE_NUMBER" none none 0
+
+  execute:
+    needs: [prepare, record-run]
+    if: always() && needs.prepare.result == 'success' && (needs.record-run.result == 'success' || needs.record-run.result == 'skipped')
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ needs.prepare.outputs.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: native-task
+          path: ${{ runner.temp }}/native-task
+      - name: Capture trusted review schema
+        if: inputs.mode == 'review'
+        run: git show origin/main:.github/agent-prompts/review.schema.json > "$RUNNER_TEMP/review.schema.json"
+      - name: Builder
+        if: inputs.mode == 'build'
+        uses: openai/codex-action@bdf19a4a223ec2549a3e2274a0cf61556bc07675 # v1 resolved commit
+        with:
+          openai-api-key: ${{ secrets.OPENAI_API_KEY }}
+          codex-version: ${{ vars.AGENT_CODEX_VERSION }}
+          prompt-file: ${{ runner.temp }}/native-task/task-prompt.txt
+          permission-profile: ':workspace'
+          safety-strategy: drop-sudo
+          allow-bots: true
+          output-file: ${{ runner.temp }}/builder-summary.txt
+      - name: Reviewer
+        if: inputs.mode == 'review'
+        uses: openai/codex-action@bdf19a4a223ec2549a3e2274a0cf61556bc07675
+        with:
+          openai-api-key: ${{ secrets.OPENAI_API_KEY }}
+          codex-version: ${{ vars.AGENT_CODEX_VERSION }}
+          prompt-file: ${{ runner.temp }}/native-task/task-prompt.txt
+          permission-profile: ':read-only'
+          safety-strategy: drop-sudo
+          allow-bots: true
+          output-schema-file: ${{ runner.temp }}/review.schema.json
+          output-file: ${{ runner.temp }}/final.json
+      - name: Export changes without executing generated code
+        if: inputs.mode == 'build'
+        run: |
+          git add -N -- src public docs scripts
+          git diff --binary HEAD -- src public docs scripts > "$RUNNER_TEMP/changes.patch"
+          test -s "$RUNNER_TEMP/changes.patch"
+          test "$(wc -c < "$RUNNER_TEMP/changes.patch")" -le 2000000
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: native-result
+          path: |
+            ${{ runner.temp }}/changes.patch
+            ${{ runner.temp }}/final.json
+          if-no-files-found: error
+          retention-days: 1
+
+  publish:
+    needs: [prepare, execute]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+      actions: write
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: main
+          persist-credentials: false
+          path: control
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ needs.prepare.outputs.sha }}
+          persist-credentials: true
+          path: work
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: native-result
+          path: work/result
+      - name: Publish validated patch or exact-head review
+        working-directory: work
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BUILD_APPROVED_AUTHOR: ${{ github.repository_owner }}
+          MODE: ${{ inputs.mode }}
+          NUMBER: ${{ inputs.number }}
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+        run: |
+          # All privileged helpers come from main, never from generated output.
+          cp -a ../control/.github/scripts/. .github/scripts/
+          python3 ../control/.github/scripts/native-agent-runtime.py publish "$MODE" "$NUMBER" "$EXPECTED_SHA"
+
+  report-failure:
+    needs: [prepare, record-run, execute, publish]
+    if: always() && contains(needs.*.result, 'failure')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: main
+          persist-credentials: false
+      - name: Record actionable failure without claiming completion
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BUILD_APPROVED_AUTHOR: ${{ github.repository_owner }}
+          MODE: ${{ inputs.mode }}
+          NUMBER: ${{ inputs.number }}
+        run: |
+          [[ "$NUMBER" =~ ^[1-9][0-9]*$ ]] || exit 1
+          gh issue comment "$NUMBER" --body "AGENT_RUNTIME_FAILED: native $MODE run $GITHUB_RUN_ID failed. Inspect Actions logs for configuration, model, policy or publication errors. No success claimed."
+          if [ "$MODE" = build ]; then
+            source .github/scripts/task-status-common.sh
+            ensure_task_status_labels
+            set_issue_status_label "$NUMBER" status:stalled
+          fi

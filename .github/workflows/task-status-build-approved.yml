@@ -48,9 +48,4 @@ jobs:
           source .github/scripts/build-orchestrator-common.sh
           ensure_orchestrator_labels
 
-          if issue_has_label "$ISSUE_NUMBER" "orchestrator:review-repair" \
-            || issue_has_label "$ISSUE_NUMBER" "orchestrator:ci-repair"; then
-            set_issue_status_label "$ISSUE_NUMBER" "status:building"
-          else
-            set_issue_status_label "$ISSUE_NUMBER" "status:approved"
-          fi
+          set_issue_status_label "$ISSUE_NUMBER" "status:approved"

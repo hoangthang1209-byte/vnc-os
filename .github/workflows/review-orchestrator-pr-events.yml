@@ -5,9 +5,13 @@ on:
     types: [synchronize, ready_for_review]
 
 permissions:
+  checks: read
+  statuses: read
+  deployments: read
   contents: read
   issues: write
   pull-requests: write
+  actions: write
 
 concurrency:
   group: review-orchestrator-pr-${{ github.event.pull_request.number }}-sha-${{ github.event.pull_request.head.sha }}

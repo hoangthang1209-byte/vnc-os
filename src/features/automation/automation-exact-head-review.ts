@@ -11,7 +11,7 @@ export type PullReviewSnapshot = {
 };
 
 export function isAttdIndependentReviewBody(body: string): boolean {
-  return body.includes("CURSOR_AUTOMATION_ID:") && body.includes("Independent ATTD PR Review");
+  return (body.includes("AGENT_RUNTIME_ID:") || body.includes("CURSOR_AUTOMATION_ID:")) && body.includes("Independent ATTD PR Review");
 }
 
 export function findExactHeadIndependentReview(

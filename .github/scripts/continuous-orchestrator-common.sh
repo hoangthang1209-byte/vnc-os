@@ -2,6 +2,9 @@
 # Continuous autonomous factory loop: merge → production exact-SHA verify → smoke → claim next task.
 set -euo pipefail
 
+if [ "${VNC_CONTINUOUS_ORCHESTRATOR_COMMON_LOADED:-}" = "1" ]; then return 0; fi
+VNC_CONTINUOUS_ORCHESTRATOR_COMMON_LOADED=1
+
 CONTINUOUS_ORCHESTRATOR_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=.github/scripts/review-orchestrator-common.sh
 source "${CONTINUOUS_ORCHESTRATOR_SCRIPT_DIR}/review-orchestrator-common.sh"
@@ -37,6 +40,8 @@ ensure_continuous_orchestrator_labels() {
     "status:verifying|FBCA04|Post-merge production exact-SHA verification"
     "status:completed|0E8A16|Factory loop completed; production verified"
     "${CONTINUOUS_QUEUE_CLAIM_LABEL}|5319E7|Automated queue claim for next Agent OS task"
+    "agent:build-approved|0E8A16|Owner-approved low-risk native build"
+    "agent:build-approved-medium|FBCA04|Owner-approved medium-risk native build"
   )
   for entry in "${labels[@]}"; do
     IFS='|' read -r name color description <<< "$entry"
@@ -61,10 +66,10 @@ is_factory_continuous_loop_pull_request() {
     if is_high_risk_issue "$issue_number"; then
       return 1
     fi
-    if issue_has_label "$issue_number" "risk:low" && issue_has_label "$issue_number" "cursor:pilot-approved"; then
+    if issue_has_label "$issue_number" "risk:low" && issue_has_label "$issue_number" "agent:build-approved"; then
       continue
     fi
-    if issue_has_label "$issue_number" "risk:medium" && issue_has_label "$issue_number" "cursor:pilot-approved-medium"; then
+    if issue_has_label "$issue_number" "risk:medium" && issue_has_label "$issue_number" "agent:build-approved-medium"; then
       continue
     fi
     return 1
@@ -80,8 +85,8 @@ pull_request_merge_state() {
       def check_state:
         (.statusCheckRollup // []) as $checks
         | if ($checks | length) == 0 then "UNKNOWN"
-          elif any($checks[]; ((.status // "") != "COMPLETED")) then "PENDING"
-          elif any($checks[]; ((.conclusion // "") | IN("SUCCESS","NEUTRAL","SKIPPED") | not)) then "FAILURE"
+          elif any($checks[]; ((.status // (if .state == "SUCCESS" then "COMPLETED" else "PENDING" end)) != "COMPLETED")) then "PENDING"
+          elif any($checks[]; ((.conclusion // .state // "") | IN("SUCCESS","NEUTRAL","SKIPPED") | not)) then "FAILURE"
           else "SUCCESS"
           end;
       [.mergeable, .mergeStateStatus, (.reviewDecision // ""), check_state] | @tsv
@@ -113,6 +118,7 @@ independent_review_clean_for_merge() {
     | jq -r --arg head "$head_sha" '
       [.[] | select(.commit_id == $head)
         | select((.body // "") | contains("Independent ATTD PR Review"))
+        | select((((.body // "") | contains("AGENT_RUNTIME_ID:")) and .user.login == "github-actions[bot]") or ((.body // "") | contains("CURSOR_AUTOMATION_ID:")))
         | {body: (.body // ""), submitted_at: (.submitted_at // "")}]
       | sort_by(.submitted_at)
       | last.body // empty
@@ -214,7 +220,7 @@ attempt_auto_merge_for_head() {
 
   if gh api --method PUT "repos/${GITHUB_REPOSITORY}/pulls/${pull_number}/merge" \
     -f merge_method=squash \
-    -f expected_head_sha="$head_sha" \
+    -f sha="$head_sha" \
     -f commit_title="Merge PR #${pull_number} (Agent OS continuous loop)" \
     >/dev/null 2>&1; then
     post_continuous_pr_comment "$pull_number" "$marker" "$triggered_body"
@@ -240,7 +246,7 @@ github_production_deployment_sha() {
       return 0
     fi
   done < <(
-    gh api "repos/${GITHUB_REPOSITORY}/deployments?environment=Production&per_page=30" 2>/dev/null \
+    gh api "repos/${GITHUB_REPOSITORY}/deployments?per_page=100" 2>/dev/null \
       | jq -r --arg sha "$merge_sha" '
           .[] | select((.environment == "Production" or .environment == "production") and .sha == $sha) | .id
         ' || true
@@ -250,16 +256,16 @@ github_production_deployment_sha() {
 
 main_branch_ci_success_for_sha() {
   local merge_sha="$1"
-  local state
-  state="$(gh api "repos/${GITHUB_REPOSITORY}/commits/${merge_sha}/status" --jq '.state' 2>/dev/null || printf 'unknown')"
-  [ "$state" = "success" ]
+  commit_ci_is_green "$merge_sha"
 }
 
 run_production_smoke_check() {
-  local url="$1"
-  local code
-  code="$(curl -fsS -o /dev/null -w '%{http_code}' --max-time 30 "$url" 2>/dev/null || printf '000')"
-  [ "$code" = "200" ] || [ "$code" = "301" ] || [ "$code" = "302" ]
+  local url="$1" expected_sha="${2:-}" body
+  [ -n "$expected_sha" ] || return 1
+  body="$(curl -fsS --max-time 30 "${url%/}/api/health" 2>/dev/null)" || return 1
+  printf '%s' "$body" | jq -e --arg sha "$expected_sha" '
+    .status == "ok" and .service == "vnc-os" and .commitSha == $sha and .environment == "production"
+  ' >/dev/null
 }
 
 continuous_elapsed_minutes_since_merge() {
@@ -340,7 +346,7 @@ handle_post_merge_verification() {
   fi
 
   if ! pr_has_marker_comment "$pull_number" "$smoke_marker"; then
-    if ! run_production_smoke_check "$AUTOMATION_PRODUCTION_SMOKE_URL"; then
+    if ! run_production_smoke_check "$AUTOMATION_PRODUCTION_SMOKE_URL" "$merge_sha"; then
       local smoke_elapsed
       smoke_elapsed="$(continuous_elapsed_minutes_since_merge "$pull_number")"
       if [ "$smoke_elapsed" -ge "$CONTINUOUS_SMOKE_TIMEOUT_MINUTES" ]; then
@@ -391,14 +397,14 @@ claim_next_eligible_agent_os_task() {
 
 ${claim_marker}"
 
-  # Claim is a queue reservation only. The Cursor API must return a real run
+  # Claim is a queue reservation only. The native runtime must return a real run
   # before the issue is marked building or a Builder lease is recorded.
-  gh issue comment "$issue_number" --body "CURSOR_QUEUE_RESERVED: waiting for eligible, explicitly authorised Cursor API dispatch."
+  gh issue comment "$issue_number" --body "AGENT_QUEUE_RESERVED: waiting for the native GitHub runtime."
   set_issue_status_label "$issue_number" "status:approved"
   # Dispatch immediately only when the owner has separately approved the
-  # issue with cursor:pilot-approved + risk:low. Other tasks stay queued.
-  if ! dispatch_approved_cursor_issue "$issue_number"; then
-    echo "Issue #$issue_number reserved but not Cursor-dispatch eligible."
+  # issue with agent:build-approved + risk:low. Other tasks stay queued.
+  if ! dispatch_approved_native_issue "$issue_number"; then
+    echo "Issue #$issue_number reserved but not native-dispatch eligible."
   fi
 }
 
@@ -426,7 +432,7 @@ select_next_claimable_agent_os_issue() {
   done < <(
     printf '%s' "$issue_json" | jq -r '
       [.[] 
-        | select([.labels[].name] | (index("risk:high") == null and index("risk:critical") == null) and ((index("risk:low") != null and index("cursor:pilot-approved") != null) or (index("risk:medium") != null and index("cursor:pilot-approved-medium") != null)))
+        | select([.labels[].name] | (index("risk:high") == null and index("risk:critical") == null) and ((index("risk:low") != null and index("agent:build-approved") != null) or (index("risk:medium") != null and index("agent:build-approved-medium") != null)))
         | select([.labels[].name] | all(. != "orchestrator:review-repair" and . != "orchestrator:ci-repair"))
         | select([.labels[].name] | all(. != "status:building" and . != "status:pr-open" and . != "status:completed"))
       ] | sort_by(.number) | .[].number
@@ -500,33 +506,11 @@ builder_lease_is_active() {
   [ "$expiry_epoch" -gt "$now_epoch" ]
 }
 
-# The only automatic launch path: an explicitly approved LOW-risk task.
-# Deterministic Agent IDs in the shared bridge make duplicate launch fail closed.
-dispatch_approved_cursor_issue() {
-  local issue_number="$1"
-  local issue_json result agent_id run_id
-  [ -n "${CURSOR_API_KEY:-}" ] || { echo "Cursor API secret unavailable; dispatch skipped."; return 1; }
-  issue_json="$(gh issue view "$issue_number" --repo "$GITHUB_REPOSITORY" --json state,labels 2>/dev/null)" || return 1
-  if ! printf '%s' "$issue_json" | jq -e '
-    .state == "OPEN" and
-    ([.labels[].name] | index("risk:high") == null and index("risk:critical") == null and ((index("risk:low") != null and index("cursor:pilot-approved") != null) or (index("risk:medium") != null and index("cursor:pilot-approved-medium") != null)))
-  ' >/dev/null; then
-    echo "Issue #$issue_number lacks explicit low/medium Cursor dispatch approval or has a high-risk label."
-    return 1
-  fi
-  if issue_has_idempotency_marker "$issue_number" "CURSOR_API_AGENT_ID:"; then
-    echo "Issue #$issue_number already dispatched; refusing a second launch."
-    return 0
-  fi
-  result="$(CURSOR_BRIDGE_MODE=launch CURSOR_ISSUE_NUMBER="$issue_number" CURSOR_LAUNCH_APPROVED=true python3 .github/scripts/cursor-cloud-api-bridge.py)" || return 1
-  agent_id="$(printf '%s' "$result" | jq -er '.agentId')"
-  run_id="$(printf '%s' "$result" | jq -er '.runId')"
-  gh issue comment "$issue_number" --body "CURSOR_API_AGENT_ID: $agent_id
-CURSOR_API_RUN_ID: $run_id
-CURSOR_API_LAUNCH_CONFIRMED: real Cursor API response; task #$issue_number."
-  set_issue_status_label "$issue_number" "status:building"
-  record_builder_lease "$issue_number" "none" "none" "0"
+# Approved native build dispatch; no external provider API is used.
+dispatch_approved_native_issue() {
+  dispatch_native_agent_task "build" "$1" ""
 }
+
 
 reconcile_builder_issue() {
   local issue_number="$1"
@@ -602,20 +586,24 @@ Builder task #$issue_number exhausted $retry_count recovery attempts; status:sta
   [ "$pull_number" = "none" ] && reason="no open PR and no recent progress"
 
   gh issue comment "$issue_number" --body "BUILDER_LIVENESS_REDISPATCH: $reason; same-task recovery attempt $next_attempt/$CONTINUOUS_BUILDER_MAX_REDISPATCH. pr=$pull_number branch=$branch_name head=$head_sha. Resume SAME branch/PR, reconcile latest main if behind/conflicted, push code progress, then CI/review."
-  # Do not record a lease before a real Cursor run has been created.
-  # GitHub Actions bot comments do not authorize or actually launch the external Cursor Builder.
+  # Do not record a lease before a real native run has been created.
+  # GitHub Actions bot comments do not authorize or actually launch the external native Builder.
   # Never claim success or refresh a Builder lease based on a synthetic BUILD_APPROVED.
-  if [ "$pull_number" = "none" ] && ! issue_has_idempotency_marker "$issue_number" "CURSOR_API_AGENT_ID:"; then
-    if dispatch_approved_cursor_issue "$issue_number"; then
-      echo "Cursor dispatch completed or reconciled for task #$issue_number."
+  if [ "$pull_number" = "none" ] || [ "$branch_name" = "agent/issue-$issue_number" ]; then
+    if dispatch_approved_native_issue "$issue_number"; then
+      echo "Native dispatch completed or reconciled for task #$issue_number."
       return 0
     fi
   fi
-  gh issue comment "$issue_number" --body "CURSOR_DISPATCH_REQUIRED: No safe automatic recovery for this task. Existing PR=$pull_number, head=$head_sha. Review existing Cursor agent/run before re-dispatch; no duplicate agent created."
-  echo "Reconciler flagged issue #$issue_number for real Cursor API dispatch (attempt $next_attempt); no Builder run claimed."
+  gh issue comment "$issue_number" --body "AGENT_RUNTIME_REQUIRED: No safe automatic recovery for this task. Existing PR=$pull_number, head=$head_sha. Review existing GitHub Actions run before re-dispatch; no duplicate agent created."
+  echo "Reconciler flagged issue #$issue_number for real native runtime dispatch (attempt $next_attempt); no Builder run claimed."
 }
 
 process_stale_builder_tasks() {
+  if [ "$(gh variable get AGENT_RUNTIME_ENABLED --repo "$GITHUB_REPOSITORY" 2>/dev/null || true)" != "true" ]; then
+    echo "Native runtime not enabled; approved tasks stay queued without consuming recovery attempts."
+    return 0
+  fi
   local now_epoch issue_number updated_at label
   local -A seen=()
   now_epoch="${CONTINUOUS_NOW_EPOCH:-$(date -u +%s)}"

@@ -33,7 +33,8 @@ jobs:
           REVIEW_STATE: ${{ github.event.review.state }}
           RUN_ID: ${{ github.run_id }}
         run: |
-          if [ "$REVIEW_STATE" != "COMMENTED" ] && [ "$REVIEW_STATE" != "CHANGES_REQUESTED" ]; then
+          review_state_normalized="$(printf '%s' "$REVIEW_STATE" | tr '[:lower:]' '[:upper:]')"
+          if [ "$review_state_normalized" != "COMMENTED" ] && [ "$review_state_normalized" != "CHANGES_REQUESTED" ]; then
             echo "Review state ${REVIEW_STATE} is not a final structured review; skipping."
             exit 0
           fi

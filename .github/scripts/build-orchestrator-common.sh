@@ -94,6 +94,37 @@ parse_review_severity_counts() {
   printf '%s %s %s %s' "$p0" "$p1" "$p2" "$p3"
 }
 
+# P2 findings may be documented as non-blocking (ops/docs follow-ups). Treat those as
+# merge-gate clean when explicitly marked in the independent review body.
+review_p2_blocks_autonomous_orchestration() {
+  local review_body="$1"
+  local p2_count="$2"
+
+  if [ "$p2_count" -le 0 ]; then
+    return 1
+  fi
+
+  if printf '%s' "$review_body" | grep -Eiq \
+    'P2:[[:space:]]*[0-9]+[[:space:]]*\([^)]*none[[:space:]]+release-blocking'; then
+    return 1
+  fi
+
+  if printf '%s' "$review_body" | grep -Eiq \
+    'none[[:space:]]+release-blocking[[:space:]]+for[[:space:]]+merge-gate'; then
+    return 1
+  fi
+
+  return 0
+}
+
+review_independent_clean_for_autonomous_merge() {
+  local review_body="$1"
+  local p0 p1 p2 _p3
+
+  read -r p0 p1 p2 _p3 <<< "$(parse_review_severity_counts "$review_body")"
+  [ "$p0" -eq 0 ] && [ "$p1" -eq 0 ] && ! review_p2_blocks_autonomous_orchestration "$review_body" "$p2"
+}
+
 count_findings_in_section() {
   local body="$1"
   local severity="$2"
@@ -267,11 +298,17 @@ is_low_risk_pull_request() {
     fi
 
     if issue_has_label "$issue_number" "risk:low"; then
-      continue
+      if issue_has_label "$issue_number" "cursor:pilot-approved"; then
+        continue
+      fi
+      return 1
     fi
 
     if issue_has_label "$issue_number" "risk:medium"; then
-      continue
+      if issue_has_label "$issue_number" "cursor:pilot-approved-medium"; then
+        continue
+      fi
+      return 1
     fi
 
     return 1
@@ -582,7 +619,7 @@ handle_reviewer_outcome() {
     return 0
   fi
 
-  if [ "$p2" -gt 0 ]; then
+  if review_p2_blocks_autonomous_orchestration "$review_body" "$p2"; then
     local repair_issue parent_issue=""
     repair_issue="$(find_open_repair_issue_for_pr "$pull_number" "$head_sha" "review")"
     if [ -n "$repair_issue" ]; then

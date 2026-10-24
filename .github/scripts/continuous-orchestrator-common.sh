@@ -122,8 +122,7 @@ independent_review_clean_for_merge() {
     return 1
   fi
 
-  read -r p0 p1 p2 _p3 <<< "$(parse_review_severity_counts "$review_body")"
-  [ "$p0" -eq 0 ] && [ "$p1" -eq 0 ] && [ "$p2" -eq 0 ]
+  review_independent_clean_for_autonomous_merge "$review_body"
 }
 
 pull_request_merge_gate_satisfied() {

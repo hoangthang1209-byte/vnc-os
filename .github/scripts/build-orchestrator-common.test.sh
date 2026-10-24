@@ -67,6 +67,25 @@ No P0/P1 findings.
 EOF
 }
 
+sample_review_non_blocking_p2() {
+  cat <<'EOF'
+<!-- CURSOR_AUTOMATION_ID: test -->
+## Independent ATTD PR Review
+
+### Findings
+
+#### P2
+
+**1. Ops follow-up**
+
+**Review status**
+
+- **P0:** 0
+- **P1:** 0
+- **P2:** 2 (none release-blocking for merge-gate safety; ops follow-ups)
+EOF
+}
+
 body="$(sample_review_clean_p2)"
 if is_attd_pr_reviewer_review "$body"; then
   echo "PASS: detects ATTD PR Reviewer body"
@@ -88,6 +107,25 @@ assert_eq "blocked review P1" "1" "$p1"
 read -r p0 p1 p2 p3 <<< "$(parse_review_severity_counts "$(sample_review_ready)")"
 assert_eq "ready review P2" "0" "$p2"
 assert_eq "ready review P3" "1" "$p3"
+
+read -r p0 p1 p2 p3 <<< "$(parse_review_severity_counts "$(sample_review_non_blocking_p2)")"
+assert_eq "non-blocking P2 review P0" "0" "$p0"
+assert_eq "non-blocking P2 review P1" "0" "$p1"
+assert_eq "non-blocking P2 review P2 count" "1" "$p2"
+
+if review_independent_clean_for_autonomous_merge "$(sample_review_non_blocking_p2)"; then
+  echo "PASS: non-blocking P2 allows autonomous merge gate"
+else
+  echo "FAIL: non-blocking P2 allows autonomous merge gate"
+  failures=$((failures + 1))
+fi
+
+if review_p2_blocks_autonomous_orchestration "$(sample_review_clean_p2)" "1"; then
+  echo "PASS: blocking P2 triggers repair path"
+else
+  echo "FAIL: blocking P2 triggers repair path"
+  failures=$((failures + 1))
+fi
 
 marker="$(orchestrator_idempotency_marker "review" "33" "abc123")"
 assert_eq "idempotency marker is PR+SHA keyed" \

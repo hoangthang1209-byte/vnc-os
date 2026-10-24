@@ -2,6 +2,11 @@
 # Shared helpers for ATTD GitHub task status label automation (Phase F1a).
 set -euo pipefail
 
+if [[ -n "${TASK_STATUS_COMMON_LOADED:-}" ]]; then
+  return 0 2>/dev/null || exit 0
+fi
+TASK_STATUS_COMMON_LOADED=1
+
 readonly STATUS_LABEL_PREFIX="status:"
 readonly STALLED_COMMENT='TASK_STALLED: No linked PR was created within 45 minutes after BUILD_APPROVED.'
 readonly BUILD_APPROVED_AUTHOR="${BUILD_APPROVED_AUTHOR:-${GITHUB_REPOSITORY_OWNER:-}}"
@@ -11,7 +16,11 @@ ensure_task_status_labels() {
   local labels=(
     "status:approved|0E8A16|Approved for implementation"
     "status:building|1D76DB|Build in progress"
+    "status:ci-review|8250DF|CI green/pending exact-head independent review"
     "status:stalled|D93F0B|Approved but no linked PR within watchdog threshold"
+    "status:merging|1B7FCE|Auto-merge in progress for exact PR head"
+    "status:verifying|FBCA04|Post-merge production exact-SHA verification"
+    "status:completed|0E8A16|Factory loop completed; production verified"
     "status:pr-open|FBCA04|Linked pull request is open"
     "status:merged|6F42C1|Linked pull request merged"
     "risk:low|C2E0C6|Low-risk change"
@@ -27,8 +36,8 @@ ensure_task_status_labels() {
 
 list_issue_status_labels() {
   local issue_number="$1"
-  gh issue view "$issue_number" --json labels --jq \
-    --arg prefix "$STATUS_LABEL_PREFIX" '[.labels[].name | select(startswith($prefix))]'
+  gh issue view "$issue_number" --json labels 2>/dev/null \
+    | jq -r --arg prefix "$STATUS_LABEL_PREFIX" '[.labels[].name | select(startswith($prefix))]'
 }
 
 set_issue_status_label() {
@@ -36,8 +45,8 @@ set_issue_status_label() {
   local target_status="$2"
 
   mapfile -t current_status_labels < <(
-    gh issue view "$issue_number" --json labels --jq \
-      --arg prefix "$STATUS_LABEL_PREFIX" '.labels[].name | select(startswith($prefix))'
+    gh issue view "$issue_number" --json labels 2>/dev/null \
+      | jq -r --arg prefix "$STATUS_LABEL_PREFIX" '.labels[].name | select(startswith($prefix))'
   )
 
   local remove_args=()
@@ -71,31 +80,38 @@ normalize_build_approved_comment() {
 
 latest_authorized_build_approved_timestamp() {
   local issue_number="$1"
-  gh issue view "$issue_number" --json comments,labels --jq \
-    --arg author "$BUILD_APPROVED_AUTHOR" \
-    --arg bot "github-actions[bot]" \
-    '([.labels[].name | select(startswith("orchestrator:"))] | length > 0) as $orchestrator_issue |
-    [.comments[]
-      | select(
-          (.body | gsub("^\\s+|\\s+$"; "") == "BUILD_APPROVED")
-          and (
-            (.author.login == $author)
-            or ((.author.login == $bot) and $orchestrator_issue)
+  gh issue view "$issue_number" --json comments,labels 2>/dev/null \
+    | jq -r --arg author "$BUILD_APPROVED_AUTHOR" --arg bot "github-actions[bot]" \
+      '([.labels[].name | select(startswith("orchestrator:"))] | length > 0) as $orchestrator_issue |
+      [.comments[]
+        | select(
+            ((.body // "") | gsub("^\\s+|\\s+$"; "") == "BUILD_APPROVED")
+            and (
+              (.author.login == $author)
+              or ((.author.login == $bot) and $orchestrator_issue)
+            )
           )
-        )
-      | .createdAt] | max // empty'
+        | .createdAt] | max // empty'
 }
 
 issue_has_stalled_comment() {
   local issue_number="$1"
-  gh issue view "$issue_number" --json comments --jq \
-    --arg body "$STALLED_COMMENT" '[.comments[] | select(.body == $body)] | length > 0'
+  gh issue view "$issue_number" --json comments 2>/dev/null \
+    | jq -r --arg body "$STALLED_COMMENT" '[.comments[] | select(.body == $body)] | length > 0'
 }
 
 linked_issue_numbers_from_pr() {
   local pull_number="$1"
-  gh pr view "$pull_number" --json closingIssuesReferences --jq \
-    '[.closingIssuesReferences[] | select(.number != null) | .number] | unique | .[]'
+  local closing_refs body
+
+  closing_refs="$(gh pr view "$pull_number" --json closingIssuesReferences --jq     '.closingIssuesReferences[]? | select(.number != null) | .number' 2>/dev/null || true)"
+
+  body="$(gh pr view "$pull_number" --json body --jq '.body // ""' 2>/dev/null || true)"
+
+  {
+    printf '%s\n' "$closing_refs"
+    printf '%s\n' "$body"       | grep -Eio '(close[sd]?|fix(e[sd])?|resolve[sd]?)[[:space:]]+#[0-9]+'       | grep -Eo '[0-9]+'       || true
+  } | awk 'NF' | sort -nu
 }
 
 reconcile_issue_without_open_pr() {

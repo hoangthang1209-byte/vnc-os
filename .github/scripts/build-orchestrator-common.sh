@@ -2,6 +2,11 @@
 # Shared helpers for ATTD event-driven build/repair orchestration (Phase F1b).
 set -euo pipefail
 
+if [[ -n "${BUILD_ORCHESTRATOR_COMMON_LOADED:-}" ]]; then
+  return 0 2>/dev/null || exit 0
+fi
+BUILD_ORCHESTRATOR_COMMON_LOADED=1
+
 ORCHESTRATOR_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=.github/scripts/task-status-common.sh
 source "${ORCHESTRATOR_SCRIPT_DIR}/task-status-common.sh"
@@ -92,6 +97,37 @@ parse_review_severity_counts() {
   p3="$(count_findings_in_section "$body" "P3")"
 
   printf '%s %s %s %s' "$p0" "$p1" "$p2" "$p3"
+}
+
+# P2 findings may be documented as non-blocking (ops/docs follow-ups). Treat those as
+# merge-gate clean when explicitly marked in the independent review body.
+review_p2_blocks_autonomous_orchestration() {
+  local review_body="$1"
+  local p2_count="$2"
+
+  if [ "$p2_count" -le 0 ]; then
+    return 1
+  fi
+
+  if printf '%s' "$review_body" | grep -Eiq \
+    'P2:[[:space:]]*[0-9]+[[:space:]]*\([^)]*none[[:space:]]+release-blocking'; then
+    return 1
+  fi
+
+  if printf '%s' "$review_body" | grep -Eiq \
+    'none[[:space:]]+release-blocking[[:space:]]+for[[:space:]]+merge-gate'; then
+    return 1
+  fi
+
+  return 0
+}
+
+review_independent_clean_for_autonomous_merge() {
+  local review_body="$1"
+  local p0 p1 p2 _p3
+
+  read -r p0 p1 p2 _p3 <<< "$(parse_review_severity_counts "$review_body")"
+  [ "$p0" -eq 0 ] && [ "$p1" -eq 0 ] && ! review_p2_blocks_autonomous_orchestration "$review_body" "$p2"
 }
 
 count_findings_in_section() {
@@ -189,11 +225,12 @@ issue_has_idempotency_marker() {
   local issue_number="$1"
   local marker="$2"
 
-  gh issue view "$issue_number" --json body,comments --jq \
-    --arg marker "$marker" '
-      (.body | contains($marker))
-      or ([.comments[].body | select(contains($marker))] | length > 0)
-    ' | grep -qx 'true'
+  gh issue view "$issue_number" --json body,comments 2>/dev/null \
+    | jq -r --arg marker "$marker" '
+      ((.body // "") | contains($marker))
+      or ([.comments[].body // "" | select(contains($marker))] | length > 0)
+    ' \
+    | grep -qx 'true'
 }
 
 linked_issue_numbers_array() {
@@ -209,8 +246,8 @@ issue_has_label() {
   local issue_number="$1"
   local label="$2"
 
-  gh issue view "$issue_number" --json labels --jq \
-    --arg label "$label" '[.labels[].name | select(. == $label)] | length > 0' \
+  gh issue view "$issue_number" --json labels 2>/dev/null \
+    | jq -r --arg label "$label" '[.labels[].name | select(. == $label)] | length > 0' \
     | grep -qx 'true'
 }
 
@@ -223,8 +260,14 @@ is_high_risk_issue() {
   local issue_number="$1"
   local combined
 
+  # Explicit risk labels are authoritative. A medium/low orchestration task may
+  # legitimately mention protected domains in safety documentation without
+  # becoming a high-risk task itself.
   if issue_has_label "$issue_number" "risk:high"; then
     return 0
+  fi
+  if issue_has_label "$issue_number" "risk:medium" || issue_has_label "$issue_number" "risk:low"; then
+    return 1
   fi
 
   combined="$(issue_body_and_title "$issue_number")"
@@ -260,10 +303,16 @@ is_low_risk_pull_request() {
     fi
 
     if issue_has_label "$issue_number" "risk:low"; then
-      continue
+      if issue_has_label "$issue_number" "cursor:pilot-approved"; then
+        continue
+      fi
+      return 1
     fi
 
     if issue_has_label "$issue_number" "risk:medium"; then
+      if issue_has_label "$issue_number" "cursor:pilot-approved-medium"; then
+        continue
+      fi
       return 1
     fi
 
@@ -481,7 +530,8 @@ ${marker}"
   if ! issue_has_orchestrator_build_approved "$repair_issue"; then
     post_orchestrator_build_approved "$repair_issue"
   fi
-  set_issue_status_label "$repair_issue" "status:building"
+  # No verified Cursor run: a bot approval cannot establish BUILDING state.
+  set_issue_status_label "$repair_issue" "status:queued"
   post_unique_pr_comment "$pull_number" "$marker" "$triggered_comment"
 }
 
@@ -574,7 +624,7 @@ handle_reviewer_outcome() {
     return 0
   fi
 
-  if [ "$p2" -gt 0 ]; then
+  if review_p2_blocks_autonomous_orchestration "$review_body" "$p2"; then
     local repair_issue parent_issue=""
     repair_issue="$(find_open_repair_issue_for_pr "$pull_number" "$head_sha" "review")"
     if [ -n "$repair_issue" ]; then
@@ -710,9 +760,8 @@ process_deferred_queue() {
 
     if issue_has_orchestrator_build_approved "$issue_number"; then
       if issue_has_label "$issue_number" "status:queued"; then
-        echo "Deferred repair issue #${issue_number} has BUILD_APPROVED but status:queued; promoting to status:building."
-        set_issue_status_label "$issue_number" "status:building"
-        return 0
+        echo "Deferred repair issue #${issue_number} awaits a verified external Builder run; keeping status:queued."
+        continue
       fi
       echo "Deferred repair issue #${issue_number} already has BUILD_APPROVED; skipping duplicate trigger."
       continue
@@ -720,7 +769,9 @@ process_deferred_queue() {
 
     echo "Re-triggering deferred repair issue #${issue_number}."
     post_orchestrator_build_approved "$issue_number"
-    set_issue_status_label "$issue_number" "status:building"
+    # Explicit owner-triggered legacy automation may consume this approval, but
+    # do not claim an actual active worker without an API run acknowledgement.
+    set_issue_status_label "$issue_number" "status:queued"
     return 0
   done
 }

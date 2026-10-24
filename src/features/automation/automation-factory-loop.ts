@@ -45,6 +45,45 @@ export function formatFactoryLoopStageLabel(stage: AutomationFactoryLoopStage): 
   return STAGE_LABEL[stage];
 }
 
+/** Whether a Cursor Builder worker is actively executing (lease + heartbeat evidence). */
+export type BuilderExecutionEvidence = "active" | "inactive" | "unknown";
+
+const EMPTY_FACTORY_LOOP_SNAPSHOT: AutomationFactoryLoopSnapshot = {
+  stage: "QUEUE",
+  exactHeadSha: null,
+  productionVerificationSha: null,
+  lastTransitionAt: null,
+  nextAction: null,
+  retryCount: 0,
+  waitHuman: false,
+  waitHumanReason: null,
+  workerLease: null,
+  leaseExpiresAt: null,
+  lastHeartbeatAt: null,
+  lastDispatchAt: null,
+};
+
+export function resolveBuilderExecutionEvidence(
+  factoryLoop: AutomationFactoryLoopSnapshot | null | undefined,
+  options?: { nowMs?: number },
+): BuilderExecutionEvidence {
+  const snapshot = factoryLoop ?? EMPTY_FACTORY_LOOP_SNAPSHOT;
+  const nowMs = options?.nowMs ?? Date.now();
+
+  if (!snapshot.workerLease?.trim()) {
+    return snapshot.stage === "BUILDING" ? "unknown" : "inactive";
+  }
+
+  const leaseExpiresRaw = snapshot.leaseExpiresAt?.trim();
+  if (!leaseExpiresRaw) return "unknown";
+
+  const leaseExpiresMs = Date.parse(leaseExpiresRaw);
+  if (Number.isNaN(leaseExpiresMs)) return "unknown";
+  if (leaseExpiresMs <= nowMs) return "inactive";
+
+  return "active";
+}
+
 function findLatestCommentMatching(
   comments: readonly AutomationStatusComment[],
   predicate: (body: string) => boolean,

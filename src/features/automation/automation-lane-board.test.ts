@@ -359,6 +359,8 @@ describe("automation lane board", () => {
 
   it("maps overall lane states from task truth", () => {
     assert.equal(mapLaneOverallState(taskFixture({ status: "building" })), "dang_build");
+    assert.equal(mapLaneOverallState(taskFixture({ status: "verifying" })), "dang_deploy");
+    assert.equal(mapLaneOverallState(taskFixture({ status: "merging" })), "san_sang_merge");
     assert.equal(mapLaneOverallState(taskFixture({ status: "ci_review" })), "dang_kiem_tra");
     assert.equal(mapLaneOverallState(taskFixture({ status: "needs_fix" })), "can_sua");
     assert.equal(mapLaneOverallState(taskFixture({ status: "ready_to_merge" })), "san_sang_merge");
@@ -586,7 +588,25 @@ describe("automation lane board", () => {
 
   it("builds summary counts from lane aggregation", () => {
     const board = buildLaneBoard([
-      taskFixture({ taskArea: "Automation Platform", status: "building" }),
+      taskFixture({
+        taskArea: "Automation Platform",
+        status: "building",
+        factoryLoop: {
+          stage: "BUILDING",
+          exactHeadSha: null,
+          productionVerificationSha: null,
+          lastTransitionAt: null,
+          nextAction: null,
+          retryCount: 0,
+          waitHuman: false,
+          waitHumanReason: null,
+          workerLease:
+            "BUILDER_LEASE: issue=83 pr=1 head=abc claimedAt=2026-09-21T00:00:00.000Z leaseExpiresAt=2026-09-21T01:00:00.000Z attempt=1 stage=BUILDING heartbeat=2026-09-21T00:00:00.000Z",
+          leaseExpiresAt: "2026-09-21T01:00:00.000Z",
+          lastHeartbeatAt: "2026-09-21T00:00:00.000Z",
+          lastDispatchAt: null,
+        },
+      }),
       taskFixture({
         issueNumber: 71,
         taskArea: "Lead & Sales",
@@ -606,9 +626,12 @@ describe("automation lane board", () => {
       }),
     ]);
 
-    const summary = buildLaneBoardSummary(board);
+    const summary = buildLaneBoardSummary(board, {
+      nowMs: Date.parse("2026-09-21T00:30:00.000Z"),
+    });
     assert.equal(summary.totalLanes, 7);
     assert.equal(summary.runningCount, 1);
+    assert.equal(summary.runningEvidenceUnknown, false);
     assert.equal(summary.blockedOrNeedsFixCount, 1);
     assert.equal(summary.productionCount, 1);
 
@@ -642,5 +665,38 @@ describe("automation lane board", () => {
 
     const automationLane = board.find((entry) => entry.laneId === "automation-platform");
     assert.equal(automationLane?.overallStateLabel, AUTOMATION_LANE_OVERALL_STATE_LABELS.dang_build);
+  });
+
+  it("does not count CI review / ready-to-merge lanes as active Builder runs", () => {
+    const board = buildLaneBoard([
+      taskFixture({ issueNumber: 1, taskArea: "Lead & Sales / CRM", status: "ci_review" }),
+      taskFixture({ issueNumber: 2, taskArea: "Public Website UI", status: "queued" }),
+      taskFixture({ issueNumber: 3, taskArea: "Quotation / Quote Builder", status: "ready_to_merge" }),
+      taskFixture({
+        issueNumber: 4,
+        taskArea: "Internal Admin Mobile UX",
+        status: "merged",
+        isOpen: false,
+        productionStatus: {
+          status: "deploying",
+          mergedCommitSha: "abc",
+          reason: null,
+          checkedAt: "2026-09-21T00:00:00.000Z",
+        },
+      }),
+    ]);
+
+    const summary = buildLaneBoardSummary(board);
+    assert.equal(summary.runningCount, 0);
+    assert.equal(summary.runningEvidenceUnknown, false);
+  });
+
+  it("flags unknown Builder evidence when BUILDING lacks lease", () => {
+    const board = buildLaneBoard([
+      taskFixture({ taskArea: "Automation Platform", status: "building" }),
+    ]);
+    const summary = buildLaneBoardSummary(board);
+    assert.equal(summary.runningCount, 0);
+    assert.equal(summary.runningEvidenceUnknown, true);
   });
 });

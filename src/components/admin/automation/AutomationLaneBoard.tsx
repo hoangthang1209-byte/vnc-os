@@ -77,8 +77,17 @@ export default function AutomationLaneBoard({
           <strong className="sales-follow-up__stat-value">{summary.totalLanes}</strong>
         </article>
         <article className="sales-follow-up__stat-card sales-follow-up__stat-card--info">
-          <span className="sales-follow-up__stat-label">Đang chạy</span>
-          <strong className="sales-follow-up__stat-value">{summary.runningCount}</strong>
+          <span className="sales-follow-up__stat-label">Builder đang chạy</span>
+          <strong className="sales-follow-up__stat-value">
+            {summary.runningEvidenceUnknown && summary.runningCount === 0
+              ? "—"
+              : summary.runningCount}
+          </strong>
+          {summary.runningEvidenceUnknown ? (
+            <span className="admin-muted automation-lane-board__stat-hint">
+              Một số lane thiếu bằng chứng lease/heartbeat
+            </span>
+          ) : null}
         </article>
         <article className="sales-follow-up__stat-card sales-follow-up__stat-card--danger">
           <span className="sales-follow-up__stat-label">Cần xử lý / Blocked</span>

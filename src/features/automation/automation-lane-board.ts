@@ -1,4 +1,5 @@
 import { evaluateApproveBuildEligibility } from "@/features/automation/automation-approve-build.eligibility";
+import { resolveBuilderExecutionEvidence } from "@/features/automation/automation-factory-loop";
 import {
   AUTOMATION_CANONICAL_LANES,
   getCanonicalLaneById,
@@ -45,7 +46,10 @@ export type AutomationLaneBoardEntry = {
 
 export type AutomationLaneBoardSummary = {
   totalLanes: number;
+  /** Lanes with verified active Builder execution (lease not expired). */
   runningCount: number;
+  /** True when at least one lane may have an active Builder but lease/heartbeat evidence is missing. */
+  runningEvidenceUnknown: boolean;
   blockedOrNeedsFixCount: number;
   productionCount: number;
 };
@@ -250,6 +254,12 @@ export function mapLaneOverallState(task: AutomationTask | null): AutomationLane
 
   if (task.status === "needs_fix") return "can_sua";
   if (task.status === "building") return "dang_build";
+  if (task.status === "verifying") return "dang_deploy";
+  if (task.status === "merging") return "san_sang_merge";
+  if (task.status === "completed") {
+    if (task.productionStatus.status === "live") return "production";
+    return "dang_deploy";
+  }
 
   if (
     (task.status === "backlog" || task.status === "unknown" || task.status === "approved") &&
@@ -431,13 +441,6 @@ export function buildLaneBoard(tasks: AutomationTask[]): AutomationLaneBoardEntr
   return AUTOMATION_CANONICAL_LANES.map((lane) => buildLaneBoardEntry(lane.id, grouped.get(lane.id) ?? []));
 }
 
-const RUNNING_LANE_STATES = new Set<AutomationLaneOverallState>([
-  "dang_build",
-  "dang_kiem_tra",
-  "san_sang_merge",
-  "dang_deploy",
-]);
-
 const BLOCKED_OR_NEEDS_FIX_STATES = new Set<AutomationLaneOverallState>(["blocked", "can_sua"]);
 
 export function isLaneProductionOrComplete(entry: AutomationLaneBoardEntry): boolean {
@@ -483,10 +486,23 @@ export function prepareLaneBoardTasks(allTasks: AutomationTask[]): AutomationTas
   return selected;
 }
 
-export function buildLaneBoardSummary(entries: AutomationLaneBoardEntry[]): AutomationLaneBoardSummary {
+export function buildLaneBoardSummary(
+  entries: AutomationLaneBoardEntry[],
+  options?: { nowMs?: number },
+): AutomationLaneBoardSummary {
+  let runningCount = 0;
+  let runningEvidenceUnknown = false;
+
+  for (const entry of entries) {
+    const evidence = resolveBuilderExecutionEvidence(entry.task?.factoryLoop, options);
+    if (evidence === "active") runningCount += 1;
+    if (evidence === "unknown") runningEvidenceUnknown = true;
+  }
+
   return {
     totalLanes: entries.length,
-    runningCount: entries.filter((entry) => RUNNING_LANE_STATES.has(entry.overallState)).length,
+    runningCount,
+    runningEvidenceUnknown,
     blockedOrNeedsFixCount: entries.filter((entry) =>
       BLOCKED_OR_NEEDS_FIX_STATES.has(entry.overallState),
     ).length,

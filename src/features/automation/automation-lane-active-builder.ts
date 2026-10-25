@@ -7,12 +7,8 @@ import type { AgentRunStatus } from "@/features/agent-os/agent-run.types";
 /** Max age of AgentRun heartbeat treated as a live Builder signal. */
 export const ACTIVE_BUILDER_HEARTBEAT_MS = 6 * 60 * 60 * 1000;
 
-const NON_TERMINAL_AGENT_RUN_STATUSES = new Set<AgentRunStatus>([
-  "QUEUED",
-  "RUNNING",
-  "WAITING_EXTERNAL",
-  "WAITING_HUMAN",
-]);
+// A queued or blocked run must not appear as a currently executing Builder.
+const EXECUTING_AGENT_RUN_STATUSES = new Set<AgentRunStatus>(["RUNNING"]);
 
 export type LaneActiveBuilderRunHint =
   | {
@@ -54,7 +50,7 @@ export function resolveLaneActiveBuilder(
   }
 
   if (hint?.kind === "agent_run") {
-    if (!NON_TERMINAL_AGENT_RUN_STATUSES.has(hint.status)) {
+    if (!EXECUTING_AGENT_RUN_STATUSES.has(hint.status)) {
       return "inactive";
     }
     if (!hint.hasVerifiedRunnerLink) {

@@ -1,0 +1,1 @@
+docs(zalo): record OAuth -14084 blocker and safe recovery path (#124)

@@ -14,7 +14,7 @@ export default async function MerchandisePage() {
     <BusinessSolutionPageV7
       kicker="Merchandise nghệ sĩ & sự kiện"
       title="Sản xuất merchandise cho nghệ sĩ và sự kiện, theo sát từ mẫu đến ngày giao."
-      lead="ATTD phối hợp cùng agency, đơn vị tổ chức và đội ngũ thương hiệu để phát triển, sản xuất và hoàn thiện merchandise nhiều mẫu cho concert, fan event và các chiến dịch quy mô lớn."
+      lead="ATTD phối hợp cùng agency, đơn vị tổ chức và đội ngũ thương hiệu để đánh giá, phát triển mẫu, lựa chọn nguồn hàng và điều phối merchandise nhiều mẫu cho concert, fan event và chiến dịch thương hiệu. Sản phẩm gắn với nghệ sĩ/IP cần được bên sở hữu quyền cho phép."
       audience="Agency giải trí · Đơn vị tổ chức · Đội ngũ nghệ sĩ · Thương hiệu"
       promise="Nhiều mẫu · Làm mẫu · Sản xuất · Kiểm hàng · Đóng gói"
       media={media}
@@ -22,10 +22,12 @@ export default async function MerchandisePage() {
         { title: "Phát triển bộ merchandise", description: "Phát triển áo, nón, bandana, tote và phụ kiện thành một bộ sản phẩm đồng nhất." },
         { title: "Quản lý duyệt mẫu", description: "Theo dõi việc duyệt mẫu, thiết kế, màu Pantone, vị trí in/thêu, nhãn và bao bì." },
         { title: "Sản xuất nhiều mẫu cùng lúc", description: "Điều phối nhiều mẫu, nhiều công đoạn và nhiều đợt sản xuất trong cùng một kế hoạch." },
+        { title: "Quà tặng fan & bộ sản phẩm", description: "Tư vấn sản phẩm đi kèm, gift set, phụ kiện, tem nhãn và bao bì theo concept được cấp phép." },
         { title: "Kiểm hàng & phân bổ", description: "Kiểm hàng, chia size/mẫu, đóng gói và giao theo địa điểm sự kiện hoặc đơn vị phân phối." },
       ]}
       outcomes={[
-        "Kế hoạch tổng theo từng mẫu và số lượng",
+        "Kế hoạch tổng theo từng mẫu, số lượng và ngày diễn ra sự kiện",
+        "Kiểm tra quyền sử dụng artwork, tên nghệ sĩ, logo và tài sản IP trước khi sản xuất",
         "Duyệt mẫu trước khi sản xuất số lượng lớn",
         "Theo dõi tiến độ theo từng mẫu và từng đợt",
         "Kiểm hàng và đóng gói phù hợp bán lẻ hoặc phân phối tại sự kiện",

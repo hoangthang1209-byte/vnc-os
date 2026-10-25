@@ -22,7 +22,11 @@ WIDTHS = (480, 800, 1200, 1920)
 
 def convert(source: Path, root: Path, dest: Path) -> dict:
     relative = source.relative_to(root)
-    digest = hashlib.sha256(source.read_bytes()).hexdigest()
+    digest_hash = hashlib.sha256()
+    with source.open("rb") as file:
+        for chunk in iter(lambda: file.read(1024 * 1024), b""):
+            digest_hash.update(chunk)
+    digest = digest_hash.hexdigest()
     with Image.open(source) as original:
         image = ImageOps.exif_transpose(original)
         if getattr(image, "is_animated", False):
@@ -31,12 +35,12 @@ def convert(source: Path, root: Path, dest: Path) -> dict:
         if image.mode not in {"RGB", "RGBA"}:
             image = image.convert("RGBA" if "A" in image.getbands() else "RGB")
         output = []
-        for width in WIDTHS:
-            if width > image.width:
-                continue  # Never upscale
+        # Include intrinsic width for small sources, never upscale.
+        widths = sorted({w for w in WIDTHS if w <= image.width} | {min(WIDTHS[0], image.width)})
+        for width in widths:
             height = max(1, round(image.height * width / image.width))
             derivative = image.resize((width, height), Image.Resampling.LANCZOS)
-            target = dest / relative.parent / f"{relative.stem}-{width}w.webp"
+            target = dest / relative.parent / f"{relative.name}-{width}w.webp"
             target.parent.mkdir(parents=True, exist_ok=True)
             if target.exists():
                 raise FileExistsError(f"Refusing to overwrite existing derivative: {target}")

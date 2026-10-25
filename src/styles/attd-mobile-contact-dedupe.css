@@ -1,0 +1,8 @@
+/* When the conversion-focused fixed mobile action bar is displayed,
+   hide only the redundant floating CTA stack on narrow viewports.
+   The floating BackToTopButton remains available. */
+@media (max-width: 767px) {
+  .floating-contact--mobile-action-bar .floating-contact-actions {
+    display: none;
+  }
+}

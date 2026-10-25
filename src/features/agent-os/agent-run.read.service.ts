@@ -5,9 +5,9 @@ import type {
   AgentEventSource,
   AgentRunListItem,
   AgentRunStatus,
+  AgentRunSummaryJson,
 } from "@/features/agent-os/agent-run.types";
 import { hasVerifiedCursorRunnerEvidence } from "@/features/agent-os/agent-run.runner-evidence";
-import type { AgentRunSummaryJson } from "@/features/agent-os/agent-run.types";
 import type { LaneActiveBuilderRunHint } from "@/features/automation/automation-lane-active-builder";
 import { prisma } from "@/lib/prisma";
 
@@ -100,8 +100,18 @@ export async function listAgentRunsForIssue(input: {
   return { currentRun, runs: mapped };
 }
 
+function resolveAgentRunHeartbeatAt(updatedAt: Date, lastEventAppliedAt: Date | undefined): string {
+  const updatedMs = updatedAt.getTime();
+  const eventMs = lastEventAppliedAt?.getTime();
+  if (eventMs != null && !Number.isNaN(eventMs) && eventMs > updatedMs) {
+    return new Date(eventMs).toISOString();
+  }
+  return updatedAt.toISOString();
+}
+
 /**
- * Latest non-terminal AgentRun per issue for lane-board Builder liveness (heartbeat via updatedAt).
+ * Latest non-terminal AgentRun per issue for lane-board Builder liveness.
+ * Heartbeat uses the newer of row updatedAt and the latest ingested AgentEvent.
  */
 export async function findActiveBuilderHintsByIssueNumbers(
   issueNumbers: number[],
@@ -124,6 +134,11 @@ export async function findActiveBuilderHintsByIssueNumbers(
       updatedAt: true,
       correlationId: true,
       inputSummary: true,
+      events: {
+        orderBy: { appliedAt: "desc" },
+        take: 1,
+        select: { appliedAt: true },
+      },
     },
   });
 
@@ -135,7 +150,7 @@ export async function findActiveBuilderHintsByIssueNumbers(
     hints.set(issueNumber, {
       kind: "agent_run",
       status: run.status,
-      lastHeartbeatAt: run.updatedAt.toISOString(),
+      lastHeartbeatAt: resolveAgentRunHeartbeatAt(run.updatedAt, run.events[0]?.appliedAt),
       hasVerifiedRunnerLink: hasVerifiedCursorRunnerEvidence({
         correlationId: run.correlationId,
         inputSummary: run.inputSummary as AgentRunSummaryJson | null,

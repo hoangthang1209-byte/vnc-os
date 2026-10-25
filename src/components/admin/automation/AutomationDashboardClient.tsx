@@ -422,6 +422,13 @@ export default function AutomationDashboardClient() {
         </p>
       ) : null}
 
+      {data?.configured && data.dataCompleteness?.agentRunHintsUnavailable ? (
+        <p className="admin-error" role="status">
+          Không tải được telemetry AgentRun cho bảng 7 mảng. Số &quot;Builder đang chạy&quot; có thể hiển thị
+          dấu ? và không phản ánh run Cursor thực tế cho đến khi đọc DB thành công.
+        </p>
+      ) : null}
+
       {data?.configured ? (
         <>
           {laneBoardData ? (

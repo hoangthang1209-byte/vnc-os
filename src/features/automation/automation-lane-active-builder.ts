@@ -4,7 +4,7 @@ import type {
 } from "@/features/automation/automation-lane-board";
 import type { AgentRunStatus } from "@/features/agent-os/agent-run.types";
 
-/** Max age of AgentRun.updatedAt (or GitHub activity fallback) treated as a live Builder heartbeat. */
+/** Max age of AgentRun heartbeat treated as a live Builder signal. */
 export const ACTIVE_BUILDER_HEARTBEAT_MS = 6 * 60 * 60 * 1000;
 
 const NON_TERMINAL_AGENT_RUN_STATUSES = new Set<AgentRunStatus>([
@@ -69,11 +69,6 @@ export function resolveLaneActiveBuilder(
 
   if (hint?.kind === "none") {
     return "unknown";
-  }
-
-  const activityAgeMs = nowMs - Date.parse(entry.task.latestUpdateAt);
-  if (Number.isNaN(activityAgeMs) || activityAgeMs > ACTIVE_BUILDER_HEARTBEAT_MS) {
-    return "inactive";
   }
 
   return "unknown";

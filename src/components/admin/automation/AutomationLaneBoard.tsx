@@ -89,7 +89,10 @@ export default function AutomationLaneBoard({
           <strong className="sales-follow-up__stat-value">
             {summary.runningCount}
             {summary.runningCountHasUnknown ? (
-              <span className="automation-lane-board__stat-unknown" title="Có task status:building nhưng chưa có bằng chứng AgentRun">
+              <span
+                className="automation-lane-board__stat-unknown"
+                title="Có task status:building nhưng chưa có bằng chứng AgentRun + Cursor run id (bc-…) trong cửa sổ heartbeat"
+              >
                 {" "}
                 ?
               </span>

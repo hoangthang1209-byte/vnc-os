@@ -264,6 +264,12 @@ export function mapLaneOverallState(task: AutomationTask | null): AutomationLane
 
   if (task.status === "needs_fix") return "can_sua";
   if (task.status === "building") return "dang_build";
+  if (task.status === "verifying") return "dang_deploy";
+  if (task.status === "merging") return "san_sang_merge";
+  if (task.status === "completed") {
+    if (task.productionStatus.status === "live") return "production";
+    return "dang_deploy";
+  }
 
   if (
     (task.status === "backlog" || task.status === "unknown" || task.status === "approved") &&

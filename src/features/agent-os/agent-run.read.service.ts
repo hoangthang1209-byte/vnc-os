@@ -6,6 +6,8 @@ import type {
   AgentRunListItem,
   AgentRunStatus,
 } from "@/features/agent-os/agent-run.types";
+import { hasVerifiedCursorRunnerEvidence } from "@/features/agent-os/agent-run.runner-evidence";
+import type { AgentRunSummaryJson } from "@/features/agent-os/agent-run.types";
 import type { LaneActiveBuilderRunHint } from "@/features/automation/automation-lane-active-builder";
 import { prisma } from "@/lib/prisma";
 
@@ -120,6 +122,8 @@ export async function findActiveBuilderHintsByIssueNumbers(
       githubIssueNumber: true,
       status: true,
       updatedAt: true,
+      correlationId: true,
+      inputSummary: true,
     },
   });
 
@@ -132,6 +136,10 @@ export async function findActiveBuilderHintsByIssueNumbers(
       kind: "agent_run",
       status: run.status,
       lastHeartbeatAt: run.updatedAt.toISOString(),
+      hasVerifiedRunnerLink: hasVerifiedCursorRunnerEvidence({
+        correlationId: run.correlationId,
+        inputSummary: run.inputSummary as AgentRunSummaryJson | null,
+      }),
     });
   }
 

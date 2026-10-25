@@ -19,6 +19,8 @@ export type LaneActiveBuilderRunHint =
       kind: "agent_run";
       status: AgentRunStatus;
       lastHeartbeatAt: string;
+      /** True when AgentRun is linked to a real Cursor Cloud agent/run id. */
+      hasVerifiedRunnerLink: boolean;
     }
   | { kind: "none" };
 
@@ -54,6 +56,9 @@ export function resolveLaneActiveBuilder(
   if (hint?.kind === "agent_run") {
     if (!NON_TERMINAL_AGENT_RUN_STATUSES.has(hint.status)) {
       return "inactive";
+    }
+    if (!hint.hasVerifiedRunnerLink) {
+      return "unknown";
     }
     const heartbeatAgeMs = nowMs - Date.parse(hint.lastHeartbeatAt);
     if (Number.isNaN(heartbeatAgeMs) || heartbeatAgeMs > ACTIVE_BUILDER_HEARTBEAT_MS) {

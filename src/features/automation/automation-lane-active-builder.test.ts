@@ -101,6 +101,20 @@ describe("automation-lane-active-builder", () => {
           kind: "agent_run",
           status: "RUNNING",
           lastHeartbeatAt: new Date(NOW_MS - 5 * 60 * 1000).toISOString(),
+          hasVerifiedRunnerLink: false,
+        },
+        NOW_MS,
+      ),
+      "unknown",
+    );
+    assert.equal(
+      resolveLaneActiveBuilder(
+        entry,
+        {
+          kind: "agent_run",
+          status: "RUNNING",
+          lastHeartbeatAt: new Date(NOW_MS - 5 * 60 * 1000).toISOString(),
+          hasVerifiedRunnerLink: true,
         },
         NOW_MS,
       ),
@@ -114,6 +128,7 @@ describe("automation-lane-active-builder", () => {
           kind: "agent_run" as const,
           status: "RUNNING" as const,
           lastHeartbeatAt: new Date(NOW_MS - 5 * 60 * 1000).toISOString(),
+          hasVerifiedRunnerLink: true as const,
         },
       ],
     ]);
@@ -157,7 +172,12 @@ describe("automation-lane-active-builder", () => {
     assert.equal(
       resolveLaneActiveBuilder(
         entry,
-        { kind: "agent_run", status: "RUNNING", lastHeartbeatAt: staleHeartbeat },
+        {
+          kind: "agent_run",
+          status: "RUNNING",
+          lastHeartbeatAt: staleHeartbeat,
+          hasVerifiedRunnerLink: true,
+        },
         NOW_MS,
       ),
       "inactive",

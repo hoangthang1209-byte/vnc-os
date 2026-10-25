@@ -148,6 +148,8 @@ export type AutomationDataCompleteness = {
   commentLookupFailedCount?: number;
   /** Recognition may be incomplete due to truncation and/or comment lookup failures. */
   recognitionDegraded?: boolean;
+  /** AgentRun heartbeat hints for lane board could not be loaded (DB unavailable). */
+  agentRunHintsUnavailable?: boolean;
 };
 
 export type AutomationDashboardView = "active" | "all" | "completed";

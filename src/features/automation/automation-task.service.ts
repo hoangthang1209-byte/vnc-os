@@ -261,6 +261,7 @@ export async function getAutomationDashboard(
     const writeAction = await resolveWriteActionState();
 
     let laneBoardActiveBuilderHints: AutomationDashboardResponse["laneBoardActiveBuilderHints"];
+    let agentRunHintsUnavailable = false;
     if (laneBoardTasks && laneBoardTasks.length > 0) {
       try {
         const hintMap = await findActiveBuilderHintsByIssueNumbers(
@@ -268,22 +269,27 @@ export async function getAutomationDashboard(
         );
         laneBoardActiveBuilderHints = Object.fromEntries(hintMap);
       } catch (hintError) {
+        agentRunHintsUnavailable = true;
         console.error("[getAutomationDashboard] lane board AgentRun hints", hintError);
       }
     }
+
+    const mergedDataCompleteness: AutomationDataCompleteness = agentRunHintsUnavailable
+      ? { ...dataCompleteness, agentRunHintsUnavailable: true }
+      : dataCompleteness;
 
     return {
       configured: true,
       configMessage: null,
       ...writeAction,
-      summary: buildSummary(tasks, dataCompleteness, view),
+      summary: buildSummary(tasks, mergedDataCompleteness, view),
       tasks,
       laneBoardTasks: laneBoardTasks ?? undefined,
       laneBoardActiveBuilderHints,
       agentSummary: agentSummary ?? undefined,
       fetchedAt: new Date().toISOString(),
       view,
-      dataCompleteness,
+      dataCompleteness: mergedDataCompleteness,
       productionCommitSha,
       productionCheckedAt,
     };

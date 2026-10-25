@@ -160,6 +160,35 @@ describe("automation-lane-active-builder", () => {
     );
   });
 
+  it("never counts queued or waiting AgentRuns as executing Builders", () => {
+    const board = buildLaneBoard([
+      taskFixture({
+        status: "building",
+        statusLabel: "status:building",
+        linkedPullRequest: null,
+      }),
+    ]);
+    const entry = board.find((row) => row.laneId === "automation-platform")!;
+    const heartbeat = new Date(NOW_MS - 60_000).toISOString();
+
+    for (const status of ["QUEUED", "WAITING_EXTERNAL", "WAITING_HUMAN"] as const) {
+      assert.equal(
+        resolveLaneActiveBuilder(
+          entry,
+          {
+            kind: "agent_run",
+            status,
+            lastHeartbeatAt: heartbeat,
+            hasVerifiedRunnerLink: true,
+          },
+          NOW_MS,
+        ),
+        "inactive",
+        `Non-executing status ${status} must not inflate runningCount`,
+      );
+    }
+  });
+
   it("expires AgentRun heartbeats beyond the configured window", () => {
     const board = buildLaneBoard([
       taskFixture({

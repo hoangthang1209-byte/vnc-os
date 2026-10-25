@@ -23,3 +23,12 @@ test("attribution permits http(s) URLs only and bounds UTM", () => {
   assert.equal(meta.utmSource, "google");
   assert.equal(meta.utmCampaign.length, 200);
 });
+
+test("attribution excludes URL credentials and fragments", () => {
+  const meta = cleanInboundAttribution({
+    landingPage: "https://user:secret@example.com/private#customer-token",
+    referrer: "https://example.com/products?utm_source=mail#personal-section",
+  });
+  assert.equal(meta.landingPage, "");
+  assert.equal(meta.referrer, "https://example.com/products?utm_source=mail");
+});

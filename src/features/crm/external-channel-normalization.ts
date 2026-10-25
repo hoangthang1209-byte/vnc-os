@@ -11,6 +11,8 @@ export const EXTERNAL_LEAD_CHANNELS = [
   "INSTAGRAM_DM",
   "ZALO_OA",
   "WHATSAPP_BUSINESS",
+  "TIKTOK_LEAD_ADS",
+  "LINKEDIN_LEAD_GEN",
 ] as const;
 
 export type ExternalLeadChannel = (typeof EXTERNAL_LEAD_CHANNELS)[number];

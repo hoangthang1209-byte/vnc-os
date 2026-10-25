@@ -6,8 +6,8 @@ import {
   normalizeVerifiedExternalEvent,
 } from "./external-channel-normalization";
 
-test("normalizes six external channels with replay-safe source refs", () => {
-  for (const channel of ["GMAIL","FACEBOOK_LEAD_ADS","FACEBOOK_MESSENGER","INSTAGRAM_DM","ZALO_OA","WHATSAPP_BUSINESS"] as const) {
+test("normalizes eight external channels with replay-safe source refs", () => {
+  for (const channel of ["GMAIL","FACEBOOK_LEAD_ADS","FACEBOOK_MESSENGER","INSTAGRAM_DM","ZALO_OA","WHATSAPP_BUSINESS","TIKTOK_LEAD_ADS","LINKEDIN_LEAD_GEN"] as const) {
     const value = normalizeVerifiedExternalEvent(channel, { eventId: "evt-1", accountId: "account-9", text: "Báo giá 100 áo" });
     assert.ok(value);
     assert.equal(value.channel, channel);

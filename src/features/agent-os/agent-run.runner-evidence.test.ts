@@ -29,6 +29,12 @@ describe("hasVerifiedCursorRunnerEvidence", () => {
 
   it("rejects github-only AgentRun rows without runner linkage", () => {
     assert.equal(hasVerifiedCursorRunnerEvidence({ correlationId: "issue-240" }), false);
+    assert.equal(
+      hasVerifiedCursorRunnerEvidence({
+        inputSummary: { cursorAgentId: "issue-240-not-a-runner" },
+      }),
+      false,
+    );
     assert.equal(hasVerifiedCursorRunnerEvidence({}), false);
   });
 });

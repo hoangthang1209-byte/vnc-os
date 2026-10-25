@@ -12,15 +12,18 @@ const INPUT_SUMMARY_RUNNER_KEYS = [
   "cursorRunnerId",
 ] as const satisfies readonly (keyof AgentRunSummaryJson)[];
 
+function isCursorRunnerReference(value: string): boolean {
+  const trimmed = value.trim();
+  return CURSOR_AGENT_ID_PATTERN.test(trimmed) || CURSOR_RUN_ID_PATTERN.test(trimmed);
+}
+
 export function hasVerifiedCursorRunnerEvidence(input: {
   correlationId?: string | null;
   inputSummary?: AgentRunSummaryJson | null;
 }): boolean {
   const correlationId = input.correlationId?.trim();
-  if (correlationId) {
-    if (CURSOR_AGENT_ID_PATTERN.test(correlationId) || CURSOR_RUN_ID_PATTERN.test(correlationId)) {
-      return true;
-    }
+  if (correlationId && isCursorRunnerReference(correlationId)) {
+    return true;
   }
 
   const summary = input.inputSummary;
@@ -28,7 +31,7 @@ export function hasVerifiedCursorRunnerEvidence(input: {
 
   for (const key of INPUT_SUMMARY_RUNNER_KEYS) {
     const value = summary[key];
-    if (typeof value === "string" && value.trim().length > 0) {
+    if (typeof value === "string" && isCursorRunnerReference(value)) {
       return true;
     }
   }

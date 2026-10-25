@@ -29,7 +29,11 @@ export function cleanInboundAttribution(input: Record<string, unknown>) {
     if (!value) return "";
     try {
       const url = new URL(value);
-      return url.protocol === "https:" || url.protocol === "http:" ? url.toString() : "";
+      if (url.protocol !== "https:" && url.protocol !== "http:") return "";
+      // Avoid retaining credentials, tracking fragments or hidden PII in source URLs.
+      if (url.username || url.password) return "";
+      url.hash = "";
+      return url.toString();
     } catch {
       return "";
     }

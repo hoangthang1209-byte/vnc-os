@@ -16,7 +16,7 @@ export const revalidate = 3600;
 
 const TITLE = "ATTD | Đồng phục, nguồn hàng, OEM, quà tặng & merchandise";
 const DESCRIPTION =
-  "ATTD đồng hành cùng doanh nghiệp, đại lý, agency và thương hiệu từ chọn sản phẩm, làm mẫu, sản xuất, hoàn thiện đến giao hàng.";
+  "Giải pháp B2B cho doanh nghiệp, agency và đơn vị tổ chức sự kiện: đồng phục, nguồn hàng, OEM, quà tặng và merchandise, từ ý tưởng đến giao hàng.";
 
 export async function generateMetadata(): Promise<Metadata> {
   const branding = await getBrandingSettings();
@@ -76,8 +76,8 @@ const SOLUTIONS = [
     href: "/merchandise",
     index: "05",
     label: "Merchandise nghệ sĩ & sự kiện",
-    title: "Sản xuất merchandise cho nghệ sĩ, concert và sự kiện.",
-    description: "Quản lý nhiều mẫu, nhiều size, duyệt mẫu, sản xuất, kiểm hàng, đóng gói và giao theo lịch sự kiện.",
+    title: "Giải pháp merchandise cho concert, nghệ sĩ, festival và sự kiện tại Việt Nam.",
+    description: "Đồng hành cùng agency, promoter và đơn vị sở hữu bản quyền: phát triển mẫu, sourcing, sản xuất, đóng bộ và giao theo lịch chương trình. Chỉ sử dụng IP được cấp phép.",
   },
 ] as const;
 

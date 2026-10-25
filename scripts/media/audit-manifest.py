@@ -1,0 +1,1 @@
+feat(media): audit image conversion errors before VNC OS ingest (#244)

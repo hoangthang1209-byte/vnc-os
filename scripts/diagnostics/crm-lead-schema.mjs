@@ -27,10 +27,20 @@ try {
         AND table_name = '_prisma_migrations'
     ) AS "exists"
   `;
+  const migrationSummary = migrationTable[0]?.exists === true
+    ? await prisma.$queryRaw`
+      SELECT
+        COUNT(*)::int AS "total",
+        COUNT(*) FILTER (WHERE finished_at IS NOT NULL)::int AS "finished",
+        COUNT(*) FILTER (WHERE finished_at IS NULL AND rolled_back_at IS NULL)::int AS "unfinished"
+      FROM "_prisma_migrations"
+    `
+    : [];
   console.log(JSON.stringify({
     leadTablePresent: columns.length > 0,
     missingLeadColumns: missing,
     prismaMigrationTablePresent: migrationTable[0]?.exists === true,
+    migrationSummary: migrationSummary[0] ?? null,
     action: missing.length ? "Investigate and apply reviewed migration; do not reset DB" : "No missing fields in inspected schema",
   }, null, 2));
   if (!columns.length || missing.length) process.exitCode = 2;

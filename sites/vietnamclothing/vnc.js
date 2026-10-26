@@ -14,6 +14,14 @@
     els.forEach(el=>ob.observe(el));
   }else{document.querySelectorAll('.reveal').forEach(el=>el.classList.add('visible'))}
   document.addEventListener('click',e=>{const link=e.target.closest('a[href*="contact.html"]');if(link&&window.dataLayer)window.dataLayer.push({event:'vnc_cta_click',cta_destination:'contact'});});
+
+  // Conversion handoff: preselect category from a discovery-card CTA, no personal data in URL or analytics.
+  const selected=new URLSearchParams(location.search).get('category');
+  const field=document.querySelector('select[name="category"]');
+  if(selected&&field&&selected.length<100){
+    const option=[...field.options].find(o=>o.value.toLowerCase()===selected.toLowerCase()||o.text.toLowerCase()===selected.toLowerCase());
+    if(option)field.value=option.value;
+  }
   const host=document.getElementById('approved-gallery');
   if(host){
     fetch('./media-gallery.json').then(r=>r.ok?r.json():null).then(data=>{

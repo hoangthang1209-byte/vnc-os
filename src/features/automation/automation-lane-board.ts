@@ -1,5 +1,9 @@
 import { evaluateApproveBuildEligibility } from "@/features/automation/automation-approve-build.eligibility";
 import {
+  summarizeLaneActiveBuilders,
+  type LaneActiveBuilderRunHint,
+} from "@/features/automation/automation-lane-active-builder";
+import {
   AUTOMATION_CANONICAL_LANES,
   getCanonicalLaneById,
   resolveCanonicalLaneId,
@@ -45,9 +49,19 @@ export type AutomationLaneBoardEntry = {
 
 export type AutomationLaneBoardSummary = {
   totalLanes: number;
+  /** Confirmed live Builder runs only (not CI review / merge / deploy). */
   runningCount: number;
+  /** True when a lane has status:building but runtime evidence was inconclusive. */
+  runningCountHasUnknown: boolean;
+  /** Lanes in CI review, ready-to-merge, or post-merge deploy — not active Builder. */
+  pipelineInProgressCount: number;
   blockedOrNeedsFixCount: number;
   productionCount: number;
+};
+
+export type BuildLaneBoardSummaryOptions = {
+  hintsByIssueNumber?: ReadonlyMap<number, LaneActiveBuilderRunHint>;
+  nowMs?: number;
 };
 
 const OPEN_TASK_SELECTION_PRIORITY: Record<NormalizedTaskStatus, number> = {
@@ -250,6 +264,12 @@ export function mapLaneOverallState(task: AutomationTask | null): AutomationLane
 
   if (task.status === "needs_fix") return "can_sua";
   if (task.status === "building") return "dang_build";
+  if (task.status === "verifying") return "dang_deploy";
+  if (task.status === "merging") return "san_sang_merge";
+  if (task.status === "completed") {
+    if (task.productionStatus.status === "live") return "production";
+    return "dang_deploy";
+  }
 
   if (
     (task.status === "backlog" || task.status === "unknown" || task.status === "approved") &&
@@ -431,13 +451,6 @@ export function buildLaneBoard(tasks: AutomationTask[]): AutomationLaneBoardEntr
   return AUTOMATION_CANONICAL_LANES.map((lane) => buildLaneBoardEntry(lane.id, grouped.get(lane.id) ?? []));
 }
 
-const RUNNING_LANE_STATES = new Set<AutomationLaneOverallState>([
-  "dang_build",
-  "dang_kiem_tra",
-  "san_sang_merge",
-  "dang_deploy",
-]);
-
 const BLOCKED_OR_NEEDS_FIX_STATES = new Set<AutomationLaneOverallState>(["blocked", "can_sua"]);
 
 export function isLaneProductionOrComplete(entry: AutomationLaneBoardEntry): boolean {
@@ -483,10 +496,21 @@ export function prepareLaneBoardTasks(allTasks: AutomationTask[]): AutomationTas
   return selected;
 }
 
-export function buildLaneBoardSummary(entries: AutomationLaneBoardEntry[]): AutomationLaneBoardSummary {
+export function buildLaneBoardSummary(
+  entries: AutomationLaneBoardEntry[],
+  options: BuildLaneBoardSummaryOptions = {},
+): AutomationLaneBoardSummary {
+  const activeSummary = summarizeLaneActiveBuilders({
+    entries,
+    hintsByIssueNumber: options.hintsByIssueNumber,
+    nowMs: options.nowMs,
+  });
+
   return {
     totalLanes: entries.length,
-    runningCount: entries.filter((entry) => RUNNING_LANE_STATES.has(entry.overallState)).length,
+    runningCount: activeSummary.runningCount,
+    runningCountHasUnknown: activeSummary.runningCountHasUnknown,
+    pipelineInProgressCount: activeSummary.pipelineInProgressCount,
     blockedOrNeedsFixCount: entries.filter((entry) =>
       BLOCKED_OR_NEEDS_FIX_STATES.has(entry.overallState),
     ).length,

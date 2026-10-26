@@ -4,6 +4,7 @@ import type {
   AgentSummaryCard,
   AgentTaskPriority,
 } from "@/features/agent-os/agent.types";
+import type { LaneActiveBuilderRunHint } from "@/features/automation/automation-lane-active-builder";
 import type { AutomationFactoryLoopSnapshot } from "@/features/automation/automation-factory-loop";
 
 export type NormalizedTaskStatus =
@@ -147,6 +148,8 @@ export type AutomationDataCompleteness = {
   commentLookupFailedCount?: number;
   /** Recognition may be incomplete due to truncation and/or comment lookup failures. */
   recognitionDegraded?: boolean;
+  /** AgentRun heartbeat hints for lane board could not be loaded (DB unavailable). */
+  agentRunHintsUnavailable?: boolean;
 };
 
 export type AutomationDashboardView = "active" | "all" | "completed";
@@ -168,4 +171,6 @@ export type AutomationDashboardResponse = {
   productionCheckedAt: string | null;
   /** Per-agent workload snapshot for open tasks (active view). */
   agentSummary?: AgentSummaryCard[];
+  /** AgentRun heartbeat hints keyed by GitHub issue number (active view lane board). */
+  laneBoardActiveBuilderHints?: Record<number, LaneActiveBuilderRunHint>;
 };

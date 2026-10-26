@@ -4,8 +4,19 @@ import type {
   AgentEventPayloadSummary,
   AgentEventSource,
   AgentRunListItem,
+  AgentRunStatus,
+  AgentRunSummaryJson,
 } from "@/features/agent-os/agent-run.types";
+import { hasVerifiedCursorRunnerEvidence } from "@/features/agent-os/agent-run.runner-evidence";
+import type { LaneActiveBuilderRunHint } from "@/features/automation/automation-lane-active-builder";
 import { prisma } from "@/lib/prisma";
+
+const NON_TERMINAL_AGENT_RUN_STATUSES: AgentRunStatus[] = [
+  "QUEUED",
+  "RUNNING",
+  "WAITING_EXTERNAL",
+  "WAITING_HUMAN",
+];
 
 function parsePayloadSummary(raw: unknown): AgentEventPayloadSummary | null {
   if (!raw || typeof raw !== "object") return null;
@@ -87,4 +98,71 @@ export async function listAgentRunsForIssue(input: {
     null;
 
   return { currentRun, runs: mapped };
+}
+
+function resolveAgentRunHeartbeatAt(updatedAt: Date, lastEventAppliedAt: Date | undefined): string {
+  const updatedMs = updatedAt.getTime();
+  const eventMs = lastEventAppliedAt?.getTime();
+  if (eventMs != null && !Number.isNaN(eventMs) && eventMs > updatedMs) {
+    return new Date(eventMs).toISOString();
+  }
+  return updatedAt.toISOString();
+}
+
+/**
+ * Latest non-terminal AgentRun per issue for lane-board Builder liveness.
+ * Heartbeat uses the newer of row updatedAt and the latest ingested AgentEvent.
+ */
+export async function findActiveBuilderHintsByIssueNumbers(
+  issueNumbers: number[],
+): Promise<Map<number, LaneActiveBuilderRunHint>> {
+  const uniqueIssues = [...new Set(issueNumbers.filter((n) => Number.isFinite(n) && n > 0))];
+  const hints = new Map<number, LaneActiveBuilderRunHint>();
+  if (uniqueIssues.length === 0) {
+    return hints;
+  }
+
+  const runs = await prisma.agentRun.findMany({
+    where: {
+      githubIssueNumber: { in: uniqueIssues },
+      status: { in: NON_TERMINAL_AGENT_RUN_STATUSES },
+    },
+    orderBy: [{ githubIssueNumber: "asc" }, { updatedAt: "desc" }],
+    select: {
+      githubIssueNumber: true,
+      status: true,
+      updatedAt: true,
+      correlationId: true,
+      inputSummary: true,
+      events: {
+        orderBy: { appliedAt: "desc" },
+        take: 1,
+        select: { appliedAt: true },
+      },
+    },
+  });
+
+  const seenIssues = new Set<number>();
+  for (const run of runs) {
+    const issueNumber = run.githubIssueNumber;
+    if (issueNumber == null || seenIssues.has(issueNumber)) continue;
+    seenIssues.add(issueNumber);
+    hints.set(issueNumber, {
+      kind: "agent_run",
+      status: run.status,
+      lastHeartbeatAt: resolveAgentRunHeartbeatAt(run.updatedAt, run.events[0]?.appliedAt),
+      hasVerifiedRunnerLink: hasVerifiedCursorRunnerEvidence({
+        correlationId: run.correlationId,
+        inputSummary: run.inputSummary as AgentRunSummaryJson | null,
+      }),
+    });
+  }
+
+  for (const issueNumber of uniqueIssues) {
+    if (!hints.has(issueNumber)) {
+      hints.set(issueNumber, { kind: "none" });
+    }
+  }
+
+  return hints;
 }

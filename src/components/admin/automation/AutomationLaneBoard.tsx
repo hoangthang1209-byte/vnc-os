@@ -10,6 +10,7 @@ import {
   type AutomationLaneBoardEntry,
   type AutomationLaneOverallState,
 } from "@/features/automation/automation-lane-board";
+import type { LaneActiveBuilderRunHint } from "@/features/automation/automation-lane-active-builder";
 import {
   AUTOMATION_PRODUCTION_STATUS_BADGE_CLASS,
   AUTOMATION_PRODUCTION_STATUS_LABELS,
@@ -32,6 +33,7 @@ const LANE_STATE_BADGE_CLASS: Record<AutomationLaneOverallState, string> = {
 type AutomationLaneBoardProps = {
   tasks: AutomationTask[];
   laneBoardTasks?: AutomationTask[];
+  activeBuilderHintsByIssue?: Record<number, LaneActiveBuilderRunHint>;
   lastUpdatedAt: string | null;
   autoRefreshLabel?: string;
   writeActionConfigured: boolean;
@@ -44,6 +46,7 @@ type AutomationLaneBoardProps = {
 export default function AutomationLaneBoard({
   tasks,
   laneBoardTasks,
+  activeBuilderHintsByIssue,
   lastUpdatedAt,
   autoRefreshLabel,
   writeActionConfigured,
@@ -56,7 +59,12 @@ export default function AutomationLaneBoard({
     () => buildLaneBoard(laneBoardTasks ?? tasks),
     [laneBoardTasks, tasks],
   );
-  const summary = useMemo(() => buildLaneBoardSummary(board), [board]);
+  const summary = useMemo(() => {
+    const hintsByIssueNumber = activeBuilderHintsByIssue
+      ? new Map(Object.entries(activeBuilderHintsByIssue).map(([key, value]) => [Number(key), value]))
+      : undefined;
+    return buildLaneBoardSummary(board, { hintsByIssueNumber });
+  }, [board, activeBuilderHintsByIssue]);
 
   return (
     <section className="automation-lane-board" aria-label="Bảng điều khiển 7 mảng phát triển">
@@ -77,8 +85,23 @@ export default function AutomationLaneBoard({
           <strong className="sales-follow-up__stat-value">{summary.totalLanes}</strong>
         </article>
         <article className="sales-follow-up__stat-card sales-follow-up__stat-card--info">
-          <span className="sales-follow-up__stat-label">Đang chạy</span>
-          <strong className="sales-follow-up__stat-value">{summary.runningCount}</strong>
+          <span className="sales-follow-up__stat-label">Builder đang chạy</span>
+          <strong className="sales-follow-up__stat-value">
+            {summary.runningCount}
+            {summary.runningCountHasUnknown ? (
+              <span
+                className="automation-lane-board__stat-unknown"
+                title="Có task status:building nhưng chưa có bằng chứng AgentRun + Cursor run id (bc-…) trong cửa sổ heartbeat"
+              >
+                {" "}
+                ?
+              </span>
+            ) : null}
+          </strong>
+        </article>
+        <article className="sales-follow-up__stat-card sales-follow-up__stat-card--warning">
+          <span className="sales-follow-up__stat-label">CI / Merge / Deploy</span>
+          <strong className="sales-follow-up__stat-value">{summary.pipelineInProgressCount}</strong>
         </article>
         <article className="sales-follow-up__stat-card sales-follow-up__stat-card--danger">
           <span className="sales-follow-up__stat-label">Cần xử lý / Blocked</span>

@@ -10,3 +10,6 @@
 7. **Catalog #245, SEO #256, intake #248:** preserve existing URLs/media, connect approved product export, RFQ-to-CRM E2E before cutover.
 
 Never state completion without relevant source evidence.
+
+## Immediate operating pilot — 2026-10-28 (owner intent recorded 2026-10-27)
+**P0 #262:** Operational readiness gate for Linh/Chi 3–5 orders in outsourced-workshop production. Refer to `OPERATIONS_ADOPTION_PILOT_2026-10-28.md`. Verify authenticated Production Order/Production UI, role-limited team logins, DB migrations, safe record editing, mobile UX, Vercel SHA/aliases and Zalo/Drive fallback; choose GO / LIMITED GO / NO-GO explicitly. Do not count schema-only evidence as a pass; do not let CRM #250 issue leak into live operations. No new feature or deploy unless reviewed and approved.

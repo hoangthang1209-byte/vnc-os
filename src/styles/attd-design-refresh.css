@@ -1,0 +1,49 @@
+/* ATTD design refresh 2026 — scoped to existing V7 templates.
+   Shared with homepage, five solutions, catalog, RFQ and editorial routes.
+   Does not alter URL routing, forms, CMS content, or mobile CTA visibility. */
+.public-main--v7 {
+  --v7-red: #df512f;
+  --v7-red-dark: #b83c22;
+  --v7-ink: #152522;
+  --v7-ink-2: #2d3d38;
+  --v7-muted: #64726d;
+  --v7-line: #dfe5de;
+  --v7-soft: #f6f6f1;
+  --v7-warm: #f0f3eb;
+  --v7-max: 1320px;
+}
+.public-main--v7 :is(.v7-home-hero, .v7-solution-hero) {
+  isolation: isolate;
+}
+.public-main--v7 :is(.v7-home-hero h1, .v7-solution-hero h1) {
+  text-wrap: balance;
+  letter-spacing: -.055em;
+}
+.public-main--v7 :is(.v7-section-head h2, .v7-solution-page h2) {
+  text-wrap: balance;
+}
+.public-main--v7 :is(.v7-capabilities__grid article, .v7-home-solutions__grid article) {
+  border-radius: 10px;
+  transition: transform .2s ease, box-shadow .2s ease;
+}
+@media (hover:hover) and (prefers-reduced-motion:no-preference) {
+  .public-main--v7 :is(.v7-capabilities__grid article, .v7-home-solutions__grid article):hover {
+    transform: translateY(-3px);
+    box-shadow: 0 16px 45px rgba(21,37,34,.08);
+  }
+}
+.public-main--v7 :is(a, button, input, select, textarea):focus-visible,
+.v7-header :is(a, button):focus-visible,
+.v7-footer a:focus-visible {
+  outline: 3px solid #f19e69;
+  outline-offset: 3px;
+}
+.public-main--v7 img { max-width: 100%; }
+@media (max-width: 640px) {
+  .public-main--v7 :is(.v7-home-hero h1,.v7-solution-hero h1) { text-wrap: pretty; }
+}
+@media (prefers-reduced-motion:reduce) {
+  .public-main--v7 :is(.v7-capabilities__grid article,.v7-home-solutions__grid article) {
+    transition: none;
+  }
+}

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getAdminSessionFromCookies } from "@/lib/admin-auth/get-admin-session";
 import { can } from "@/features/auth/admin-permissions";
@@ -57,7 +58,7 @@ export async function POST(request: NextRequest) {
       return tx.studioPage.create({
         data: {
           siteId: input.siteId as string, slug, title: (input.title as string).trim(),
-          revisions: { create: { version: 1, status: "DRAFT", content: { blocks } } },
+          revisions: { create: { version: 1, status: "DRAFT", content: JSON.parse(JSON.stringify({ blocks })) as Prisma.InputJsonValue } },
         },
         select: { id: true, siteId: true, slug: true, title: true },
       });

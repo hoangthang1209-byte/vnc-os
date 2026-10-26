@@ -60,3 +60,22 @@
 /* Official logo — horizontal sign remains legible on a neutral header */
 .v7-header__logo .attd-logo-img{width:166px!important;height:auto!important;max-height:55px!important;object-fit:contain!important;border-radius:5px!important}
 @media(max-width:760px){.v7-header__logo .attd-logo-img{width:137px!important;max-height:45px!important}}
+
+/* Inner solutions, product/category discovery, and quote conversion */
+.v7-solution-hero,.v7-contact__hero,.v7-category-hub__hero{background:linear-gradient(125deg,#f8f8f6,#ededeb)!important;padding-top:95px!important;padding-bottom:95px!important}
+.v7-solution-hero__grid,.v7-contact__grid,.v7-category-hub__hero-grid{gap:clamp(28px,5vw,70px)!important;align-items:center!important}
+.v7-solution-hero h1,.v7-contact__hero h1,.v7-category-hub__hero h1{font-size:clamp(2.9rem,5.5vw,5.45rem)!important;letter-spacing:-.034em!important;line-height:1.13!important;font-weight:790!important}
+.v7-solution-hero__lead,.v7-contact__intro>p{font-size:17px!important;line-height:1.8!important;color:#62676b!important}
+.v7-solution-hero__visual,.v7-contact__media{border-radius:26px 26px 72px 26px!important;overflow:hidden!important}
+.v7-solution-hero__brief{border-radius:17px!important;background:#fff!important;box-shadow:0 15px 45px #00000015!important}
+.v7-solution-final{background:#202124!important;border:0!important}
+.v7-solution-final__link{border-radius:12px!important;padding:15px 22px!important;background:#eb1728!important;color:#fff!important}
+.v7-contact__form,.v7-solution-lead__form{border-radius:24px!important;background:#fff!important;border:1px solid #e7e7e6!important;box-shadow:0 20px 55px #0000000d!important;padding:clamp(22px,3vw,42px)!important}
+.v7-contact__form :is(input,textarea,select),.v7-solution-lead__form :is(input,textarea,select){border:1px solid #d8dad7!important;border-radius:11px!important;background:#fcfcfb!important}
+.v7-contact__channels>a,.v7-category-group,.v7-category-group__featured{border-radius:18px!important}
+.v7-category-hub__body{background:#fafaf8!important}
+.v7-category-group__head h2,.v7-collection-products__head h2{letter-spacing:-.026em!important}
+.v7-footer__lead{border-bottom:1px solid #393a3d!important;padding-top:55px!important;padding-bottom:55px!important}
+.v7-footer__lead-link{background:#eb1728!important;color:#fff!important;border-radius:13px!important}
+.v7-footer__grid{gap:38px!important}.v7-footer__nav a{transition:color .2s!important}.v7-footer__nav a:hover{color:#ff6070!important}
+@media(max-width:760px){.v7-solution-hero,.v7-contact__hero,.v7-category-hub__hero{padding-top:55px!important;padding-bottom:55px!important}.v7-solution-hero h1,.v7-contact__hero h1{font-size:clamp(2.6rem,9vw,3.7rem)!important}.v7-contact__form,.v7-solution-lead__form{padding:22px!important}}

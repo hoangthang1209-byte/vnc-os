@@ -113,3 +113,17 @@
   transition:none;transform:none;
  }
 }
+
+/* Consistent conversion and editorial treatment across CMS-driven public routes. */
+.public-main--v7 :is(.v7-home-hero,.v7-solution-hero,.v7-capabilities,.v7-process,.v7-deliverables) {scroll-margin-top:95px}
+.public-main--v7 :is(.v7-section-head,.v7-solution-hero__copy) p {max-width:72ch}
+.public-main--v7 :is(.v7-capabilities__grid article,.v7-process__list li) {background-clip:padding-box}
+.public-main--v7 :is(.v7-capabilities__grid article,.v7-process__list li) p {line-height:1.75}
+.public-main--v7 :is(.v7-home-hero__image,.v7-solution-hero__image) {transition:transform .65s cubic-bezier(.22,1,.36,1)}
+@media (hover:hover) and (prefers-reduced-motion:no-preference) {
+ .public-main--v7 :is(.v7-home-hero__visual,.v7-solution-hero__visual):hover :is(.v7-home-hero__image,.v7-solution-hero__image) {transform:scale(1.025)}
+}
+@media (max-width:640px) {
+ .public-main--v7 :is(.v7-solution-hero__copy,.v7-section-head) {min-width:0}
+ .public-main--v7 :is(.v7-home-hero h1,.v7-solution-hero h1,.v7-section-head h2) {overflow-wrap:break-word}
+}

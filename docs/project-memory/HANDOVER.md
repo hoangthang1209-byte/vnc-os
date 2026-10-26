@@ -26,3 +26,6 @@ VNC Strategy covers VietnamClothing (global B2B), ATTD (Vietnamese B2B) and VNC 
 “Alex, tiếp tục VNC Strategy. Đọc `docs/project-memory/HANDOVER.md` và các file memory, đối chiếu GitHub/Vercel thực tế, rồi làm task P0 tiếp theo.”
 
 This document deliberately excludes secrets and customer data.
+
+## Standing continuity instruction (approved 2026-10-26)
+Use a **Memory-First Workflow** in each new VNC Strategy session: load these files, reconcile current live state, follow already approved decisions, execute and verify, then update this memory via PR. The objective is to prevent chat context limits from erasing recorded project decisions, knowledge, commitments and progress. Perfect recall of unrecorded conversations is not guaranteed.

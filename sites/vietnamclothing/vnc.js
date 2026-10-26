@@ -13,6 +13,7 @@
     const ob=new IntersectionObserver(entries=>entries.forEach(e=>{if(e.isIntersecting){e.target.classList.add('visible');ob.unobserve(e.target)}}),{threshold:.09});
     els.forEach(el=>ob.observe(el));
   }else{document.querySelectorAll('.reveal').forEach(el=>el.classList.add('visible'))}
+  document.addEventListener('click',e=>{const link=e.target.closest('a[href*="contact.html"]');if(link&&window.dataLayer)window.dataLayer.push({event:'vnc_cta_click',cta_destination:'contact'});});
   const host=document.getElementById('approved-gallery');
   if(host){
     fetch('./media-gallery.json').then(r=>r.ok?r.json():null).then(data=>{

@@ -13,6 +13,9 @@ This repository stores **institutional memory**, not private chat transcripts. R
 - `INCIDENTS_AND_BLOCKERS.md` — release gates and unresolved risks
 - `NEXT_ACTIONS.md` — prioritized next tasks
 - `HANDOVER.md` — short entrypoint for a new conversation/agent
+- `MASTER_DECISION_COMMITMENT_LEDGER.md` — approved decisions, outstanding commitments, evidence and acceptance
+- `HISTORICAL_RECONCILIATION.md` — source inventory, verification procedure and historical coverage limits
+- `RECONCILIATION_LOG.md` — observed conflicts and corrective actions
 
 ## Update protocol
 1. Record exact UTC timestamp and source URL for every **mutable** status.

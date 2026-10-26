@@ -3,7 +3,7 @@
 **Purpose:** start a new ChatGPT conversation without losing durable intent.
 
 ## First steps for a new assistant
-1. Read `docs/project-memory/README.md`, `CURRENT_STATUS.md`, `NEXT_ACTIONS.md`, `STRATEGIC_DECISIONS.md`.
+1. Read `docs/project-memory/README.md`, `MASTER_DECISION_COMMITMENT_LEDGER.md`, `HISTORICAL_RECONCILIATION.md`, `RECONCILIATION_LOG.md`, `CURRENT_STATUS.md`, `NEXT_ACTIONS.md`, `STRATEGIC_DECISIONS.md`.
 2. Verify current GitHub issues/PRs, CI runs, exact commit SHAs and Vercel deployments. Do not treat snapshots as live.
 3. Reconcile production domain/alias with Vercel, check auth and CRM operational data only when authorized.
 4. Continue highest-priority safe task; report committed code vs successful CI vs deployed vs authenticated QA separately.

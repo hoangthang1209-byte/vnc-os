@@ -64,3 +64,20 @@ a{color:inherit}
 @media(max-width:980px){.hero-inner{grid-template-columns:1fr!important;padding:75px 0!important;min-height:0!important;gap:42px!important}.abstract{height:420px!important}.cards{grid-template-columns:repeat(2,1fr)!important}}
 @media(max-width:620px){.wrap{width:calc(100% - 32px)!important}.nav{min-height:72px!important}.hero h1{font-size:clamp(3rem,12vw,4.8rem)!important}.hero-inner{padding:65px 0 45px!important}.abstract{height:330px!important}.section{padding:85px 0!important}.section h2{font-size:2.9rem!important}.cards,.stats,.steps,.form{grid-template-columns:1fr!important}.stats>div{border-right:0!important;border-bottom:1px solid #eee!important}.card{min-height:0!important}.rfq-inner{grid-template-columns:1fr!important}}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto!important}[data-reveal]{opacity:1!important;transform:none!important;transition:none!important}.card,.btn{transition:none!important}}
+
+
+/* Type rhythm: correct over-tight -0.077em and cramped line-height used in old VNC draft. */
+body{font-family:Inter,"Helvetica Neue",Arial,sans-serif!important;font-weight:400!important;letter-spacing:0!important;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+.hero h1{letter-spacing:-.037em!important;line-height:1.115!important;font-weight:700!important;overflow-wrap:normal;word-break:normal}
+.section h2{letter-spacing:-.035em!important;line-height:1.22!important;font-weight:700!important}
+.card h3,article h2{letter-spacing:-.015em!important;line-height:1.32!important;font-weight:680!important}
+.hero p,.lead,article p,.card p,.step p{letter-spacing:.005em!important;line-height:1.8!important}
+.nav-links,.brand{letter-spacing:0!important}
+@media(max-width:620px){.hero h1{font-size:clamp(2.65rem,10.5vw,4.2rem)!important;letter-spacing:-.027em!important;line-height:1.13!important}.section h2{font-size:clamp(2.15rem,8.2vw,3rem)!important;line-height:1.2!important}}
+.vnc-media-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;margin-top:36px}
+.vnc-media-tile{margin:0;background:#f5f5f4;min-height:220px;overflow:hidden;position:relative}
+.vnc-media-tile img{display:block;width:100%;height:300px;object-fit:cover;transition:transform .6s ease}
+.vnc-media-tile:hover img{transform:scale(1.035)}
+.vnc-media-tile figcaption{padding:16px 18px;color:#555;font-size:.86rem}
+.vnc-media-status{padding:22px;background:#f5f5f4;border-left:3px solid #222;color:#525252}
+@media(max-width:750px){.vnc-media-grid{grid-template-columns:1fr 1fr}}@media(max-width:500px){.vnc-media-grid{grid-template-columns:1fr}}

@@ -29,3 +29,9 @@ This document deliberately excludes secrets and customer data.
 
 ## Standing continuity instruction (approved 2026-10-26)
 Use a **Memory-First Workflow** in each new VNC Strategy session: load these files, reconcile current live state, follow already approved decisions, execute and verify, then update this memory via PR. The objective is to prevent chat context limits from erasing recorded project decisions, knowledge, commitments and progress. Perfect recall of unrecorded conversations is not guaranteed.
+
+## Operations adoption / 28 Oct 2026 team pilot (recorded 2026-10-27)
+- Owner intends to start team usage on **2026-10-28**, initially Linh and Chi with 3–5 of approximately 10–15 concurrent outsourced-production orders.
+- Read [OPERATIONS_ADOPTION_PILOT_2026-10-28.md](./OPERATIONS_ADOPTION_PILOT_2026-10-28.md) and [issue #262](https://github.com/hoangthang1209-byte/vnc-os/issues/262) before recommending new Order/Production features.
+- Preserve existing Zalo/Gmail/Drive/Excel/Word/Illustrator workflows; reuse production Order/ItemProductionTracking/Batch/Supplier/TechPack/QC/Delivery models.
+- Actual access, DB health, live order screens, role authorization and mobile experience are **UNVERIFIED**. Pilot GO/LIMITED GO/NO-GO must be based on authenticated smoke and safety gates, not schema presence. Do not expose customer data or merge/deploy just to meet target date.

@@ -33,3 +33,8 @@ VNC OS: operational CRM, task and AgentRun data (subject to authorization).
 ChatGPT memory/history: convenience, never sole evidence.
 
 Human owner retains authority over production migrations, DNS, live customer messages and high-risk actions.
+
+## Memory-first continuity objective (owner-confirmed 2026-10-26)
+**Goal:** No individual ChatGPT conversation limit should cause VNC Strategy to lose its recorded knowledge, approved decisions, commitments, work status, or next steps. This is an operational objective, not a claim of perfect memory or access to all past chats.
+
+**Required workflow for every VNC Strategy execution session:** Read Project Memory → verify live GitHub/Vercel/VNC OS evidence → reconcile decisions/commitments and unknowns → execute authorized work → test → update Project Memory and handover through reviewed PR. If repository access or historical coverage is missing, disclose the gap rather than invent continuity.

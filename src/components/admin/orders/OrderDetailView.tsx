@@ -161,7 +161,7 @@ export default function OrderDetailView({ id }: Props) {
     });
   }, []);
 
-  useEffect(() => { void load(); }, [id]);
+  useEffect(() => { const task = Promise.resolve().then(load); void task; }, [id]);
 
   useEffect(() => {
     const carrierId = order?.deliveryCarrierId;

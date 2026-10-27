@@ -1,0 +1,82 @@
+"use client";
+import { useCallback, useEffect, useState } from "react";
+
+type SiteId = "attd.vn" | "vietnamclothing.vn";
+type Page = { id:string; slug:string; title:string; publishedRevisionId:string|null; updatedAt:string };
+type Block = { type:"hero"|"richText"|"cta"; data:Record<string,string> };
+const sites: {id:SiteId;name:string;locale:string}[]=[
+  {id:"attd.vn",name:"ATTD · Blank Apparel & Uniforms",locale:"vi / en"},
+  {id:"vietnamclothing.vn",name:"VietnamClothing · Merchandise & OEM",locale:"en / vi"},
+];
+const examples:Record<SiteId,{slug:string;title:string;blocks:Block[]}>={
+  "attd.vn":{slug:"/ao-thun-tron",title:"Áo thun trơn sỉ | ATTD",blocks:[
+    {type:"hero",data:{headline:"Nguồn áo thun trơn B2B",subtitle:"Chọn form, chất liệu, màu sắc và số lượng cho đơn hàng của bạn."}},
+    {type:"richText",data:{text:"Nội dung DEMO. Thông số, MOQ và năng lực cung ứng phải được xác nhận trước khi xuất bản."}},
+    {type:"cta",data:{label:"Yêu cầu báo giá",href:"/lien-he"}},
+  ]},
+  "vietnamclothing.vn":{slug:"/merchandise",title:"Branded Merchandise | VietnamClothing",blocks:[
+    {type:"hero",data:{headline:"Merchandise for remarkable brands",subtitle:"Concept-to-product development for entertainment, campaigns and branded experiences."}},
+    {type:"richText",data:{text:"DEMO draft content; no client endorsements or verified production claims."}},
+    {type:"cta",data:{label:"Discuss your project",href:"/contact.html"}},
+  ]},
+};
+
+export default function MultisiteStudio(){
+  const [site,setSite]=useState<SiteId>("attd.vn");
+  const [pages,setPages]=useState<Page[]>([]);
+  const [slug,setSlug]=useState("/");
+  const [title,setTitle]=useState("");
+  const [blocks,setBlocks]=useState<Block[]>([{type:"hero",data:{headline:"",subtitle:""}}]);
+  const [loading,setLoading]=useState(false);
+  const [notice,setNotice]=useState("");
+  const [error,setError]=useState("");
+  const refresh=useCallback(async (selected:SiteId)=>{
+    setLoading(true);setError("");
+    try{
+      const res=await fetch("/api/admin/content-studio/pages?siteId="+encodeURIComponent(selected),{cache:"no-store"});
+      const body=await res.json();
+      if(!res.ok)throw Error(body.message||"Unable to load pages");
+      setPages(body.pages||[]);
+    }catch(e){setPages([]);setError(e instanceof Error?e.message:"Unable to load pages");}
+    finally{setLoading(false);}
+  },[]);
+  useEffect(()=>{void refresh(site);},[site,refresh]);
+  const seed=()=>{const sample=examples[site];setSlug(sample.slug);setTitle(sample.title);setBlocks(sample.blocks);setNotice("Example loaded in editor only. Save as draft to write to Content Studio.");};
+  const changeBlock=(index:number,key:string,value:string)=>setBlocks(old=>old.map((block,i)=>i===index?{...block,data:{...block.data,[key]:value}}:block));
+  const addBlock=(type:Block["type"])=>setBlocks(old=>[...old,{type,data:type==="hero"?{headline:"",subtitle:""}:type==="cta"?{label:"",href:"/"}:{text:""}}]);
+  const save=async()=>{setNotice("");setError("");setLoading(true);try{
+    const res=await fetch("/api/admin/content-studio/pages",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({siteId:site,slug,title,blocks})});
+    const body=await res.json();if(!res.ok)throw Error(body.message||"Draft creation failed");
+    setNotice("Draft created for "+site+". It is not published.");
+    await refresh(site);
+  }catch(e){setError(e instanceof Error?e.message:"Unable to save draft");}finally{setLoading(false);}};
+  return <main style={{maxWidth:1150,margin:"0 auto",padding:"38px 22px",fontFamily:"system-ui,sans-serif",color:"#1c302b"}}>
+    <p style={{fontSize:12,letterSpacing:".12em",fontWeight:800}}>VNC OS / MULTISITE CONTENT STUDIO</p>
+    <h1 style={{fontSize:"clamp(28px,4vw,48px)",margin:"10px 0"}}>One CMS. Two independent brands.</h1>
+    <p>Manage site-scoped page drafts. Changes do not overwrite legacy ATTD content or publish to either public domain. Publishing requires a separately reviewed approval workflow.</p>
+    <label style={{display:"block",fontWeight:700,margin:"24px 0 12px"}}>Website
+      <select value={site} onChange={e=>{setSite(e.target.value as SiteId);setTitle("");setSlug("/");setBlocks([{type:"hero",data:{headline:"",subtitle:""}}]);setNotice("");}} style={field}>
+        {sites.map(s=><option key={s.id} value={s.id}>{s.name} · {s.locale}</option>)}
+      </select>
+    </label>
+    <div style={{display:"grid",gridTemplateColumns:"minmax(0,1fr) minmax(0,1.5fr)",gap:22}}>
+      <section style={panel}><h2>Draft inventory</h2>{loading?<p>Loading…</p>:pages.length?pages.map(p=><div key={p.id} style={{padding:"12px 0",borderBottom:"1px solid #dce3dc"}}><strong>{p.title}</strong><div style={{fontSize:13}}>{p.slug} · {p.publishedRevisionId?"Published revision exists":"DRAFT / NOT PUBLISHED"}</div></div>):<p>No pages yet for {site}. Start with a demo draft.</p>}<p style={{fontSize:12,color:"#65766e"}}>This list is filtered by the selected site ID on the server.</p></section>
+      <section style={panel}><h2>New page draft</h2><button type="button" onClick={seed} style={button}>Load demo content for this site</button>
+        <label style={label}>Page path<input value={slug} onChange={e=>setSlug(e.target.value)} style={field} placeholder="/category-page"/></label>
+        <label style={label}>Page title<input value={title} onChange={e=>setTitle(e.target.value)} style={field}/></label>
+        {blocks.map((block,index)=><div key={index} style={{border:"1px solid #ced8ce",borderRadius:9,padding:14,marginTop:14}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}><strong>{block.type}</strong><button type="button" onClick={()=>setBlocks(old=>old.filter((_,i)=>i!==index))}>Remove</button></div>
+          {Object.entries(block.data).map(([key,value])=><label key={key} style={label}>{key}<textarea rows={key==="text"?4:2} value={value} onChange={e=>changeBlock(index,key,e.target.value)} style={field}/></label>)}
+        </div>)}
+        <div style={{display:"flex",gap:8,flexWrap:"wrap",marginTop:15}}>{(["hero","richText","cta"] as const).map(v=><button key={v} type="button" onClick={()=>addBlock(v)} style={button}>+ {v}</button>)}</div>
+        <button type="button" onClick={()=>void save()} disabled={loading||!title.trim()} style={{...button,marginTop:22,background:"#123e32",color:"#fff"}}>Save DRAFT — {site}</button>
+        {notice?<p role="status" style={{color:"#12613c"}}>{notice}</p>:null}{error?<p role="alert" style={{color:"#a03527"}}>{error}</p>:null}
+        <p style={{fontSize:12,color:"#64776b"}}>Drafts require database schema deployment. A 503 response means the Content Studio migration is not yet installed. No direct publishing is exposed.</p>
+      </section>
+    </div>
+  </main>;
+}
+const panel:React.CSSProperties={padding:22,border:"1px solid #d2dcd4",borderRadius:12,background:"#f9faf7"};
+const field:React.CSSProperties={width:"100%",display:"block",padding:12,marginTop:6,border:"1px solid #bac6bc",borderRadius:8,font:"inherit",background:"#fff"};
+const label:React.CSSProperties={display:"block",fontWeight:650,marginTop:13,fontSize:14};
+const button:React.CSSProperties={padding:"10px 14px",border:"1px solid #b7c5ba",borderRadius:8,cursor:"pointer",fontWeight:700,background:"#e7eee5",color:"#163a2c"};

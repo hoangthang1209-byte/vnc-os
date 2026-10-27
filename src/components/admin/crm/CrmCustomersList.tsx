@@ -131,7 +131,8 @@ export default function CrmCustomersList() {
   }, [search, customerTypeFilter, unclassifiedFilter, statusFilter]);
 
   useEffect(() => {
-    void load();
+    const task = Promise.resolve().then(load);
+    void task;
   }, [load]);
 
   const visibleIds = useMemo(() => customers.map((customer) => customer.id), [customers]);

@@ -41,3 +41,6 @@ Three brands are differentiated by **product / buyer intent, NOT domestic vs ove
 
 ## Website execution scope (owner-confirmed 2026-10-27)
 **ACTIVE:** ATTD.vn and VietnamClothing.vn — both bilingual, distinct product positioning per decision VNC-DEC-2026-003. **DEFERRED / EXTERNAL TEAM:** aothunthongdiep.com; no changes, releases, or tasks by this team without a new explicit owner instruction. Prioritize completing the two active websites before revisiting the deferred site.
+
+## Owner-approved deployment optimization policy — 2026-10-27
+Keep CI for code; avoid redundant Preview builds; **never skip Production builds or release approval**. ATTD project has a narrow docs-only Ignored Build Step configured and VietnamClothing staging has affected-project deployment optimization requested. Do not claim measured speedup until live skipped-build evidence exists. Consult [runbook](./VERCEL_BUILD_OPTIMIZATION_2026-10-27.md) and verify actual project settings/deployment behavior.

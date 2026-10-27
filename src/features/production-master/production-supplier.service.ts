@@ -42,7 +42,7 @@ export async function listProductionSuppliers(input?: {
       },
     },
     orderBy: [{ isActive: "desc" }, { updatedAt: "desc" }],
-    take: 200,
+    take: 1000,
   });
   return {
     items: items.map(({ _count, ...item }) => ({

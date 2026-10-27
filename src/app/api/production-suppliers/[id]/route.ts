@@ -40,6 +40,10 @@ export async function PATCH(req: NextRequest, context: RouteContext) {
   const { id } = await context.params;
   try {
     const body = (await req.json()) as Record<string, unknown>;
+    if (body.verificationStatus === "APPROVED") {
+      const approval = await requireAdminPermission({ platform: "manufacturing", action: "admin", request: req });
+      if (!approval.ok) return approval.response;
+    }
     const updated = await updateProductionSupplier(id, {
       name: typeof body.name === "string" ? body.name : undefined,
       category: body.category === undefined ? undefined : parseSupplierCategory(body.category),

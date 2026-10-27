@@ -13,12 +13,16 @@ export async function listProductionSuppliers(input?: {
   activeOnly?: boolean;
   inactiveOnly?: boolean;
   category?: string;
+  supplierType?: string;
+  verificationStatus?: string;
 }) {
   const where: Prisma.ProductionSupplierWhereInput = {};
   if (input?.activeOnly) where.isActive = true;
   if (input?.inactiveOnly) where.isActive = false;
   const category = parseSupplierCategory(input?.category);
   if (category) where.category = category;
+  if (input?.supplierType) where.supplierType = input.supplierType;
+  if (input?.verificationStatus) where.verificationStatus = input.verificationStatus;
   if (input?.search?.trim()) {
     const q = input.search.trim();
     where.OR = [
@@ -27,6 +31,8 @@ export async function listProductionSuppliers(input?: {
       { contact: { contains: q, mode: "insensitive" } },
       { email: { contains: q, mode: "insensitive" } },
       { phone: { contains: q, mode: "insensitive" } },
+      { capabilities: { contains: q, mode: "insensitive" } },
+      { factoryAddress: { contains: q, mode: "insensitive" } },
     ];
   }
   const items = await prisma.productionSupplier.findMany({
@@ -69,6 +75,21 @@ export async function getProductionSupplier(id: string) {
   };
 }
 
+async function assertNotDuplicateSupplier(name: string, phone?: string | null, exceptId?: string) {
+  const normalized = name.trim().replace(/\\s+/g, " ");
+  const existing = await prisma.productionSupplier.findFirst({
+    where: {
+      ...(exceptId ? { id: { not: exceptId } } : {}),
+      OR: [
+        { name: { equals: normalized, mode: "insensitive" } },
+        ...(phone?.trim() ? [{ phone: { equals: phone.trim() } }] : []),
+      ],
+    },
+    select: { code: true, name: true },
+  });
+  if (existing) throw new ProductionMasterValidationError(`Có thể trùng NCC ${existing.code} - ${existing.name}. Kiểm tra trước khi lưu.`);
+}
+
 export async function createProductionSupplier(input: {
   name: string;
   category?: SupplierCategory;
@@ -87,6 +108,7 @@ export async function createProductionSupplier(input: {
 }) {
   const name = input.name?.trim();
   if (!name) throw new ProductionMasterValidationError("Tên nhà cung cấp là bắt buộc.");
+  await assertNotDuplicateSupplier(name, input.phone);
   const code = await generateMasterCode("PS", "productionSupplier");
   return prisma.productionSupplier.create({
     data: {
@@ -130,6 +152,8 @@ export async function updateProductionSupplier(
 ) {
   const existing = await prisma.productionSupplier.findUnique({ where: { id } });
   if (!existing) throw new ProductionMasterValidationError("Không tìm thấy nhà cung cấp.");
+  if (input.name !== undefined && !input.name.trim()) throw new ProductionMasterValidationError("Tên nhà cung cấp là bắt buộc.");
+  if (input.name !== undefined || input.phone !== undefined) await assertNotDuplicateSupplier(input.name ?? existing.name, input.phone === undefined ? existing.phone : input.phone, id);
   return prisma.productionSupplier.update({
     where: { id },
     data: {

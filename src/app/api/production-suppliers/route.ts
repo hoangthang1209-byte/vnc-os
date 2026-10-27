@@ -24,6 +24,8 @@ export async function GET(req: NextRequest) {
       activeOnly: searchParams.get("activeOnly") === "true",
       inactiveOnly: searchParams.get("inactiveOnly") === "true",
       category: searchParams.get("category") ?? undefined,
+      supplierType: searchParams.get("supplierType") ?? undefined,
+      verificationStatus: searchParams.get("verificationStatus") ?? undefined,
     });
     return NextResponse.json(result);
   } catch {

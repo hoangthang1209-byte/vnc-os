@@ -1,6 +1,6 @@
 export const CONTENT_SITES = {
-  "vietnamclothing.vn": { domain: "vietnamclothing.vn", locale: "en", name: "Vietnam Clothing" },
-  "attd.vn": { domain: "attd.vn", locale: "vi", name: "ATTD" },
+  "vietnamclothing.vn": { domain: "vietnamclothing.vn", locale: "en", name: "Vietnam Clothing", locales: ["en", "vi"] },
+  "attd.vn": { domain: "attd.vn", locale: "vi", name: "ATTD", locales: ["vi", "en"] },
 } as const;
 
 export type ContentSiteId = keyof typeof CONTENT_SITES;

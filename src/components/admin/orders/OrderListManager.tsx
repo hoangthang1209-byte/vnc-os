@@ -177,7 +177,11 @@ export default function OrderListManager() {
     <div className="order-ops-dashboard">
       {canCreateOrders ? (
         <header className="order-ops-header">
-          <div />
+          {canViewCrm ? (
+            <Link href="/admin/crm/customers" className="admin-btn admin-btn--secondary">
+              Khách hàng
+            </Link>
+          ) : <div />}
           <Link href="/admin/orders/new" className="admin-btn admin-btn--primary">
             + Tạo đơn hàng
           </Link>

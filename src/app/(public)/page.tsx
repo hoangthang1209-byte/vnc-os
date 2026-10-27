@@ -14,9 +14,9 @@ import CaseStudySection from "@/components/public/CaseStudySection";
 
 export const revalidate = 3600;
 
-const TITLE = "ATTD | Đồng phục, nguồn hàng, OEM, quà tặng & merchandise";
+const TITLE = "ATTD | Áo trơn sỉ, nguồn hàng may mặc B2B & đồng phục doanh nghiệp";
 const DESCRIPTION =
-  "ATTD đồng hành cùng doanh nghiệp, đại lý, agency và thương hiệu từ chọn sản phẩm, làm mẫu, sản xuất, hoàn thiện đến giao hàng.";
+  "ATTD cung ứng áo thun trơn, áo polo, nguồn hàng may mặc B2B và đồng phục doanh nghiệp cho khách hàng Việt Nam và quốc tế. Tư vấn sản phẩm, số lượng, in thêu và hợp đồng cung ứng.";
 
 export async function generateMetadata(): Promise<Metadata> {
   const branding = await getBrandingSettings();
@@ -60,7 +60,7 @@ const SOLUTIONS = [
     href: "/oem",
     index: "03",
     label: "OEM / Private Label",
-    title: "Phát triển sản phẩm riêng theo yêu cầu thương hiệu.",
+    title: "Tùy chỉnh trang phục và nhãn riêng theo đơn hàng B2B.",
     description: "Từ chất liệu, form, màu, nhãn, bao bì đến làm mẫu và sản xuất số lượng lớn.",
   },
   {
@@ -68,7 +68,7 @@ const SOLUTIONS = [
     href: "/qua-tang-doanh-nghiep",
     index: "04",
     label: "Quà tặng doanh nghiệp",
-    title: "Làm bộ quà tặng theo ngân sách và mục tiêu chương trình.",
+    title: "Nguồn hàng may mặc và phụ kiện cho các chương trình doanh nghiệp.",
     description: "Kết hợp nhiều sản phẩm, in logo, đóng bộ và hoàn thiện bao bì theo nhận diện thương hiệu.",
   },
   {
@@ -76,7 +76,7 @@ const SOLUTIONS = [
     href: "/merchandise",
     index: "05",
     label: "Merchandise nghệ sĩ & sự kiện",
-    title: "Sản xuất merchandise cho nghệ sĩ, concert và sự kiện.",
+    title: "Tư vấn sản phẩm may mặc cho đội ngũ và sự kiện doanh nghiệp.",
     description: "Quản lý nhiều mẫu, nhiều size, duyệt mẫu, sản xuất, kiểm hàng, đóng gói và giao theo lịch sự kiện.",
   },
 ] as const;
@@ -121,14 +121,14 @@ export default async function HomePage() {
       <section className="v7-home-hero">
         <div className="container v7-home-hero__grid">
           <div className="v7-home-hero__copy">
-            <p className="v7-kicker">Đồng phục · nguồn hàng · OEM · quà tặng · merchandise</p>
+            <p className="v7-kicker">Áo trơn sỉ · nguồn hàng B2B · đồng phục doanh nghiệp</p>
             <h1>
-              Đồng phục, quà tặng & merchandise.
-              <span className="v7-home-hero__accent">Một đầu mối từ mẫu đến giao hàng.</span>
+              Nguồn hàng may mặc đáng tin cậy.
+              <span className="v7-home-hero__accent">Áo trơn, hàng sỉ & đồng phục B2B.</span>
             </h1>
             <p className="v7-home-hero__lead">
-              Bạn chỉ cần cho ATTD biết cần làm gì, số lượng bao nhiêu và khi nào cần hàng.
-              Đội ngũ sẽ cùng bạn chọn phương án phù hợp, báo giá và theo sát đến khi giao hàng.
+              Từ áo thun trơn, polo đến đồng phục cho hệ thống doanh nghiệp, ATTD hỗ trợ chọn chất liệu, màu sắc, số lượng và phương án cung ứng phù hợp.
+              Phục vụ khách hàng B2B tại Việt Nam và thị trường quốc tế theo từng yêu cầu.
             </p>
             <div className="v7-home-hero__actions">
               <Link href="/lien-he" className="v7-btn v7-btn--primary">Nhận tư vấn & báo giá</Link>

@@ -20,7 +20,7 @@ export default function DemoCatalogEditor() {
   useEffect(() => {
     try { const raw=window.localStorage.getItem(key); if (!raw) return; const parsed: unknown=JSON.parse(raw); if (Array.isArray(parsed) && parsed.length > 0) {
       const safe=parsed.filter((x): x is Item => !!x && typeof x==="object" && x.demo===true && x.status==="DRAFT" && x.site==="vietnamclothing.vn");
-      if (safe.length) setItems(safe);
+      if (safe.length) queueMicrotask(()=>setItems(safe));
     }} catch { /* ignore invalid local draft */ }
   }, []);
   const chosen=items[active] || items[0];

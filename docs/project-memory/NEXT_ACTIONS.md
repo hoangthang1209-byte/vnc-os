@@ -32,3 +32,14 @@ Deliver the two active sites **ATTD.vn** and **VietnamClothing.vn** first. **Do 
 - **Multisite CMS** [PR #255](https://github.com/hoangthang1209-byte/vnc-os/pull/255): patched React effect lint in commits `a83788d` and `748146b`, latest-head CI **IN_PROGRESS** as of checkpoint. Schema migration, shared draft editing, per-site RBAC and frontend publication are **unverified/unimplemented**, therefore no Production DB migration.
 - **Production caution**: Vercel attd-vn deployments `dpl_95nQziJeteqVKn7FjVfCg1jXgXee` BUILDING and `dpl_13bjf7Cdh5Nyrx7Rqyx1bFbfWeFp` QUEUED at checkpoint. Inspect actual domain/aliases and regression before any release.
 - **Release gate**: require actual authenticated smoke/mobile + forms, URL crawl/backups, approved products/media, reviewed DB migration, rollback and owner approval; never confuse Preview READY with Production acceptance.
+
+## Production eligibility audit — 2026-10-27 evening
+Owner requests fast Production testing with minimum review, retaining CI/rollback/DB/SEO safeguards. Open PR inventory has 50+ entries, many historical/superseded; **do not mass-merge**.
+
+**Eligible for small controlled main release once exact-sha smoke and revert are confirmed:** PR #264 Admin operations-first navigation (non-draft, CI PASS, no schema); PR #270 Customer↔Orders navigation (CI PASS, RBAC smoke needed); PR #247 ATTD duplicate mobile CTA fix (CI PASS, site smoke); PR #267 missing-customer snapshot order safety fix (CI PASS, focused route behavior smoke); PR #260 Project Memory docs (CI PASS, no runtime). Consider #265 Admin user editor only after account permission and OWNER safety smoke.
+
+**Code-safe foundations but NOT equivalent to active integration:** #258 AI Leadership policy only; #249 external channel contracts only; #254 Gmail payload validator only; #252 CRM read-only drift diagnostic only; #253 offline image optimization CLI only. CI PASS not proof of operational go-live.
+
+**Do NOT launch as finished products:** #269 ATTD full redesign only first slice; #245 VietnamClothing new website still missing full bilingual/legacy SEO migration/RFQ—*separate Vercel project Production deployment READY at SHA 2467d7fa, **not** custom domain cutover*; #255 multisite CMS CI PASS but schema migration, per-site permissions, editing/publishing integration not production approved; #248 multisite lead intake depends on CRM incident #250 and backend adapters and production secret; #274 supplier duplicate checks and #265 user management alter critical operations and warrant focused authenticated tests.
+
+**Live Vercel observation:** attd-vn production deployment from main `22ee7745` BUILDING at this snapshot; VietnamClothing preview project Production READY SHA `2467d7fa`. Preserve currently aliased Production until release verification. No bulk Production deployment was executed by this audit.

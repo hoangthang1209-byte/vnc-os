@@ -25,6 +25,11 @@ export default function AdminUsersManager() {
   const [passwordConfirm, setPasswordConfirm] = useState("");
   const [employeeId, setEmployeeId] = useState("");
   const [roleId, setRoleId] = useState("");
+  const [editingUser, setEditingUser] = useState<AdminUserListRecord | null>(null);
+  const [editUsername, setEditUsername] = useState("");
+  const [editEmployeeId, setEditEmployeeId] = useState("");
+  const [editRoleId, setEditRoleId] = useState("");
+  const [savingEdit, setSavingEdit] = useState(false);
   const [resetUserId, setResetUserId] = useState<string | null>(null);
   const [resetPassword, setResetPassword] = useState("");
   const [resetPasswordConfirm, setResetPasswordConfirm] = useState("");
@@ -82,6 +87,40 @@ export default function AdminUsersManager() {
     setEmployeeId("");
     setRoleId("");
     void load();
+  }
+
+  function openEdit(user: AdminUserListRecord) {
+    setError(null);
+    setEditingUser(user);
+    setEditUsername(user.username);
+    setEditEmployeeId(user.employeeId ?? "");
+    setEditRoleId(user.roleId ?? "");
+  }
+
+  async function handleEdit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!editingUser || savingEdit) return;
+    setError(null);
+    setSavingEdit(true);
+    try {
+      const res = await fetch(`/api/admin/users/${editingUser.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          username: editUsername,
+          employeeId: editEmployeeId || null,
+          roleId: editRoleId,
+        }),
+      });
+      const data = await res.json() as { message?: string };
+      if (!res.ok) throw new Error(data.message ?? "Không thể cập nhật tài khoản.");
+      setEditingUser(null);
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Không thể cập nhật tài khoản.");
+    } finally {
+      setSavingEdit(false);
+    }
   }
 
   async function toggleActive(user: AdminUserListRecord) {
@@ -157,6 +196,9 @@ export default function AdminUsersManager() {
                   <td>{user.lastLoginAt ? formatCrmDateTime(user.lastLoginAt) : "—"}</td>
                   <td>
                     <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                      <button type="button" className="admin-btn admin-btn--secondary admin-btn--small" onClick={() => openEdit(user)}>
+                        Sửa
+                      </button>
                       <button type="button" className="admin-btn admin-btn--secondary admin-btn--small" onClick={() => setResetUserId(user.id)}>
                         Đặt lại MK
                       </button>
@@ -212,6 +254,42 @@ export default function AdminUsersManager() {
             <div className="quote-quick-contact-modal__actions">
               <button type="button" className="admin-btn admin-btn--secondary" onClick={() => setFormOpen(false)}>Hủy</button>
               <button type="submit" className="admin-btn admin-btn--primary">Tạo</button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {editingUser && (
+        <div className="quote-quick-contact-modal">
+          <div className="quote-quick-contact-modal__backdrop" onClick={() => !savingEdit && setEditingUser(null)} aria-hidden="true" />
+          <form className="quote-quick-contact-modal__panel" onSubmit={(e) => void handleEdit(e)}>
+            <h3 className="quote-quick-contact-modal__title">Sửa thông tin đăng nhập</h3>
+            <p>Thay đổi tên đăng nhập, vai trò hoặc hồ sơ nhân viên. Để đổi mật khẩu, dùng nút Đặt lại MK.</p>
+            <div className="admin-field">
+              <label className="admin-label" htmlFor="edit-admin-username">Tên đăng nhập</label>
+              <input id="edit-admin-username" className="admin-input" required minLength={3} maxLength={50} pattern="[a-zA-Z0-9._-]+" value={editUsername} onChange={(e) => setEditUsername(e.target.value)} />
+            </div>
+            <div className="admin-field">
+              <label className="admin-label" htmlFor="edit-admin-employee">Nhân viên liên kết</label>
+              <select id="edit-admin-employee" className="admin-input" value={editEmployeeId} onChange={(e) => setEditEmployeeId(e.target.value)}>
+                <option value="">— Không liên kết —</option>
+                {employees.filter((emp) => !users.some((u) => u.employeeId === emp.id && u.id !== editingUser.id)).map((emp) => (
+                  <option key={emp.id} value={emp.id}>{emp.fullName}</option>
+                ))}
+              </select>
+            </div>
+            <div className="admin-field">
+              <label className="admin-label" htmlFor="edit-admin-role">Vai trò</label>
+              <select id="edit-admin-role" className="admin-input" required value={editRoleId} onChange={(e) => setEditRoleId(e.target.value)}>
+                <option value="">Chọn vai trò</option>
+                {roles.filter((role) => role.isActive).map((role) => (
+                  <option key={role.id} value={role.id}>{role.name}</option>
+                ))}
+              </select>
+            </div>
+            <div className="quote-quick-contact-modal__actions">
+              <button type="button" className="admin-btn admin-btn--secondary" disabled={savingEdit} onClick={() => setEditingUser(null)}>Hủy</button>
+              <button type="submit" className="admin-btn admin-btn--primary" disabled={savingEdit}>{savingEdit ? "Đang lưu…" : "Lưu thay đổi"}</button>
             </div>
           </form>
         </div>

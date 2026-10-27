@@ -7,6 +7,7 @@ import TrackedLink from "@/components/analytics/TrackedLink";
 import TrackedAnchor from "@/components/analytics/TrackedAnchor";
 import BackToTopButton from "@/components/public/BackToTopButton";
 import { CTA } from "@/lib/ctaConfig";
+import { shouldShowMobileActionBar } from "@/lib/navConfig";
 import { getHotlineTel, getHotlineDisplay, getZaloUrl } from "@/lib/companyInfo";
 
 /** Long-form reading pages hold the widget back until the reader is committed. */
@@ -15,6 +16,7 @@ const REVEAL_AFTER_PX = 480;
 export default function FloatingContactWidget() {
   const pathname = usePathname();
   const deferred = /^\/blog\/[^/]+$/.test(pathname);
+  const mobileBarVisible = shouldShowMobileActionBar(pathname);
   const [revealed, setRevealed] = useState(false);
 
   useEffect(() => {
@@ -35,7 +37,7 @@ export default function FloatingContactWidget() {
 
   return (
     <div
-      className={`floating-contact${deferred ? " floating-contact--deferred" : ""}${
+      className={`floating-contact${mobileBarVisible ? " floating-contact--mobile-action-bar" : ""}${deferred ? " floating-contact--deferred" : ""}${
         deferred && revealed ? " is-revealed" : ""
       }`}
       role="complementary"

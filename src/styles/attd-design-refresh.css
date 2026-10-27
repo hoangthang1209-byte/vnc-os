@@ -1,0 +1,129 @@
+/* ATTD V8 — brand-led B2B design system based on the owner's red/white logotype.
+ * Scoped to the public V7 surface. Preserves routes, CMS, schema, forms and mobile CTA.
+ * New styles intentionally avoid unverified customer claims and synthetic branding.
+ */
+:root {
+  --v7-red: #ec1626;
+  --v7-red-dark: #bc1020;
+  --v7-ink: #1e2022;
+  --v7-ink-2: #303336;
+  --v7-muted: #656a70;
+  --v7-line: #e5e5e5;
+  --v7-soft: #f8f8f7;
+  --v7-warm: #f3f2f0;
+  --v7-max: 1320px;
+}
+.public-main--v7 {
+  --v7-red: #ec1626;
+  --v7-red-dark: #bc1020;
+  --v7-ink: #1e2022;
+  --v7-ink-2: #303336;
+  --v7-muted: #656a70;
+  --v7-line: #e5e5e5;
+  --v7-soft: #f8f8f7;
+  --v7-warm: #f3f2f0;
+  color:var(--v7-ink);
+  background:#fff;
+  font-feature-settings:"kern" 1;
+  -webkit-font-smoothing:antialiased;
+}
+.v7-header {
+  background:rgba(255,255,255,.96);
+  border-bottom:1px solid #ebebeb;
+  box-shadow:0 8px 30px rgba(0,0,0,.025);
+}
+.v7-header__inner{min-height:82px}
+.v7-header__nav a {font-weight:690;letter-spacing:0}
+.v7-header__nav a.is-active::after {background:#ec1626}
+.v7-header__logo {display:inline-flex;align-items:center}
+.public-main--v7 :is(.v7-home-hero,.v7-solution-hero) {
+  isolation:isolate;
+  background:linear-gradient(125deg,#fff 15%,#f7f7f5 75%);
+}
+.public-main--v7 :is(.v7-home-hero h1,.v7-solution-hero h1) {
+  font-weight:720;
+  line-height:1.14;
+  letter-spacing:-.028em;
+  text-wrap:balance;
+}
+.public-main--v7 :is(.v7-home-hero p,.v7-solution-hero__lead) {
+  line-height:1.85;letter-spacing:0;
+}
+.public-main--v7 :is(.v7-section-head h2,.v7-solution-page h2) {
+  font-weight:700;
+  line-height:1.2;
+  letter-spacing:-.022em;
+  text-wrap:balance;
+}
+.public-main--v7 h3 {letter-spacing:-.012em;line-height:1.36}
+.public-main--v7 :is(.v7-btn,.v7-btn--primary,.v7-btn--ghost) {
+  border-radius:13px;
+  min-height:48px;
+  font-weight:750;
+  transition:background .23s ease,color .23s ease,transform .23s ease,box-shadow .23s ease;
+}
+.public-main--v7 .v7-btn--primary {
+  background:#ed1727;
+  border-color:#ed1727;
+  color:#fff;
+  box-shadow:0 10px 25px rgba(237,23,39,.15);
+}
+.public-main--v7 .v7-btn--primary:hover {
+  background:#b70f1c;border-color:#b70f1c;color:#fff;
+  box-shadow:0 13px 30px rgba(237,23,39,.22);
+}
+.public-main--v7 .v7-btn--ghost {border-color:#dedede;background:#fff;color:#1e2022}
+.public-main--v7 :is(.v7-solution-hero__visual,.v7-home-hero__visual) {
+  border-radius:24px;
+  overflow:hidden;
+}
+.public-main--v7 :is(.v7-capabilities__grid article,.v7-home-solutions__grid article,.v7-process__list li) {
+  border-radius:18px;
+  transition:transform .26s ease,box-shadow .26s ease,border-color .26s ease;
+}
+.public-main--v7 :is(.v7-capabilities__grid article,.v7-home-solutions__grid article) {
+  border-color:#ededed;
+}
+.public-main--v7 .v7-capabilities__grid article > span {color:#d21b2a}
+.public-main--v7 .v7-deliverables {background:#202225;color:#fff}
+.public-main--v7 .v7-process {background:#fafaf9}
+.public-main--v7 :is(input,textarea,select) {border-radius:12px}
+.public-main--v7 :is(a,button,input,select,textarea):focus-visible,
+.v7-header :is(a,button):focus-visible,
+.v7-footer a:focus-visible {
+  outline:3px solid #ff9ba2;
+  outline-offset:3px;
+}
+.public-main--v7 img {max-width:100%}
+.v7-footer {background:#1e2022}
+@media (hover:hover) and (prefers-reduced-motion:no-preference) {
+  .public-main--v7 :is(.v7-capabilities__grid article,.v7-home-solutions__grid article):hover{
+    transform:translateY(-4px);
+    box-shadow:0 22px 50px rgba(26,26,26,.075);
+  }
+}
+@media(max-width:640px){
+ .public-main--v7 :is(.v7-home-hero h1,.v7-solution-hero h1){
+    text-wrap:pretty;line-height:1.17;letter-spacing:-.018em;
+ }
+ .v7-header__inner{min-height:68px}
+}
+@media(prefers-reduced-motion:reduce) {
+ .public-main--v7 :is(.v7-btn,.v7-capabilities__grid article,.v7-home-solutions__grid article,.v7-process__list li){
+  transition:none;transform:none;
+ }
+}
+
+/* Consistent conversion and editorial treatment across CMS-driven public routes. */
+.public-main--v7 :is(.v7-home-hero,.v7-solution-hero,.v7-capabilities,.v7-process,.v7-deliverables) {scroll-margin-top:95px}
+.public-main--v7 :is(.v7-section-head,.v7-solution-hero__copy) p {max-width:72ch}
+.public-main--v7 :is(.v7-capabilities__grid article,.v7-process__list li) {background-clip:padding-box}
+.public-main--v7 :is(.v7-capabilities__grid article,.v7-process__list li) p {line-height:1.75}
+.public-main--v7 :is(.v7-home-hero__image,.v7-solution-hero__image) {transition:transform .65s cubic-bezier(.22,1,.36,1)}
+@media (hover:hover) and (prefers-reduced-motion:no-preference) {
+ .public-main--v7 :is(.v7-home-hero__visual,.v7-solution-hero__visual):hover :is(.v7-home-hero__image,.v7-solution-hero__image) {transform:scale(1.025)}
+}
+@media (max-width:640px) {
+ .public-main--v7 :is(.v7-solution-hero__copy,.v7-section-head) {min-width:0}
+ .public-main--v7 :is(.v7-home-hero h1,.v7-solution-hero h1,.v7-section-head h2) {overflow-wrap:break-word}
+}

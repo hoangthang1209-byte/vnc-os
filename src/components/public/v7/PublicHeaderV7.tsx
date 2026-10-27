@@ -75,7 +75,7 @@ export default function PublicHeaderV7({
   return (
     <header ref={headerRef} className="v7-header">
       <div className="container v7-header__inner">
-        <AttdLogo src={logoUrl} className="v7-header__logo" />
+        <AttdLogo src="/attd-v9-brand.svg" className="v7-header__logo" />
 
         <nav className="v7-header__nav" aria-label="Điều hướng chính">
           <div className={`v7-header__solutions${solutionActive ? " is-active" : ""}`}>

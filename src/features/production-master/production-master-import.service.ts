@@ -8,6 +8,7 @@ import {
   PRODUCTION_MATERIAL_CATEGORIES,
   PRODUCTION_TRIM_CATEGORIES,
   PRINT_METHOD_CATEGORIES,
+  SUPPLIER_CATEGORIES,
 } from "@/features/production-master/production-master-labels";
 
 export type ImportRowError = {
@@ -184,7 +185,7 @@ export async function importProductionSuppliersCsv(buffer: Buffer): Promise<Impo
         address: row.address?.trim() || null,
         notes: row.notes?.trim() || null,
         isActive: parseBool(row.active),
-        category: (row.category?.trim().toUpperCase() || "GENERAL") as never,
+        category: ((SUPPLIER_CATEGORIES as readonly string[]).includes(row.category?.trim().toUpperCase() ?? "") ? row.category!.trim().toUpperCase() : "GENERAL") as never,
       };
       const code = row.code?.trim();
       if (code) {

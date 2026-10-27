@@ -206,6 +206,12 @@ export async function updateAdminUser(
     if (user.role?.code === "OWNER" && role.code !== "OWNER" && actorUserId === userId) {
       throw new AdminUserValidationError("Không thể tự hạ quyền Chủ hệ thống của chính mình.");
     }
+    if (user.role?.code === "OWNER" && role.code !== "OWNER" && user.isActive) {
+      const ownerCount = await prisma.adminUser.count({ where: { isActive: true, role: { code: "OWNER" } } });
+      if (ownerCount <= 1) {
+        throw new AdminUserValidationError("Không thể hạ quyền tài khoản Chủ hệ thống cuối cùng.");
+      }
+    }
   }
 
   if (input.employeeId) {

@@ -16,3 +16,8 @@ Never state completion without relevant source evidence.
 
 ## Scope override — 2026-10-27
 Deliver the two active sites **ATTD.vn** and **VietnamClothing.vn** first. **Do not execute aothunthongdiep.com work:** external development team owns it for now. Keep strategic positioning documented; resume only after explicit owner instruction. This scope overrides any earlier three-site implementation suggestion.
+
+## Active two-site redesign progress — 2026-10-27
+- **ATTD:** [issue #268](https://github.com/hoangthang1209-byte/vnc-os/issues/268), [draft PR #269](https://github.com/hoangthang1209-byte/vnc-os/pull/269), branch `feature/attd-b2b-supply-redesign`: homepage re-positioned to blanks/B2B/uniforms, added responsive `/nguon-hang-ao-tron` acquisition page. No production release. Full site redesign, bilingual EN and existing route/content migration remain **PENDING**.
+- **VietnamClothing:** [draft PR #245](https://github.com/hoangthang1209-byte/vnc-os/pull/245), branch `issue-244-vietnamclothing-website-mvp`: introduced `/vi/index.html` Vietnamese homepage and language switch on English landing page. Other pages not yet fully localized, no approved product feed and no RFQ→CRM end-to-end confirmation. **Do not label site fully bilingual yet.**
+- **Release gates:** exact-head CI, independent responsive/a11y QA, authenticated staging and CRM, legacy SEO URL inventory, approved content and media rights, safe rollout. Preserve existing Production domains.

@@ -8,6 +8,12 @@ import { parseSupplierCategory } from "@/features/patterns/pattern-supplier-snap
 import { requireProductionUpdate, requireProductionView } from "@/lib/admin-auth/require-production-api";
 import { requireAdminPermission } from "@/lib/permissions/require-admin-permission";
 
+const SUPPLIER_TYPES = new Set(["UNKNOWN", "DIRECT_MANUFACTURER", "TRADER", "MIXED", "SERVICE_PROVIDER"]);
+const VERIFICATION_STATUSES = new Set(["UNVERIFIED", "DESK_REVIEWED", "SITE_VISITED", "APPROVED", "REJECTED"]);
+function supplierType(v: unknown) { return typeof v === "string" && SUPPLIER_TYPES.has(v) ? v : "UNKNOWN"; }
+function verificationStatus(v: unknown) { return typeof v === "string" && VERIFICATION_STATUSES.has(v) ? v : "UNVERIFIED"; }
+function optionalText(v: unknown) { return v === null ? null : typeof v === "string" ? v.trim() : undefined; }
+
 export async function GET(req: NextRequest) {
   const auth = requireProductionView(req);
   if (auth.error) return auth.error;
@@ -41,6 +47,12 @@ export async function POST(req: NextRequest) {
     const created = await createProductionSupplier({
       name: String(body.name ?? ""),
       category: parseSupplierCategory(body.category),
+      supplierType: supplierType(body.supplierType),
+      verificationStatus: verificationStatus(body.verificationStatus),
+      factoryAddress: optionalText(body.factoryAddress),
+      website: optionalText(body.website),
+      capabilities: optionalText(body.capabilities),
+      sourceUrl: optionalText(body.sourceUrl),
       contact: body.contact === null ? null : typeof body.contact === "string" ? body.contact : undefined,
       email: body.email === null ? null : typeof body.email === "string" ? body.email : undefined,
       phone: body.phone === null ? null : typeof body.phone === "string" ? body.phone : undefined,

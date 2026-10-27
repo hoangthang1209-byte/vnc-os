@@ -36,68 +36,20 @@ export const adminDashboardNavItem: AdminNavigationItem = {
 };
 
 /**
- * Lean Admin navigation — primary destinations for ATTD’s 4-person operating team.
+ * VNC OS Admin 2.0 — operations-first navigation for a multi-role production team.
  * Routes not listed remain reachable by URL / contextual links; they are not deleted.
  */
 export const adminNavigationSections: AdminNavigationSection[] = [
   {
-    label: "BÁN HÀNG",
-    icon: "💼",
+    label: "ĐƠN HÀNG & SẢN XUẤT",
+    icon: "🏭",
     platforms: domainItems([
       {
-        label: "Khách hàng",
-        href: "/admin/crm/customers",
-        status: "active",
-        requiredPermissions: ["canViewCrm"],
-      },
-      {
-        label: "Lead",
-        href: "/admin/crm/leads",
-        status: "active",
-        requiredPermissions: ["canViewCrm"],
-      },
-      {
-        label: "Tính giá",
-        href: "/admin/pricing/costing",
-        status: "active",
-        requiredPermissions: ["canAccessPricing"],
-      },
-      {
-        label: "Báo giá",
-        href: "/admin/quotes",
-        status: "active",
-        requiredPermissions: ["canAccessQuotes"],
-      },
-      {
-        label: "Đơn hàng",
+        label: "Tất cả đơn hàng",
         href: "/admin/orders",
         status: "active",
         requiredPermissions: ["canViewOrders"],
       },
-      {
-        label: "Giao dịch ngân hàng",
-        href: "/admin/bank-transactions",
-        status: "active",
-        requiredPermissions: ["canViewFinancials"],
-      },
-    ]),
-  },
-  {
-    label: "SẢN PHẨM",
-    icon: "📦",
-    platforms: domainItems([
-      {
-        label: "Sản phẩm",
-        href: "/admin/products",
-        status: "active",
-        requiredPermissions: ["canManageProducts"],
-      },
-    ]),
-  },
-  {
-    label: "SẢN XUẤT",
-    icon: "🏭",
-    platforms: domainItems([
       {
         label: "Tiến độ sản xuất",
         href: "/admin/manufacturing/production-timeline",
@@ -125,7 +77,55 @@ export const adminNavigationSections: AdminNavigationSection[] = [
     ]),
   },
   {
-    label: "KỸ THUẬT",
+    label: "KHÁCH HÀNG & ĐƠN",
+    icon: "💼",
+    platforms: domainItems([
+      {
+        label: "Khách hàng",
+        href: "/admin/crm/customers",
+        status: "active",
+        requiredPermissions: ["canViewCrm"],
+      },
+      {
+        label: "Lead",
+        href: "/admin/crm/leads",
+        status: "active",
+        requiredPermissions: ["canViewCrm"],
+      },
+      {
+        label: "Tính giá",
+        href: "/admin/pricing/costing",
+        status: "active",
+        requiredPermissions: ["canAccessPricing"],
+      },
+      {
+        label: "Báo giá",
+        href: "/admin/quotes",
+        status: "active",
+        requiredPermissions: ["canAccessQuotes"],
+      },
+      {
+        label: "Giao dịch ngân hàng",
+        href: "/admin/bank-transactions",
+        status: "active",
+        requiredPermissions: ["canViewFinancials"],
+      },
+    ]),
+  },
+  {
+    label: "SẢN PHẨM",
+    icon: "📦",
+    platforms: domainItems([
+      {
+        label: "Sản phẩm",
+        href: "/admin/products",
+        status: "active",
+        requiredPermissions: ["canManageProducts"],
+      },
+    ]),
+  },
+  {
+    label: "MẪU & KỸ THUẬT",
     icon: "📐",
     platforms: domainItems([
       {
@@ -149,7 +149,7 @@ export const adminNavigationSections: AdminNavigationSection[] = [
     ]),
   },
   {
-    label: "CONTENT & SEO",
+    label: "MARKETING & NỘI DUNG",
     icon: "📝",
     platforms: domainItems([
       {
@@ -203,7 +203,7 @@ export const adminNavigationSections: AdminNavigationSection[] = [
     ]),
   },
   {
-    label: "CẤU HÌNH",
+    label: "HỆ THỐNG",
     icon: "⚙️",
     platforms: domainItems([
       {
@@ -278,7 +278,7 @@ export function filterNavigationForWorkspaceMode(
 ): AdminNavigationSection[] {
   if (!isSolo) return sections;
   return sections.map((section) => {
-    if (section.label !== "CONTENT & SEO" && section.label !== "NỘI DUNG") {
+    if (section.label !== "MARKETING & NỘI DUNG" && section.label !== "CONTENT & SEO" && section.label !== "NỘI DUNG") {
       return section;
     }
     return {

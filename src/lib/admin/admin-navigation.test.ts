@@ -38,13 +38,13 @@ describe("lean admin navigation", () => {
     assert.deepEqual(
       adminNavigationSections.map((section) => section.label),
       [
-        "BÁN HÀNG",
+        "ĐƠN HÀNG & SẢN XUẤT",
+        "KHÁCH HÀNG & ĐƠN",
         "SẢN PHẨM",
-        "SẢN XUẤT",
-        "KỸ THUẬT",
-        "CONTENT & SEO",
+        "MẪU & KỸ THUẬT",
+        "MARKETING & NỘI DUNG",
         "WEBSITE",
-        "CẤU HÌNH",
+        "HỆ THỐNG",
       ],
     );
     assert.equal(adminDashboardNavItem.label, "Tổng quan");
@@ -52,8 +52,10 @@ describe("lean admin navigation", () => {
   });
 
   it("keeps commercial spine primary with costing promoted", () => {
-    const sales = adminNavigationSections.find((s) => s.label === "BÁN HÀNG");
+    const sales = adminNavigationSections.find((s) => s.label === "KHÁCH HÀNG & ĐƠN");
     assert.ok(sales);
+    const operations = adminNavigationSections.find((s) => s.label === "ĐƠN HÀNG & SẢN XUẤT");
+    assert.ok(operations?.platforms[0].items.some((item) => item.href === "/admin/orders"));
     assert.deepEqual(
       sales.platforms[0].items.map((item) => [item.label, item.href]),
       [
@@ -61,7 +63,7 @@ describe("lean admin navigation", () => {
         ["Lead", "/admin/crm/leads"],
         ["Tính giá", "/admin/pricing/costing"],
         ["Báo giá", "/admin/quotes"],
-        ["Đơn hàng", "/admin/orders"],
+        ["Giao dịch ngân hàng", "/admin/bank-transactions"],
       ],
     );
   });
@@ -81,7 +83,7 @@ describe("lean admin navigation", () => {
   });
 
   it("keeps Content & SEO and Website as primary business domains", () => {
-    const content = adminNavigationSections.find((s) => s.label === "CONTENT & SEO");
+    const content = adminNavigationSections.find((s) => s.label === "MARKETING & NỘI DUNG");
     assert.ok(content);
     assert.deepEqual(
       content.platforms[0].items.map((item) => item.href),
@@ -141,7 +143,7 @@ describe("lean admin navigation", () => {
 
   it("Solo filter still drops enterprise content ops when present", () => {
     const filtered = filterNavigationForWorkspaceMode(adminNavigationSections, true);
-    const content = filtered.find((s) => s.label === "CONTENT & SEO");
+    const content = filtered.find((s) => s.label === "MARKETING & NỘI DUNG");
     assert.ok(content);
     const hrefs = content.platforms.flatMap((p) => p.items.map((i) => i.href));
     for (const hidden of SOLO_HIDDEN_CONTENT_HREFS) {

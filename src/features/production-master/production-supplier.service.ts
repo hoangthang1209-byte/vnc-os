@@ -72,6 +72,12 @@ export async function getProductionSupplier(id: string) {
 export async function createProductionSupplier(input: {
   name: string;
   category?: SupplierCategory;
+  supplierType?: string;
+  verificationStatus?: string;
+  factoryAddress?: string | null;
+  website?: string | null;
+  capabilities?: string | null;
+  sourceUrl?: string | null;
   contact?: string | null;
   email?: string | null;
   phone?: string | null;
@@ -87,6 +93,12 @@ export async function createProductionSupplier(input: {
       code,
       name,
       category: input.category ?? SupplierCategory.GENERAL,
+      supplierType: input.supplierType ?? "UNKNOWN",
+      verificationStatus: input.verificationStatus ?? "UNVERIFIED",
+      factoryAddress: input.factoryAddress?.trim() || null,
+      website: input.website?.trim() || null,
+      capabilities: input.capabilities?.trim() || null,
+      sourceUrl: input.sourceUrl?.trim() || null,
       contact: input.contact?.trim() || null,
       email: input.email?.trim() || null,
       phone: input.phone?.trim() || null,
@@ -102,6 +114,12 @@ export async function updateProductionSupplier(
   input: Partial<{
     name: string;
     category: SupplierCategory;
+    supplierType: string;
+    verificationStatus: string;
+    factoryAddress: string | null;
+    website: string | null;
+    capabilities: string | null;
+    sourceUrl: string | null;
     contact: string | null;
     email: string | null;
     phone: string | null;
@@ -117,6 +135,12 @@ export async function updateProductionSupplier(
     data: {
       name: input.name?.trim() ?? undefined,
       category: input.category,
+      supplierType: input.supplierType,
+      verificationStatus: input.verificationStatus,
+      factoryAddress: input.factoryAddress,
+      website: input.website,
+      capabilities: input.capabilities,
+      sourceUrl: input.sourceUrl,
       contact: input.contact,
       email: input.email,
       phone: input.phone,

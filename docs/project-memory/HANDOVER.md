@@ -44,3 +44,6 @@ Three brands are differentiated by **product / buyer intent, NOT domestic vs ove
 
 ## Owner-approved deployment optimization policy — 2026-10-27
 Keep CI for code; avoid redundant Preview builds; **never skip Production builds or release approval**. ATTD project has a narrow docs-only Ignored Build Step configured and VietnamClothing staging has affected-project deployment optimization requested. Do not claim measured speedup until live skipped-build evidence exists. Consult [runbook](./VERCEL_BUILD_OPTIMIZATION_2026-10-27.md) and verify actual project settings/deployment behavior.
+
+## Owner's release preference (confirmed 2026-10-27)
+Minimize repetitive review and permit **owner-led Production testing** via small, reversible releases for ATTD, VietnamClothing and CMS. Preserve CI, backup/migration checks, SEO integrity, authorization and rollback. Separate deploy of safe UI code from risky data migrations/domain cutovers; make release and rollback SHA visible to owner.

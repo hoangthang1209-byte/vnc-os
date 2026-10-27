@@ -35,3 +35,9 @@ Each durable entry must provide:
 - If sources disagree, record conflict in reconciliation log, use authoritative live data for **current operational state**, and retain original intent.
 - Treat missing transcript as `UNKNOWN`, never invented content.
 - Backfill earlier chat discussions only from available transcript exports, user-confirmed summary, or linked issue/PR.
+
+## Approved addendum — 2026-10-27
+
+| ID | Kind | Decision / commitment | Status | Evidence | Missing acceptance |
+|---|---|---|---|---|---|
+| VNC-DEC-2026-003 | DECISION | Three product-led brands: ATTD = blank apparel/B2B supply/corporate uniforms; VietnamClothing = merchandise/OEM/ODM/project development; aothunthongdiep.com = personalized printing/short runs. ATTD and VietnamClothing both bilingual Vietnamese–English and serve domestic and overseas buyers; route by **primary order purpose**, not geography or company size. Large-enterprise uniform orders belong to ATTD. | APPROVED | Owner confirmation in VNC Strategy conversation 2026-10-27; [Strategic Decisions](./STRATEGIC_DECISIONS.md) | Distinct sitemaps, CRM routing and SEO-safe execution; no Production implementation implied |

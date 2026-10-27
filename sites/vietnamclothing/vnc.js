@@ -39,3 +39,6 @@
     }).catch(()=>{});
   }
 })();
+
+/* Compact locale switch; never present a language as an ordinary nav item. */
+(function(){const vi=location.pathname.includes('/vi/');document.querySelectorAll('.site-header .nav-links').forEach(nav=>{nav.querySelectorAll('a').forEach(a=>{if(a.textContent.trim()==='Tiếng Việt'||a.textContent.trim()==='English')a.remove()});const switcher=document.createElement('span');switcher.className='locale-switch';switcher.setAttribute('aria-label','Language / Ngôn ngữ');const isIndex=/\/(?:vi\/)?(?:index\.html)?$/.test(location.pathname);const en=isIndex?(vi?'../index.html':'./index.html'):(vi?'../index.html':'./index.html');const vn=isIndex?(vi?'./index.html':'./vi/index.html'):(vi?'./index.html':'./vi/index.html');switcher.innerHTML='<a lang="en" hreflang="en" href="'+en+'"'+(!vi?' aria-current="page"':'')+'>EN</a><span aria-hidden="true">/</span><a lang="vi" hreflang="vi" href="'+vn+'"'+(vi?' aria-current="page"':'')+'>VN</a>';nav.insertBefore(switcher,nav.querySelector('.pill'));});})();

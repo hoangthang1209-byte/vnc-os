@@ -2,20 +2,19 @@
   display: flex;
   min-height: 100dvh;
   background:
-    radial-gradient(circle at top left, rgba(220, 38, 38, 0.04), transparent 26rem),
     #f8fafc;
 }
 
 .sidebar {
   position: sticky;
   top: 0;
-  flex: 0 0 286px;
-  width: 286px;
+  flex: 0 0 248px;
+  width: 248px;
   height: 100dvh;
   overflow-y: auto;
   overscroll-behavior: contain;
-  padding: 18px 14px;
-  background: linear-gradient(180deg, #0b1120 0%, #111827 100%);
+  padding: 14px 10px;
+  background: #111827;
   color: #e5e7eb;
   border-right: 1px solid rgba(148, 163, 184, 0.18);
 }
@@ -104,7 +103,7 @@
 .nav {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 8px;
 }
 
 .navSection {
@@ -160,9 +159,9 @@
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  min-height: 36px;
-  padding: 8px 10px 8px 12px;
-  border-radius: 12px;
+  min-height: 38px;
+  padding: 8px 10px;
+  border-radius: 8px;
   color: #cbd5e1;
   text-decoration: none;
   font-size: 13px;
@@ -224,8 +223,8 @@
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 24px;
-  padding: 26px 40px 20px;
+  gap: 16px;
+  padding: 16px 28px;
   background: #f8fafc;
   border-bottom: 1px solid #e2e8f0;
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
@@ -262,18 +261,18 @@
 .title {
   margin: 0;
   color: #0f172a;
-  font-size: clamp(24px, 3vw, 32px);
+  font-size: clamp(21px, 2.5vw, 27px);
   font-weight: 800;
   letter-spacing: -0.04em;
   line-height: 1.15;
 }
 
 .description {
-  margin: 8px 0 0;
-  max-width: 720px;
+  margin: 4px 0 0;
+  max-width: 560px;
   color: #64748b;
-  font-size: 14px;
-  line-height: 1.6;
+  font-size: 12px;
+  line-height: 1.4;
 }
 
 .headerActions {
@@ -309,8 +308,8 @@
 
 .content {
   min-width: 0;
-  max-width: 1320px;
-  padding: 28px 40px 48px;
+  max-width: 1440px;
+  padding: 24px 28px 40px;
 }
 
 .mobileOverlay {

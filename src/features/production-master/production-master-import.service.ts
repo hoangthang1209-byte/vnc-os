@@ -184,6 +184,7 @@ export async function importProductionSuppliersCsv(buffer: Buffer): Promise<Impo
         address: row.address?.trim() || null,
         notes: row.notes?.trim() || null,
         isActive: parseBool(row.active),
+        category: (row.category?.trim().toUpperCase() || "GENERAL") as never,
       };
       const code = row.code?.trim();
       if (code) {
@@ -434,6 +435,7 @@ export async function previewProductionSuppliersCsv(buffer: Buffer): Promise<Imp
         address: row.address?.trim() || null,
         notes: row.notes?.trim() || null,
         isActive: parseBool(row.active),
+        category: (row.category?.trim().toUpperCase() || "GENERAL") as never,
       };
       const code = row.code?.trim();
       if (code) {
@@ -519,6 +521,6 @@ export async function previewPrintMethodsCsv(buffer: Buffer): Promise<ImportPrev
 export const PRODUCTION_MASTER_CSV_TEMPLATES = {
   material: "code,name,category,composition,gsm,width,supplier,defaultColor,notes,active",
   trim: "code,name,category,supplier,notes,active",
-  supplier: "code,name,contact,email,phone,address,notes,active",
+  supplier: "code,name,category,contact,email,phone,address,notes,active",
   "print-method": "code,name,category,description,active",
 } as const;

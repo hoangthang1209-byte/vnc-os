@@ -136,7 +136,8 @@ export default function OrderListManager() {
   const [advancedOpen, setAdvancedOpen] = useState(false);
 
   useEffect(() => {
-    setSearchInput(filters.search);
+    const task = Promise.resolve().then(() => setSearchInput(filters.search));
+    void task;
   }, [filters.search]);
 
   useEffect(() => {

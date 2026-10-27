@@ -40,7 +40,7 @@ export default function MultisiteStudio(){
     }catch(e){setPages([]);setError(e instanceof Error?e.message:"Unable to load pages");}
     finally{setLoading(false);}
   },[]);
-  useEffect(()=>{void refresh(site);},[site,refresh]);
+  useEffect(()=>{const task=Promise.resolve().then(()=>refresh(site));void task;},[site,refresh]);
   const seed=()=>{const sample=examples[site];setSlug(sample.slug);setTitle(sample.title);setBlocks(sample.blocks);setNotice("Example loaded in editor only. Save as draft to write to Content Studio.");};
   const changeBlock=(index:number,key:string,value:string)=>setBlocks(old=>old.map((block,i)=>i===index?{...block,data:{...block.data,[key]:value}}:block));
   const addBlock=(type:Block["type"])=>setBlocks(old=>[...old,{type,data:type==="hero"?{headline:"",subtitle:""}:type==="cta"?{label:"",href:"/"}:{text:""}}]);

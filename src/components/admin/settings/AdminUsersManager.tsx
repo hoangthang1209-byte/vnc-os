@@ -57,7 +57,7 @@ export default function AdminUsersManager() {
     }
   }, []);
 
-  useEffect(() => { void load(); }, [load]);
+  useEffect(() => { const task = Promise.resolve().then(load); void task; }, [load]);
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();

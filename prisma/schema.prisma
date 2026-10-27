@@ -5901,6 +5901,12 @@ model ProductionSupplier {
   code      String           @unique
   name      String
   category  SupplierCategory @default(GENERAL)
+  supplierType String @default("UNKNOWN")
+  verificationStatus String @default("UNVERIFIED")
+  factoryAddress String? @db.Text
+  website String?
+  capabilities String? @db.Text
+  sourceUrl String? @db.Text
   contact   String?
   email     String?
   phone     String?

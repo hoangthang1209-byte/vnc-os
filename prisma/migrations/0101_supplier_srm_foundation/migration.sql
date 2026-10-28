@@ -5,3 +5,9 @@ CREATE TABLE IF NOT EXISTS "SupplierRfq" ("id" TEXT PRIMARY KEY,"supplierId" TEX
 CREATE INDEX IF NOT EXISTS "SupplierRfq_supplierId_status_idx" ON "SupplierRfq"("supplierId","status");
 CREATE INDEX IF NOT EXISTS "SupplierRfq_deadline_idx" ON "SupplierRfq"("deadline");
 CREATE TABLE IF NOT EXISTS "SupplierScorecard" ("id" TEXT PRIMARY KEY,"supplierId" TEXT NOT NULL REFERENCES "ProductionSupplier"("id") ON DELETE RESTRICT ON UPDATE CASCADE,"period" TEXT NOT NULL,"qualityScore" INTEGER NOT NULL,"deliveryScore" INTEGER NOT NULL,"priceScore" INTEGER NOT NULL,"responsivenessScore" INTEGER NOT NULL,"note" TEXT,"assessedBy" TEXT,"createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,"updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,CONSTRAINT "SupplierScorecard_supplierId_period_key" UNIQUE ("supplierId","period"));
+
+-- Reject new exact/case/whitespace duplicates at database level.
+-- Deployment precondition: existing normalized names must be unique.
+CREATE UNIQUE INDEX IF NOT EXISTS "ProductionSupplier_normalized_name_unique"
+  ON "ProductionSupplier" (lower(btrim(regexp_replace("name", '[[:space:]]+', ' ', 'g'))));
+ALTER TABLE "SupplierScorecard" ADD CONSTRAINT "SupplierScorecard_scores_range" CHECK ("qualityScore" BETWEEN 0 AND 100 AND "deliveryScore" BETWEEN 0 AND 100 AND "priceScore" BETWEEN 0 AND 100 AND "responsivenessScore" BETWEEN 0 AND 100);

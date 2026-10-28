@@ -16,6 +16,11 @@ export default function SupplierSrmPage() {
   const [price, setPrice] = useState("80");
   const [response, setResponse] = useState("80");
   const [message, setMessage] = useState("");
+  const [quoteId,setQuoteId] = useState("");
+  const [quotePrice,setQuotePrice] = useState("");
+  const [quoteMoq,setQuoteMoq] = useState("");
+  const [quoteLead,setQuoteLead] = useState("");
+  const [quoteStatus,setQuoteStatus] = useState("QUOTED");
   async function refresh() {
     const [s,r,c] = await Promise.all([fetch("/api/production-suppliers?pageSize=1000"),fetch("/api/supplier-rfqs"),fetch("/api/supplier-scorecards")]);
     if (s.ok) { const v = await s.json(); setSuppliers(v.items ?? []); }
@@ -42,6 +47,11 @@ export default function SupplierSrmPage() {
       <input className="w-full rounded border p-2" placeholder="Tên sản phẩm / yêu cầu báo giá" value={title} onChange={e=>setTitle(e.target.value)}/>
       <button className="rounded bg-slate-900 px-4 py-2 text-white disabled:opacity-50" disabled={!supplierId||!title.trim()} onClick={()=>void submit("/api/supplier-rfqs",{supplierId,title})}>Tạo RFQ</button>
       <div className="overflow-auto"><table className="w-full text-left text-sm"><thead><tr><th className="p-2">NCC</th><th className="p-2">RFQ</th><th className="p-2">Trạng thái</th><th className="p-2">Báo giá</th><th className="p-2">MOQ</th><th className="p-2">Lead time (ngày)</th></tr></thead><tbody>{rfqs.map(r=><tr key={r.id} className="border-t"><td className="p-2">{r.supplier.name}</td><td className="p-2">{r.title}</td><td className="p-2">{r.status}</td><td className="p-2">{r.quotedPrice??"—"}</td><td className="p-2">{r.moq??"—"}</td><td className="p-2">{r.leadTimeDays??"—"}</td></tr>)}</tbody></table></div>
+    </section>
+    <section className="space-y-3"><h2 className="text-lg font-semibold">Cập nhật báo giá RFQ</h2>
+      <select className="w-full rounded border p-2" value={quoteId} onChange={e=>setQuoteId(e.target.value)}><option value="">Chọn RFQ</option>{rfqs.map(r=><option key={r.id} value={r.id}>{r.supplier.name} · {r.title}</option>)}</select>
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4"><input type="number" className="rounded border p-2" placeholder="Giá báo" value={quotePrice} onChange={e=>setQuotePrice(e.target.value)}/><input type="number" className="rounded border p-2" placeholder="MOQ" value={quoteMoq} onChange={e=>setQuoteMoq(e.target.value)}/><input type="number" className="rounded border p-2" placeholder="Lead time (ngày)" value={quoteLead} onChange={e=>setQuoteLead(e.target.value)}/><select className="rounded border p-2" value={quoteStatus} onChange={e=>setQuoteStatus(e.target.value)}>{["DRAFT","SENT","QUOTED","ACCEPTED","REJECTED","CLOSED"].map(s=><option key={s}>{s}</option>)}</select></div>
+      <button className="rounded bg-slate-900 px-4 py-2 text-white disabled:opacity-50" disabled={!quoteId} onClick={()=>void (async()=>{const response=await fetch(`/api/supplier-rfqs/${quoteId}`,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({status:quoteStatus,...(quotePrice!==""?{quotedPrice:Number(quotePrice)}:{}),...(quoteMoq!==""?{moq:Number(quoteMoq)}:{}),...(quoteLead!==""?{leadTimeDays:Number(quoteLead)}:{})})}); const body=await response.json();setMessage(response.ok?"Đã cập nhật RFQ.":body.message??"Lỗi cập nhật.");if(response.ok)await refresh()})()}>Lưu báo giá</button>
     </section>
     <section className="space-y-3"><h2 className="text-xl font-semibold">Supplier Scorecard</h2>
       <div className="grid gap-2 sm:grid-cols-5"><label>Kỳ (YYYY-MM)<input className="w-full rounded border p-2" type="month" value={period} onChange={e=>setPeriod(e.target.value)}/></label>{([["Chất lượng",quality,setQuality],["Giao hàng",delivery,setDelivery],["Giá",price,setPrice],["Phản hồi",response,setResponse]] as const).map(([label,value,set])=><label key={label}>{label}<input type="number" min={0} max={100} className="w-full rounded border p-2" value={value} onChange={e=>set(e.target.value)}/></label>)}</div>

@@ -90,6 +90,23 @@ async function assertNotDuplicateSupplier(name: string, phone?: string | null, e
   if (existing) throw new ProductionMasterValidationError(`Có thể trùng NCC ${existing.code} - ${existing.name}. Kiểm tra trước khi lưu.`);
 }
 
+function assertSupplierQualification(input: {
+  supplierType?: string;
+  verificationStatus?: string;
+  factoryAddress?: string | null;
+  sourceUrl?: string | null;
+  isActive?: boolean;
+}) {
+  if (input.verificationStatus === "APPROVED" &&
+      input.supplierType === "DIRECT_MANUFACTURER" &&
+      (!input.factoryAddress?.trim() || !input.sourceUrl?.trim())) {
+    throw new ProductionMasterValidationError("Duyệt xưởng trực tiếp cần địa chỉ xưởng và nguồn bằng chứng.");
+  }
+  if (input.isActive === true && input.verificationStatus === "REJECTED") {
+    throw new ProductionMasterValidationError("Không thể kích hoạt nhà cung cấp đã bị đánh giá không đạt.");
+  }
+}
+
 export async function createProductionSupplier(input: {
   name: string;
   category?: SupplierCategory;
@@ -109,6 +126,7 @@ export async function createProductionSupplier(input: {
   const name = input.name?.trim();
   if (!name) throw new ProductionMasterValidationError("Tên nhà cung cấp là bắt buộc.");
   await assertNotDuplicateSupplier(name, input.phone);
+  assertSupplierQualification(input);
   const code = await generateMasterCode("PS", "productionSupplier");
   return prisma.productionSupplier.create({
     data: {
@@ -154,6 +172,7 @@ export async function updateProductionSupplier(
   if (!existing) throw new ProductionMasterValidationError("Không tìm thấy nhà cung cấp.");
   if (input.name !== undefined && !input.name.trim()) throw new ProductionMasterValidationError("Tên nhà cung cấp là bắt buộc.");
   if (input.name !== undefined || input.phone !== undefined) await assertNotDuplicateSupplier(input.name ?? existing.name, input.phone === undefined ? existing.phone : input.phone, id);
+  assertSupplierQualification({ supplierType: input.supplierType ?? existing.supplierType, verificationStatus: input.verificationStatus ?? existing.verificationStatus, factoryAddress: input.factoryAddress === undefined ? existing.factoryAddress : input.factoryAddress, sourceUrl: input.sourceUrl === undefined ? existing.sourceUrl : input.sourceUrl, isActive: input.isActive ?? existing.isActive });
   return prisma.productionSupplier.update({
     where: { id },
     data: {

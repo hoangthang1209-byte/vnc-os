@@ -27,7 +27,7 @@ export default function SupplierSrmPage() {
     if (r.ok) { const v = await r.json(); setRfqs(v.items ?? []); }
     if (c.ok) { const v = await c.json(); setScores(v.items ?? []); }
   }
-  useEffect(() => { void refresh(); }, []);
+  useEffect(() => { void Promise.resolve().then(() => refresh()); }, []);
   async function submit(url: string, data: Record<string, unknown>) {
     setMessage("");
     const r=await fetch(url,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(data)});

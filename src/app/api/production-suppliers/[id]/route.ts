@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
 import {
   getProductionSupplier,
@@ -62,6 +63,7 @@ export async function PATCH(req: NextRequest, context: RouteContext) {
     });
     return NextResponse.json(updated);
   } catch (err) {
+    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") return NextResponse.json({ message: "Tên nhà cung cấp bị trùng với hồ sơ hiện có." }, { status: 409 });
     if (err instanceof ProductionMasterValidationError) {
       return NextResponse.json({ message: err.message }, { status: 400 });
     }

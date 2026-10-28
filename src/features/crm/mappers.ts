@@ -372,7 +372,8 @@ export const CUSTOMER_DETAIL_INCLUDE = {
     select: { id: true, code: true, name: true, isActive: true },
   },
   contacts: { orderBy: [{ isPrimary: "desc" as const }, { createdAt: "asc" as const }] },
-  leads: { orderBy: { createdAt: "desc" as const } },
+  // Temporarily omit Lead relation until #250 migration reconciles its missing fields.
+  // Otherwise Prisma selects Lead.assignedEmployeeId and crashes customer detail (P2022).
   activities: { orderBy: { createdAt: "desc" as const } },
   productInterests: { orderBy: { createdAt: "desc" as const } },
 } satisfies Prisma.CustomerInclude;

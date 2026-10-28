@@ -409,3 +409,44 @@
     padding-top: 12px;
   }
 }
+
+
+/* VNC OS Operations Workspace: shared visual language across all Admin routes. */
+.shell {
+  --vnc-canvas: #f3f5f9;
+  --vnc-ink: #182338;
+  --vnc-muted: #71819a;
+  --vnc-line: #e1e7f0;
+  --vnc-accent: #e23843;
+  background: var(--vnc-canvas);
+  color: var(--vnc-ink);
+  font-family: "Be Vietnam Pro", Inter, system-ui, sans-serif;
+}
+.sidebar { flex-basis: 268px; width: 268px; background: #111b2c; border-right: 1px solid #26354c; padding: 16px 12px; }
+.sidebarTop { background: #111b2c; border-bottom-color: #283750; }
+.brandMark { font-size: 21px; letter-spacing: -.045em; }
+.brandSub { color: #a4b4ca; letter-spacing: .22em; }
+.sectionLabel { color: #8fa4c1; font-size: 10px; letter-spacing: .13em; font-weight: 750; }
+.navLink { border-radius: 9px; min-height: 38px; transition: background .15s, color .15s; }
+.navLink:hover { background: #26354d; color: #fff; }
+.navLinkActive { background: #2a3c5b; border-left: 3px solid #ee444e; color: #fff; }
+.main { background: var(--vnc-canvas); min-width: 0; }
+.header { background: rgba(255,255,255,.96); border-bottom: 1px solid var(--vnc-line); box-shadow: 0 1px 1px rgba(14,26,45,.025); }
+.breadcrumbs { color: #8090aa; font-size: 11px; }
+.title { color: #16233b; font-weight: 760; letter-spacing: -.035em; }
+.description { color: #73839e; }
+.content { width: 100%; max-width: none; padding: 24px 28px 48px; }
+/* Page-level surface, tables and form treatment without modifying business logic. */
+.shell :global(.admin-main-content) :global(table) { border-collapse: separate; border-spacing: 0; background: #fff; border-radius: 12px; }
+.shell :global(.admin-main-content) :global(th) { background: #f7f9fc; color: #5e718f; font-size: 11px; letter-spacing: .045em; font-weight: 750; }
+.shell :global(.admin-main-content) :global(th),
+.shell :global(.admin-main-content) :global(td) { border-bottom-color: #e9edf4; }
+.shell :global(.admin-main-content) :global(input),
+.shell :global(.admin-main-content) :global(select),
+.shell :global(.admin-main-content) :global(textarea) { max-width: 100%; }
+.shell :global(.admin-main-content) :global(button) { transition: background-color .15s, border-color .15s, box-shadow .15s; }
+.shell :global(.admin-main-content) :global(input:focus-visible),
+.shell :global(.admin-main-content) :global(select:focus-visible),
+.shell :global(.admin-main-content) :global(button:focus-visible),
+.shell :global(.admin-main-content) :global(a:focus-visible) { outline: 2px solid #e23843; outline-offset: 2px; }
+@media(max-width: 900px) { .sidebar { width: 268px; } .content { padding: 18px 16px 36px; } }

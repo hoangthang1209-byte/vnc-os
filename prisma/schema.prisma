@@ -4999,6 +4999,8 @@ model MaterialSupplier {
   updatedAt        DateTime               @updatedAt
   materialLinks    MaterialSupplierLink[]
   purchaseRequests PurchaseRequest[]
+  productionSupplierId String?
+  productionSupplier ProductionSupplier? @relation(fields: [productionSupplierId], references: [id], onDelete: SetNull)
 
   @@index([supplierCode])
   @@index([isActive])
@@ -5925,6 +5927,9 @@ model ProductionSupplier {
   itemProductionStages      ItemProductionStage[]
   itemProductionBatches     ItemProductionBatch[]
   itemProductionBatchStages ItemProductionBatchStage[]
+  linkedMaterialSuppliers MaterialSupplier[]
+  supplierRfqs SupplierRfq[]
+  supplierScorecards SupplierScorecard[]
 
   @@index([code])
   @@index([isActive])
@@ -6516,4 +6521,42 @@ model AgentDecision {
   agentRun AgentRun @relation(fields: [agentRunId], references: [id], onDelete: Cascade)
 
   @@index([agentRunId, createdAt])
+}
+
+model SupplierRfq {
+  id String @id @default(cuid())
+  supplierId String
+  supplier ProductionSupplier @relation(fields: [supplierId], references: [id], onDelete: Restrict)
+  title String
+  status String @default("DRAFT")
+  productCategory String?
+  quantity Int?
+  unit String?
+  targetPrice Decimal? @db.Decimal(14, 2)
+  quotedPrice Decimal? @db.Decimal(14, 2)
+  currency String @default("VND")
+  moq Int?
+  leadTimeDays Int?
+  deadline DateTime?
+  note String? @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@index([supplierId, status])
+  @@index([deadline])
+}
+
+model SupplierScorecard {
+  id String @id @default(cuid())
+  supplierId String
+  supplier ProductionSupplier @relation(fields: [supplierId], references: [id], onDelete: Restrict)
+  period String
+  qualityScore Int
+  deliveryScore Int
+  priceScore Int
+  responsivenessScore Int
+  note String? @db.Text
+  assessedBy String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@unique([supplierId, period])
 }

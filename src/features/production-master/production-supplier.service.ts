@@ -15,6 +15,8 @@ export async function listProductionSuppliers(input?: {
   category?: string;
   supplierType?: string;
   verificationStatus?: string;
+  page?: number;
+  pageSize?: number;
 }) {
   const where: Prisma.ProductionSupplierWhereInput = {};
   if (input?.activeOnly) where.isActive = true;
@@ -35,7 +37,9 @@ export async function listProductionSuppliers(input?: {
       { factoryAddress: { contains: q, mode: "insensitive" } },
     ];
   }
-  const items = await prisma.productionSupplier.findMany({
+  const page = Math.max(1, Math.floor(input?.page ?? 1));
+  const pageSize = Math.min(1000, Math.max(1, Math.floor(input?.pageSize ?? 1000)));
+  const [total, items] = await prisma.$transaction([prisma.productionSupplier.count({ where }), prisma.productionSupplier.findMany({
     where,
     include: {
       _count: {
@@ -47,10 +51,12 @@ export async function listProductionSuppliers(input?: {
         },
       },
     },
-    orderBy: [{ isActive: "desc" }, { updatedAt: "desc" }],
-    take: 1000,
-  });
+    orderBy: [{ isActive: "desc" }, { updatedAt: "desc" }, { id: "asc" }],
+    skip: (page - 1) * pageSize,
+    take: pageSize,
+  })]);
   return {
+    total, page, pageSize, totalPages: Math.ceil(total / pageSize),
     items: items.map(({ _count, ...item }) => ({
       ...item,
       usageCount: _count.bomItems + _count.materials + _count.trims + _count.patterns,
@@ -76,7 +82,7 @@ export async function getProductionSupplier(id: string) {
 }
 
 async function assertNotDuplicateSupplier(name: string, phone?: string | null, exceptId?: string) {
-  const normalized = name.trim().replace(/\\s+/g, " ");
+  const normalized = name.trim().replace(/\s+/g, " ");
   const existing = await prisma.productionSupplier.findFirst({
     where: {
       ...(exceptId ? { id: { not: exceptId } } : {}),

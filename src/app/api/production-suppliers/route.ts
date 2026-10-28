@@ -26,6 +26,8 @@ export async function GET(req: NextRequest) {
       category: searchParams.get("category") ?? undefined,
       supplierType: searchParams.get("supplierType") ?? undefined,
       verificationStatus: searchParams.get("verificationStatus") ?? undefined,
+      page: Number(searchParams.get("page") ?? 1) || 1,
+      pageSize: Number(searchParams.get("pageSize") ?? 1000) || 1000,
     });
     return NextResponse.json(result);
   } catch {
@@ -46,6 +48,10 @@ export async function POST(req: NextRequest) {
   if (auth.error) return auth.error;
   try {
     const body = (await req.json()) as Record<string, unknown>;
+    if (body.verificationStatus === "APPROVED") {
+      const approval = await requireAdminPermission({ platform: "manufacturing", action: "admin", request: req });
+      if (!approval.ok) return approval.response;
+    }
     const created = await createProductionSupplier({
       name: String(body.name ?? ""),
       category: parseSupplierCategory(body.category),

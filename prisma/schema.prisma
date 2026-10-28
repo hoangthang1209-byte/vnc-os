@@ -6517,3 +6517,52 @@ model AgentDecision {
 
   @@index([agentRunId, createdAt])
 }
+
+
+///////////////////////
+// Multi-Site Content Studio — additive isolation from legacy ATTD CMS
+///////////////////////
+
+model StudioSite {
+  id        String   @id
+  domain    String   @unique
+  name      String
+  locale    String
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  pages     StudioPage[]
+}
+
+model StudioPage {
+  id                  String   @id @default(cuid())
+  siteId              String
+  slug                String
+  title               String
+  seoTitle            String?
+  seoDescription      String?  @db.Text
+  canonicalPath       String?
+  publishedRevisionId String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  site                StudioSite @relation(fields: [siteId], references: [id], onDelete: Restrict)
+  revisions           StudioPageRevision[]
+  @@unique([siteId, slug])
+  @@index([siteId, updatedAt])
+}
+
+model StudioPageRevision {
+  id           String   @id @default(cuid())
+  pageId       String
+  version      Int
+  status       String   @default("DRAFT")
+  content      Json
+  authorId     String?
+  approvedById String?
+  createdAt    DateTime @default(now())
+  approvedAt   DateTime?
+  publishedAt  DateTime?
+  page         StudioPage @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  @@unique([pageId, version])
+  @@index([pageId, status, createdAt])
+}

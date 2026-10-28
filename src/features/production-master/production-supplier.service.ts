@@ -82,7 +82,7 @@ export async function getProductionSupplier(id: string) {
 }
 
 async function assertNotDuplicateSupplier(name: string, phone?: string | null, exceptId?: string) {
-  const normalized = name.trim().replace(/\\s+/g, " ");
+  const normalized = name.trim().replace(/\s+/g, " ");
   const existing = await prisma.productionSupplier.findFirst({
     where: {
       ...(exceptId ? { id: { not: exceptId } } : {}),

@@ -164,6 +164,7 @@ export async function createAdminUser(input: {
 export async function updateAdminUser(
   userId: string,
   input: {
+    username?: string;
     employeeId?: string | null;
     roleId?: string;
     isActive?: boolean;
@@ -175,6 +176,17 @@ export async function updateAdminUser(
     include: { role: true },
   });
   if (!user) throw new AdminUserValidationError("Không tìm thấy tài khoản.");
+
+  const username = input.username === undefined ? undefined : normalizeAdminUsername(input.username);
+  if (username !== undefined) {
+    if (!username || !/^[a-z0-9._-]{3,50}$/.test(username)) {
+      throw new AdminUserValidationError("Tên đăng nhập phải dài 3–50 ký tự, chỉ gồm chữ thường không dấu, số, dấu chấm, gạch dưới hoặc gạch ngang.");
+    }
+    if (username !== user.username) {
+      const existing = await prisma.adminUser.findUnique({ where: { username } });
+      if (existing) throw new AdminUserValidationError("Tên đăng nhập đã tồn tại.");
+    }
+  }
 
   if (user.role?.code === "OWNER" && input.isActive === false) {
     const ownerCount = await prisma.adminUser.count({
@@ -194,6 +206,12 @@ export async function updateAdminUser(
     if (user.role?.code === "OWNER" && role.code !== "OWNER" && actorUserId === userId) {
       throw new AdminUserValidationError("Không thể tự hạ quyền Chủ hệ thống của chính mình.");
     }
+    if (user.role?.code === "OWNER" && role.code !== "OWNER" && user.isActive) {
+      const ownerCount = await prisma.adminUser.count({ where: { isActive: true, role: { code: "OWNER" } } });
+      if (ownerCount <= 1) {
+        throw new AdminUserValidationError("Không thể hạ quyền tài khoản Chủ hệ thống cuối cùng.");
+      }
+    }
   }
 
   if (input.employeeId) {
@@ -206,6 +224,7 @@ export async function updateAdminUser(
   const updated = await prisma.adminUser.update({
     where: { id: userId },
     data: {
+      username,
       employeeId: input.employeeId === undefined ? undefined : input.employeeId,
       roleId: input.roleId,
       isActive: input.isActive,
@@ -220,6 +239,7 @@ export async function updateAdminUser(
     action: input.isActive === false ? "user_locked" : input.isActive === true ? "user_unlocked" : "user_updated",
     userId: updated.id,
     actorUserId,
+    detail: username && username !== user.username ? { oldUsername: user.username, newUsername: username } : undefined,
   });
 
   return mapUserRow(updated);

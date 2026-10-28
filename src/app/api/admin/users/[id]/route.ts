@@ -36,6 +36,7 @@ export async function PATCH(req: NextRequest, context: RouteContext) {
     const user = await updateAdminUser(
       id,
       {
+        username: typeof raw.username === "string" ? raw.username : undefined,
         employeeId:
           raw.employeeId === null
             ? null

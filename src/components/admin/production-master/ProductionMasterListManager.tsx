@@ -69,6 +69,10 @@ export default function ProductionMasterListManager({ config }: Props) {
   const [newName, setNewName] = useState("");
   const [newCategory, setNewCategory] = useState("GENERAL");
   const [importOpen, setImportOpen] = useState(false);
+  const [page,setPage] = useState(1);
+  const [totalPages,setTotalPages] = useState(1);
+  const [supplierType,setSupplierType] = useState("");
+  const [verificationStatus,setVerificationStatus] = useState("");
 
   const categories = useMemo(() => categoryOptions(config), [config]);
 
@@ -81,14 +85,16 @@ export default function ProductionMasterListManager({ config }: Props) {
       if (statusFilter === "active") params.set("activeOnly", "true");
       if (statusFilter === "inactive") params.set("inactiveOnly", "true");
       if (categoryFilter) params.set("category", categoryFilter);
+      if (config.kind === "supplier") { params.set("page", String(page)); params.set("pageSize", "50"); if (supplierType) params.set("supplierType",supplierType); if (verificationStatus) params.set("verificationStatus",verificationStatus); }
       const res = await fetch(`${config.apiPath}?${params.toString()}`);
-      const data = (await res.json()) as { items?: Array<Record<string, unknown>>; message?: string };
+      const data = (await res.json()) as { items?: Array<Record<string, unknown>>; message?: string; totalPages?: number };
       if (!res.ok) throw new Error(data.message ?? "Không thể tải danh sách");
       let next = data.items ?? [];
       if (sortBy === "usage") {
         next = [...next].sort((a, b) => Number(b.usageCount ?? 0) - Number(a.usageCount ?? 0));
       }
       setItems(next);
+      setTotalPages(config.kind === "supplier" ? Math.max(1,data.totalPages ?? 1) : 1);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Lỗi tải dữ liệu");
     } finally {
@@ -98,7 +104,7 @@ export default function ProductionMasterListManager({ config }: Props) {
 
   useEffect(() => {
     void load();
-  }, [sortBy]);
+  }, [sortBy,page]);
 
   function exportUrl() {
     const params = new URLSearchParams();
@@ -163,6 +169,7 @@ export default function ProductionMasterListManager({ config }: Props) {
       <form
         onSubmit={(e) => {
           e.preventDefault();
+          if (config.kind === "supplier") setPage(1);
           void load();
         }}
       >
@@ -196,6 +203,7 @@ export default function ProductionMasterListManager({ config }: Props) {
               ))}
             </select>
           )}
+          {config.kind === "supplier" && <><select className="admin-select" value={supplierType} onChange={e=>{setSupplierType(e.target.value);setPage(1)}}><option value="">Mọi loại hình</option><option value="DIRECT_MANUFACTURER">Xưởng trực tiếp</option><option value="TRADER">Thương mại</option><option value="MIXED">Hỗn hợp</option></select><select className="admin-select" value={verificationStatus} onChange={e=>{setVerificationStatus(e.target.value);setPage(1)}}><option value="">Mọi trạng thái xác minh</option><option value="UNVERIFIED">Chưa xác minh</option><option value="APPROVED">Đã duyệt</option><option value="REJECTED">Không đạt</option></select></>}
           <select className="admin-select" value={sortBy} onChange={(e) => setSortBy(e.target.value as SortFilter)}>
             <option value="updated">Sắp xếp: cập nhật gần nhất</option>
             <option value="usage">Sắp xếp: mức sử dụng</option>
@@ -299,6 +307,7 @@ export default function ProductionMasterListManager({ config }: Props) {
             </tbody>
           </table>
         </div>
+        {config.kind === "supplier" && <div className="mt-4 flex items-center gap-3"><button type="button" className="admin-btn" disabled={page <= 1} onClick={()=>setPage(p=>Math.max(1,p-1))}>Trang trước</button><span className="text-sm">Trang {page}/{totalPages}</span><button type="button" className="admin-btn" disabled={page >= totalPages} onClick={()=>setPage(p=>p+1)}>Trang sau</button></div>}
         </>
       )}
     </AdminPageShell>

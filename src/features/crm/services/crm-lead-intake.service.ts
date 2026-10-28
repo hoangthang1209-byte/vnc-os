@@ -173,6 +173,8 @@ export async function ingestCrmLead(input: {
   externalId?: string | null;
   payload?: Prisma.InputJsonValue;
   dedupeByIdentity?: boolean;
+  /** For shared VNC OS inbox: leave fresh lead unassigned until a human picks it up. */
+  skipAutoAssignment?: boolean;
 }): Promise<{ lead: CrmLeadRecord; deduplicated: boolean }> {
   const identity = resolveIdentity(input.lead);
   const phoneNormalized = normalizeLeadPhone(identity.phone);
@@ -322,7 +324,7 @@ export async function ingestCrmLead(input: {
       return row.id;
     });
 
-    await autoAssignLead(leadId);
+    if (!input.skipAutoAssignment) await autoAssignLead(leadId);
     const result = await getCrmLeadById(leadId);
     if (!result) throw new Error("Không tìm thấy lead sau khi tiếp nhận.");
     return { lead: result, deduplicated: false };

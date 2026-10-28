@@ -1,5 +1,6 @@
 import { createHash, timingSafeEqual } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
+import { cleanInboundAttribution, resolveVncInboundSite } from "@/features/crm/vnc-inbound-site";
 import {
   assertLeadIntakeRateLimit,
   buildDailyLeadIdempotencyKey,
@@ -53,15 +54,23 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ message: "Invalid email" }, { status: 400 });
   }
 
-  // Source is bound to this integration, not client-controlled.
-  const channel = "WEBSITE_VIETNAMCLOTHING";
+  // Trusted website backends may select only known sites. Legacy clients default to VietnamClothing.
+  const site = resolveVncInboundSite(input.sourceSite ?? "vietnamclothing.vn");
+  if (!site) return NextResponse.json({ message: "Unsupported sourceSite" }, { status: 400 });
+  const { channel } = site;
+  const attribution = cleanInboundAttribution(input);
   const source = "WEBSITE" as const;
   try {
     await assertLeadIntakeRateLimit({ phone, email });
     const result = await ingestCrmLead({
       lead: {
         source,
-        sourceDetail: "vietnamclothing.vn",
+        sourceDetail: site.site,
+        landingPage: attribution.landingPage || null,
+        referrer: attribution.referrer || null,
+        utmSource: attribution.utmSource || null,
+        utmMedium: attribution.utmMedium || null,
+        utmCampaign: attribution.utmCampaign || null,
         fullName: name || company,
         contactName: name || null,
         companyName: company || null,
@@ -70,12 +79,13 @@ export async function POST(req: NextRequest) {
         message: message || null,
       },
       channel,
+      skipAutoAssignment: true,
       externalId: externalId || null,
       idempotencyKey: buildDailyLeadIdempotencyKey({
         channel, source, phone, email,
         fingerprint: externalId || JSON.stringify({ name, company, message }),
       }),
-      payload: { name, company, phone, email, message, externalId, origin: "vietnamclothing.vn" },
+      payload: { name, company, phone, email, message, externalId, origin: site.site, ...attribution },
     });
     return NextResponse.json(
       { leadId: result.lead.id, deduplicated: result.deduplicated },

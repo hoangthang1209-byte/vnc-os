@@ -103,7 +103,7 @@ export default function ProductionMasterListManager({ config }: Props) {
   }
 
   useEffect(() => {
-    void load();
+    void Promise.resolve().then(() => load());
   }, [sortBy,page]);
 
   function exportUrl() {

@@ -1,0 +1,16 @@
+/* ATTD landing-page design parity with approved VNC site. */
+.av-public .attd-supply{font-family:'DM Sans',Arial,sans-serif;background:#fafaf8;color:#191b1b}
+.av-public .attd-supply__nav{display:none}
+.av-public .attd-supply__hero{background:#f2f2ef;color:#191b1b;border-bottom:1px solid #e5e6e2;padding-block:85px}
+.av-public .attd-supply__hero h1{font-family:Manrope,'DM Sans',sans-serif;font-weight:700;letter-spacing:-.045em;line-height:1.12;font-size:clamp(38px,5vw,72px);color:#191b1b}
+.av-public .attd-supply__eyebrow{color:#686e6b;text-transform:uppercase;letter-spacing:.16em;font-size:11px}
+.av-public .attd-supply__hero p{color:#626a66}
+.av-public .attd-supply__actions a,.av-public .attd-supply__navcta{border-radius:11px}
+.av-public .attd-supply__actions a:first-child{background:#191b1b;color:#fff;border-color:#191b1b}
+.av-public .attd-supply__section{background:#fafaf8;padding-block:90px}
+.av-public .attd-supply__sectionhead h2{font-family:Manrope,'DM Sans',sans-serif;font-weight:700;letter-spacing:-.035em;color:#191b1b}
+.av-public .attd-supply__card{background:#fff;border:1px solid #e5e6e2;border-radius:18px;box-shadow:none}
+.av-public .attd-supply__number{color:#707673}
+.av-public .attd-supply__process{background:#f2f2ef}
+.av-public .attd-supply__closing{background:#17191a;color:#fff}
+@media(max-width:750px){.av-public .attd-supply__hero{padding-block:52px}.av-public .attd-supply__section{padding-block:60px}}

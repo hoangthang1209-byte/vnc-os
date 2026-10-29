@@ -46,6 +46,17 @@ an autonomous executor has run.
 
 ## Known limitations / follow-ups
 
+- **WAITING_HUMAN / WAITING_EXTERNAL policy (fail closed):** the lease service
+  intentionally refuses new claims and heartbeats unless the TaskRun is
+  `QUEUED` or `RUNNING`. The orchestration layer must explicitly release the
+  current lease when entering either waiting state, stop the executor, and
+  record the wait reason; it must never keep executing with an old token.
+  Resume requires a persisted transition back to `QUEUED` or `RUNNING`, a
+  fresh claim with a new token and incremented attempt, and a fresh exact-head
+  check. If release fails or the worker crashes, do not resume work until the
+  old lease has expired and a fresh claim succeeds. Isolated PostgreSQL tests
+  exercise wait-state claim/heartbeat fencing and fresh-token resume; this
+  does **not** prove atomic state-transition-plus-release or a live runner.
 - This slice does not yet create transactional `AgentEvent` records or
   coordinate shared-file locks across distinct TaskRuns.
 - Lease token hashing is not an authentication mechanism. Provider-neutral

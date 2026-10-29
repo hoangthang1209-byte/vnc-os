@@ -56,7 +56,7 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
   const params = await searchParams;
   return {
     title: `Danh mục nguồn hàng B2B | ${SITE_NAME}`,
-    description: `Khám phá nguồn hàng B2B cho đồng phục, quà tặng, agency, OEM / làm riêng và merchandise — lọc theo danh mục, tồn kho và khả năng hoàn thiện. ${DEFAULT_DESCRIPTION}`,
+    description: `Khám phá áo trơn sỉ, polo, đồng phục doanh nghiệp và nguồn hàng may mặc B2B — lọc theo danh mục, tồn kho và khả năng hoàn thiện. ${DEFAULT_DESCRIPTION}`,
     ...buildCatalogMetadata(params),
   };
 }
@@ -126,7 +126,7 @@ export default async function ProductCatalogPage({ searchParams }: Props) {
   const pageTitle = categoryContext?.title ?? "Nguồn hàng B2B";
   const pageDescription =
     categoryContext?.subtitle ??
-    "Danh sách nguồn hàng đồng phục và quà tặng B2B — lọc theo danh mục, tình trạng hàng và khả năng in/thêu/OEM.";
+    "Danh mục áo trơn, polo và đồng phục B2B — lọc theo chất liệu, nhóm hàng và khả năng in/thêu/OEM.";
 
   const breadcrumbItems = [
     { name: "Sản phẩm", href: "/san-pham" },
@@ -177,7 +177,7 @@ export default async function ProductCatalogPage({ searchParams }: Props) {
                 size="large"
                 catalogContext={quickNavBaseFilters}
               />
-              <p>Tìm theo sản phẩm, mã hàng, chất liệu hoặc nhóm quà tặng doanh nghiệp.</p>
+              <p>Tìm theo tên sản phẩm, mã hàng, chất liệu hoặc nhóm đồng phục B2B.</p>
             </div>
           </div>
 

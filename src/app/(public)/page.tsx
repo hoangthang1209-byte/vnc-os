@@ -65,19 +65,19 @@ const SOLUTIONS = [
   },
   {
     key: "gift",
-    href: "/qua-tang-doanh-nghiep",
+    href: "/nguon-hang-ao-tron",
     index: "04",
-    label: "Quà tặng doanh nghiệp",
-    title: "Nguồn hàng may mặc và phụ kiện cho các chương trình doanh nghiệp.",
-    description: "Kết hợp nhiều sản phẩm, in logo, đóng bộ và hoàn thiện bao bì theo nhận diện thương hiệu.",
+    label: "Áo thun trơn & polo sỉ",
+    title: "Áo trơn sỉ cho đại lý, xưởng in và đơn hàng số lượng lớn.",
+    description: "Chọn loại vải, màu, size, form dáng và số lượng; yêu cầu báo giá theo cấu hình thực tế.",
   },
   {
     key: "merch",
-    href: "/merchandise",
+    href: "/san-pham",
     index: "05",
-    label: "Merchandise nghệ sĩ & sự kiện",
-    title: "Tư vấn sản phẩm may mặc cho đội ngũ và sự kiện doanh nghiệp.",
-    description: "Quản lý nhiều mẫu, nhiều size, duyệt mẫu, sản xuất, kiểm hàng, đóng gói và giao theo lịch sự kiện.",
+    label: "Danh mục sản phẩm",
+    title: "Khám phá các dòng sản phẩm và gửi yêu cầu hàng sỉ.",
+    description: "Xem danh mục hiện có; xác nhận khả năng cung ứng, chất liệu và tiến độ khi trao đổi dự án.",
   },
 ] as const;
 

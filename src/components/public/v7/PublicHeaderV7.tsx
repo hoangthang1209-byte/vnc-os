@@ -12,11 +12,12 @@ const SOLUTIONS = [
   { href: "/dong-phuc-doanh-nghiep", label: "Đồng phục doanh nghiệp", desc: "Tư vấn, sản xuất và giao đồng phục" },
   { href: "/nguon-hang", label: "Nguồn hàng B2B", desc: "Hàng trơn và nguồn sản phẩm B2B" },
   { href: "/oem", label: "OEM / Private Label", desc: "Làm sản phẩm theo yêu cầu riêng" },
-  { href: "/qua-tang-doanh-nghiep", label: "Quà tặng doanh nghiệp", desc: "Quà tặng theo ngân sách và chương trình" },
-  { href: "/merchandise", label: "Merchandise", desc: "Cho nghệ sĩ, concert và sự kiện" },
+  { href: "/nguon-hang-ao-tron", label: "Áo trơn sỉ", desc: "Áo thun, polo và nguồn hàng trơn B2B" },
+  { href: "/san-pham", label: "Danh mục B2B", desc: "Xem sản phẩm và gửi yêu cầu báo giá" },
 ] as const;
 
 const NAV = [
+  { href: "/nguon-hang-ao-tron", label: "Áo trơn sỉ" },
   { href: "/#nang-luc", label: "Năng lực" },
   { href: "/gioi-thieu", label: "Về ATTD" },
 ] as const;
@@ -140,6 +141,7 @@ export default function PublicHeaderV7({
         </nav>
 
         <div className="v7-header__actions">
+          <div className="attd-v2-language" aria-label="Language"><Link href="/" hrefLang="vi" aria-current={pathname === "/" ? "page" : undefined}>VN</Link><span aria-hidden>/</span><Link href="/en" hrefLang="en" aria-current={pathname === "/en" ? "page" : undefined}>EN</Link></div>
           <Link href="/san-pham" className="v7-header__search" aria-label="Tìm sản phẩm">
             <Search size={18} />
             <span>Tìm sản phẩm</span>
@@ -183,6 +185,9 @@ export default function PublicHeaderV7({
                 {group.name}<span>↗</span>
               </Link>
             ))}
+            <span className="v7-mobile-nav__label">Language / Ngôn ngữ</span>
+            <Link href="/" onClick={() => setOpen(false)}>VN — Tiếng Việt<span>↗</span></Link>
+            <Link href="/en" onClick={() => setOpen(false)}>EN — English<span>↗</span></Link>
             <span className="v7-mobile-nav__label">ATTD</span>
             {NAV.map((item) => (
               <Link key={item.href} href={item.href} onClick={() => setOpen(false)}>

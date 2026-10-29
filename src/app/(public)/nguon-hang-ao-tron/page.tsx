@@ -4,7 +4,7 @@ import Link from "next/link";
 export const metadata: Metadata = {
   title: "Nguồn áo thun trơn sỉ & đồng phục B2B | ATTD",
   description: "Tìm nguồn áo thun trơn, polo, áo khoác, hàng may mặc sỉ và đồng phục doanh nghiệp. Yêu cầu báo giá theo số lượng với ATTD.",
-  robots: { index: false, follow: false },
+  robots: { index: true, follow: true },
 };
 
 const categories = [
@@ -17,14 +17,6 @@ const categories = [
 export default function BlankSupplyPage() {
   return (
     <main className="attd-supply">
-      <header className="attd-supply__nav">
-        <Link href="/" className="attd-supply__brand">ATTD<span> / B2B APPAREL</span></Link>
-        <nav aria-label="Nguồn hàng áo trơn">
-          <Link href="/san-pham">Sản phẩm</Link>
-          <Link href="/dong-phuc-doanh-nghiep">Đồng phục</Link>
-          <Link href="/lien-he" className="attd-supply__navcta">Yêu cầu báo giá ↗</Link>
-        </nav>
-      </header>
       <section className="attd-supply__hero">
         <div className="attd-supply__eyebrow">BLANK APPAREL / WHOLESALE / UNIFORMS</div>
         <h1>Nguồn hàng may mặc B2B.<br/><em>Rõ sản phẩm. Rõ nhu cầu.</em></h1>

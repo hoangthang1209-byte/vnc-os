@@ -440,3 +440,17 @@
  .main[data-vnc-workspace="customers"] .header,
  .main[data-vnc-workspace="orders"] .header { padding:12px 16px; }
 }
+
+
+/* Program #294 — optional compact navigation for dense desktop workflows. */
+.desktopCollapseToggle { display:inline-flex; align-items:center; justify-content:center; width:27px; height:27px; flex-shrink:0; border:1px solid #36465c; background:transparent; color:#e2e8f0; border-radius:6px; cursor:pointer; font-size:18px; }
+.desktopCollapseToggle:focus-visible { outline:2px solid #fff; outline-offset:2px; }
+@media(min-width:901px) {
+ .shellCompact .sidebar { flex-basis:174px; width:174px; padding:14px 8px; }
+ .shellCompact .sidebarTop { padding-left:10px; padding-right:10px; gap:4px; }
+ .shellCompact .brandMark { font-size:17px; }
+ .shellCompact .brandSub { font-size:8px; letter-spacing:.08em; }
+ .shellCompact .sectionLabel { font-size:9px; letter-spacing:0; padding:0 6px; }
+ .shellCompact .navLink { font-size:11px; min-height:32px; padding:7px; }
+}
+@media(max-width:900px) { .desktopCollapseToggle { display:none; } }

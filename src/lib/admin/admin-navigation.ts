@@ -51,6 +51,12 @@ export const adminNavigationSections: AdminNavigationSection[] = [
         requiredPermissions: ["canViewOrders"],
       },
       {
+        label: "Dự án đơn hàng",
+        href: "/admin/orders/projects",
+        status: "active",
+        requiredPermissions: ["canManageUsers"],
+      },
+      {
         label: "Tiến độ sản xuất",
         href: "/admin/manufacturing/production-timeline",
         status: "active",

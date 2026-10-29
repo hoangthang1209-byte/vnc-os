@@ -327,6 +327,15 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
   const isLogin = pathname === "/admin/login";
 
   useEffect(() => {
+    if (!mobileNavOpen) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setMobileNavOpen(false);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [mobileNavOpen]);
+
+  useEffect(() => {
     if (isLogin) return;
     const root = document.documentElement;
     root.classList.add("admin-cms");

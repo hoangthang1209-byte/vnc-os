@@ -22,7 +22,7 @@ export default function OrderProjectManager() {
     if (!r.ok) throw new Error(v.message ?? "Không tải được dự án");
     setProjects(v.projects);
   };
-  useEffect(() => { void refresh().catch(e => setError(e.message)); }, []);
+  useEffect(() => { void Promise.resolve().then(refresh).catch(e => setError(e instanceof Error ? e.message : "Không thể tải dự án")); }, []);
   const submit = async (path: string, body: object) => {
     setSaving(true); setError("");
     try {

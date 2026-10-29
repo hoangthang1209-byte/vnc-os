@@ -1,5 +1,6 @@
 import "@/styles/public-v7.css";
 import "@/styles/attd-vnc-catalog.css";
+import "@/styles/attd-vnc-pdp.css";
 import { ATTDVncHeader, ATTDVncFooter, ATTDVncPageFrame } from "@/components/public/vnc/ATTDVncShell";
 import NavigationProgress from "@/components/public/NavigationProgress";
 import OrganizationSchema from "@/components/seo/OrganizationSchema";

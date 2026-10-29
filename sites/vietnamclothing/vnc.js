@@ -22,6 +22,9 @@
     const option=[...field.options].find(o=>o.value.toLowerCase()===selected.toLowerCase()||o.text.toLowerCase()===selected.toLowerCase());
     if(option)field.value=option.value;
   }
+  const selectedProduct=new URLSearchParams(location.search).get('product');
+  const productRef=document.getElementById('product-reference');
+  if(productRef&&selectedProduct&&/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(selectedProduct)&&selectedProduct.length<=100){productRef.value=selectedProduct;}
   const host=document.getElementById('approved-gallery');
   if(host){
     fetch('./media-gallery.json').then(r=>r.ok?r.json():null).then(data=>{

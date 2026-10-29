@@ -276,6 +276,7 @@ function AdminShellMain({
       ref={mainRef}
       id="admin-content-scroll"
       className={`${styles.main} admin-content-scroll`}
+      data-vnc-workspace={pathname.startsWith("/admin/crm/customers") ? "customers" : pathname.startsWith("/admin/orders") ? "orders" : undefined}
     >
       <Suspense fallback={null}>
         <AdminScrollRestoration />

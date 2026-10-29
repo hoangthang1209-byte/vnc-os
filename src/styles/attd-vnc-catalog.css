@@ -1,0 +1,17 @@
+/* VietnamClothing editorial style for existing ATTD DB-powered product catalog */
+.av-public .v7-catalog{font-family:'DM Sans',Arial,sans-serif;color:#191b1b;background:#fafaf8}
+.av-public .v7-catalog-hero{background:#f2f2ef;border-bottom:1px solid #e5e6e2;padding:70px 0}
+.av-public .v7-catalog-hero__grid{align-items:center;gap:58px}
+.av-public .v7-catalog-hero h1{font-family:Manrope,'DM Sans',sans-serif;font-size:clamp(38px,5vw,70px);font-weight:700;line-height:1.14;letter-spacing:-.045em;color:#191b1b}
+.av-public .v7-catalog .v7-kicker{color:#666e6b;letter-spacing:.16em;font-size:11px;text-transform:uppercase}
+.av-public .v7-catalog-hero__visual,.av-public .v7-catalog-hero__image{border-radius:18px}
+.av-public .v7-catalog-search{border:1px solid #e5e6e2;border-radius:14px;background:#fff;box-shadow:none}
+.av-public .v7-catalog-intents{display:flex;gap:12px;flex-wrap:wrap}
+.av-public .v7-catalog-intents a{border:1px solid #dfe0dc;background:#fff;border-radius:100px;color:#191b1b;font-weight:650}
+.av-public .v7-catalog-body{padding:65px 0 100px;background:#fafaf8}
+.av-public .v7-catalog-results h2,.av-public .mp-catalog-results-kicker{font-family:Manrope,sans-serif;color:#191b1b}
+.av-public .mp-product-grid--catalog{gap:22px}
+.av-public .mp-product-grid--catalog>*{border-radius:17px;overflow:hidden}
+.av-public .mp-catalog-results-controls{border-color:#e5e6e2}
+.av-public .mp-catalog-pagination a{border-radius:10px}
+@media(max-width:760px){.av-public .v7-catalog-hero{padding:44px 0}.av-public .v7-catalog-body{padding:45px 0 75px}}

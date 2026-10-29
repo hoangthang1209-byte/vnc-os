@@ -83,9 +83,24 @@ describe("G3 durable lease PostgreSQL CAS (isolated DB only)", { skip: !isIsolat
       if (reclaimed.ok) assert.equal(reclaimed.lease.attempt, 3);
       assert.equal((await renewDurableG3Lease(loser, db)).ok, false, "superseded token remains fenced");
 
+      // WAITING_* tasks must not retain an actively renewable execution lease.
+      // Explicitly release before waiting; resume requires a fresh claim/token.
+      await db.taskRun.update({ where: { id: task.id }, data: { status: "WAITING_HUMAN" } });
+      assert.equal((await renewDurableG3Lease(third, db)).ok, false, "waiting task cannot heartbeat");
+      assert.equal((await claimDurableG3Lease({ ...third, token: "isolated-waiting-token-000" }, db)).ok, false, "waiting task cannot be claimed");
+      assert.equal((await releaseDurableG3Lease(third, db)).ok, true, "owner may release lease while waiting");
+      await db.taskRun.update({ where: { id: task.id }, data: { status: "WAITING_EXTERNAL" } });
+      assert.equal((await claimDurableG3Lease({ ...third, token: "isolated-external-token-00" }, db)).ok, false, "external wait cannot be claimed");
+      await db.taskRun.update({ where: { id: task.id }, data: { status: "RUNNING" } });
+      const resumed = { ...third, token: "isolated-resumed-token-000" };
+      const resumedLease = await claimDurableG3Lease(resumed, db);
+      assert.equal(resumedLease.ok, true, "resumed task requires a new claim");
+      if (resumedLease.ok) assert.equal(resumedLease.lease.attempt, 4);
+      assert.equal((await renewDurableG3Lease(third, db)).ok, false, "pre-wait token remains fenced");
+
       await db.taskRun.update({ where: { id: task.id }, data: { status: "SUCCEEDED" } });
-      assert.equal((await renewDurableG3Lease(third, db)).ok, false, "terminal TaskRun cannot heartbeat");
-      assert.equal((await claimDurableG3Lease({ ...third, token: "isolated-new-token-0000" }, db)).ok, false);
+      assert.equal((await renewDurableG3Lease(resumed, db)).ok, false, "terminal TaskRun cannot heartbeat");
+      assert.equal((await claimDurableG3Lease({ ...resumed, token: "isolated-new-token-0000" }, db)).ok, false);
     } finally {
       await db.agentRun.delete({ where: { id: run.id } });
       await db.$disconnect();

@@ -12,11 +12,12 @@ const SOLUTIONS = [
   { href: "/dong-phuc-doanh-nghiep", label: "Đồng phục doanh nghiệp", desc: "Tư vấn, sản xuất và giao đồng phục" },
   { href: "/nguon-hang", label: "Nguồn hàng B2B", desc: "Hàng trơn và nguồn sản phẩm B2B" },
   { href: "/oem", label: "OEM / Private Label", desc: "Làm sản phẩm theo yêu cầu riêng" },
-  { href: "/qua-tang-doanh-nghiep", label: "Quà tặng doanh nghiệp", desc: "Quà tặng theo ngân sách và chương trình" },
-  { href: "/merchandise", label: "Merchandise", desc: "Cho nghệ sĩ, concert và sự kiện" },
+  { href: "/nguon-hang-ao-tron", label: "Áo trơn sỉ", desc: "Áo thun, polo và nguồn hàng trơn B2B" },
+  { href: "/san-pham", label: "Danh mục B2B", desc: "Xem sản phẩm và gửi yêu cầu báo giá" },
 ] as const;
 
 const NAV = [
+  { href: "/nguon-hang-ao-tron", label: "Áo trơn sỉ" },
   { href: "/#nang-luc", label: "Năng lực" },
   { href: "/gioi-thieu", label: "Về ATTD" },
 ] as const;

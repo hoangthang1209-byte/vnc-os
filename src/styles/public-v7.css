@@ -3196,3 +3196,25 @@
   .v7-footer__grid { padding: 36px 0; gap: 36px; }
   .v7-footer__nav a { min-height: 36px; display: inline-flex; align-items: center; }
 }
+
+/* ATTD V2 — unified apparel sourcing visual language (public only). */
+:root{--v7-ink:#18302d;--v7-ink-2:#304743;--v7-muted:#65716d;--v7-subtle:#929d97;--v7-line:#dde5dc;--v7-soft:#f3f6f0;--v7-warm:#eeefe7;--v7-red:#456f55;--v7-red-dark:#28543d;--v7-dark:#142823;--v7-max:1320px}
+.public-main--v7{background:#fafbf8;color:var(--v7-ink)}
+.v7-header{background:rgba(250,251,248,.96);border-bottom-color:#dde5dc}
+.v7-header__inner{min-height:82px;gap:20px}
+.v7-header__nav a{color:#344d43}
+.v7-header__nav a:hover,.v7-header__nav a.is-active{color:#183b2b}
+.v7-btn--primary{background:#244e39;color:#fff}
+.v7-btn--primary:hover{background:#163a2a}
+.v7-btn--ghost{background:transparent;border-color:#bcc9bb}
+.v7-home-hero{background:#eef2e8}
+.v7-home-hero__accent{color:#446e4e}
+.v7-home-hero__lead{color:#405449}
+.v7-solution-row,.v7-catalog-intents a{transition:background .2s ease,transform .2s ease}
+.v7-solution-row:hover,.v7-catalog-intents a:hover{background:#eaf0e4;transform:translateY(-2px)}
+.v7-catalog-hero{background:#edf2e9}
+.v7-catalog-hero__fallback{background:linear-gradient(135deg,#dce8d5,#adc6b0);color:#254c38}
+.v7-footer{background:#122820}
+.v7-home-hero__visual img,.v7-catalog-hero__visual img,.v7-solution-row__media img{object-fit:cover}
+@media(max-width:900px){.v7-header__inner{min-height:72px}.v7-home-hero__grid{gap:22px}}
+@media(max-width:600px){.public-main--v7 .container,.v7-header .container,.v7-footer .container{width:min(calc(100% - 36px),var(--v7-max))}.v7-home-hero h1{overflow-wrap:anywhere}.v7-catalog-hero h1{overflow-wrap:anywhere}}

@@ -28,9 +28,11 @@ an autonomous executor has run.
    lock scope, rollback/forward-fix, and Neon branch compatibility. Do not
    apply it to Neon Production without a separate approved release gate.
 3. Apply migration **only to an isolated PostgreSQL test database** named
-   `*_test` or `*_ci`, never the production database. Set a separate
+   `*_test` or `*_ci`, never the production database. The GitHub CI job uses
+   local `attd_ci` PostgreSQL with `prisma db push` and runs the concurrency
+   test automatically. For manual execution, set a separate
    `G3_LEASE_TEST_DATABASE_URL`, distinct from `DATABASE_URL`.
-4. Run the opt-in concurrency test:
+4. Run or inspect the concurrency test:
    `NODE_OPTIONS=--conditions=react-server npx tsx --test src/features/agent-os/g3-durable-lease.integration.test.ts`.
    Collect two-claimer winner evidence, expired takeover, stale-token
    rejection, terminal TaskRun fence and crash/restart recovery evidence.
@@ -51,8 +53,10 @@ an autonomous executor has run.
 - A runner must fail closed if claim/renew returns `not_claimed`, if the
   database is unreachable, if the task becomes terminal, or if its PR head
   changes. No synthetic BUILDING state is permitted.
-- The integration test is intentionally opt-in and **not** proof until run
-  against a migrated isolated database; default CI does not perform DB writes.
+- The integration test runs against the local ephemeral `attd_ci` database
+  in GitHub CI (`CI=true`, localhost only), after CI schema preparation. For
+  manual runs it is opt-in with an explicitly separate isolated test DB.
+  A passing test is necessary but not proof of live executor dispatch.
 - Production migration rollback must be reviewed separately because removing
   a live lease table would be destructive. Prefer forward-fix and disabling
   dispatch rather than dropping production data.

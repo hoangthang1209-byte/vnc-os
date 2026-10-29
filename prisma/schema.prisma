@@ -6519,9 +6519,33 @@ model TaskRun {
 
   agentRun AgentRun     @relation(fields: [agentRunId], references: [id], onDelete: Cascade)
   events   AgentEvent[]
+  g3Lease  G3TaskLease?
 
   @@index([agentRunId])
   @@index([githubIssueNumber])
+}
+
+
+/**
+ * G3 persistent, single-owner execution lease. No executor is started by
+ * this table; atomic SQL claim/renew/release must precede any dispatch.
+ */
+model G3TaskLease {
+  id          String   @id
+  taskRunId   String   @unique
+  executorId  String
+  tokenHash   String
+  headSha     String
+  attempt     Int      @default(1)
+  status      String   @default("CLAIMED")
+  heartbeatAt DateTime @default(now())
+  expiresAt   DateTime
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  taskRun TaskRun @relation(fields: [taskRunId], references: [id], onDelete: Cascade)
+
+  @@index([status, expiresAt])
 }
 
 model AgentEvent {

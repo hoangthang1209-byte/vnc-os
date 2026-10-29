@@ -69,7 +69,9 @@ else
 fi
 
 if command -v gh >/dev/null 2>&1; then
-  if gh pr view --help 2>&1 | grep -q -- '--jq'; then
+  # Capture output first: grep -q can close the pipe early, making gh exit with SIGPIPE under pipefail.
+  gh_help="$(gh pr view --help 2>&1 || true)"
+  if grep -q -- '--jq' <<< "$gh_help"; then
     pass "gh pr view exposes --jq flag in help"
   else
     fail "gh pr view help missing --jq (unexpected gh version)"

@@ -141,6 +141,7 @@ export default function PublicHeaderV7({
         </nav>
 
         <div className="v7-header__actions">
+          <div className="attd-v2-language" aria-label="Language"><Link href="/" hrefLang="vi" aria-current={pathname === "/" ? "page" : undefined}>VN</Link><span aria-hidden>/</span><Link href="/en" hrefLang="en" aria-current={pathname === "/en" ? "page" : undefined}>EN</Link></div>
           <Link href="/san-pham" className="v7-header__search" aria-label="Tìm sản phẩm">
             <Search size={18} />
             <span>Tìm sản phẩm</span>
@@ -184,6 +185,9 @@ export default function PublicHeaderV7({
                 {group.name}<span>↗</span>
               </Link>
             ))}
+            <span className="v7-mobile-nav__label">Language / Ngôn ngữ</span>
+            <Link href="/" onClick={() => setOpen(false)}>VN — Tiếng Việt<span>↗</span></Link>
+            <Link href="/en" onClick={() => setOpen(false)}>EN — English<span>↗</span></Link>
             <span className="v7-mobile-nav__label">ATTD</span>
             {NAV.map((item) => (
               <Link key={item.href} href={item.href} onClick={() => setOpen(false)}>

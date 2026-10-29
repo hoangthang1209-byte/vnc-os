@@ -133,16 +133,17 @@ export default function OrderWorkspaceShell(props: OrderWorkspaceShellProps) {
   const [activeTab, setActiveTab] = useState<OrderWorkspaceTab>(defaultTabForRole(roleCode));
 
   useEffect(() => {
+    let nextTab = defaultTabForRole(roleCode);
     try {
       const stored = sessionStorage.getItem(tabStorageKey) as OrderWorkspaceTab | null;
       if (stored && visibleTabs.some((t) => t.key === stored)) {
-        setActiveTab(stored);
-        return;
+        nextTab = stored;
       }
     } catch {
       /* ignore */
     }
-    setActiveTab(defaultTabForRole(roleCode));
+    // Defer React state update to avoid synchronous render cascades in an effect.
+    Promise.resolve().then(() => setActiveTab(nextTab));
   }, [orderId, roleCode, tabStorageKey, visibleTabs]);
 
   const navigateTab = useCallback(

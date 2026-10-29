@@ -15,6 +15,7 @@ import { CRM_CUSTOMER_STATUSES, type CrmCustomerRecord } from "@/features/crm/ty
 import { EmptyState, PageHeader } from "@/components/admin/AdminUi";
 import { TableLoading } from "@/components/ui/loading/ContextLoading";
 import { useAdminToast } from "@/hooks/useAdminToast";
+import { useAdminPermissions } from "@/components/admin/AdminPermissionsContext";
 
 type LoadState = "loading" | "error" | "empty" | "ready";
 
@@ -74,6 +75,7 @@ export default function CrmCustomersList() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const toast = useAdminToast();
+  const { permissions } = useAdminPermissions();
   const { types: customerTypes } = useCustomerTypeOptions(false);
   const [customers, setCustomers] = useState<CrmCustomerRecord[]>([]);
   const [total, setTotal] = useState(0);
@@ -129,7 +131,8 @@ export default function CrmCustomersList() {
   }, [search, customerTypeFilter, unclassifiedFilter, statusFilter]);
 
   useEffect(() => {
-    void load();
+    const task = Promise.resolve().then(load);
+    void task;
   }, [load]);
 
   const visibleIds = useMemo(() => customers.map((customer) => customer.id), [customers]);
@@ -401,6 +404,7 @@ export default function CrmCustomersList() {
                 <th>Tỉnh/TP</th>
                 <th>Trạng thái</th>
                 <th>Ngày tạo</th>
+                {permissions.canViewOrders && <th>Đơn hàng</th>}
               </tr>
             </thead>
             <tbody>
@@ -437,6 +441,17 @@ export default function CrmCustomersList() {
                     <CustomerStatusBadge status={customer.status} />
                   </td>
                   <td>{formatCrmDateTime(customer.createdAt)}</td>
+                  {permissions.canViewOrders && (
+                    <td onClick={(event) => event.stopPropagation()}>
+                      <Link
+                        href={`/admin/orders?customerId=${encodeURIComponent(customer.id)}`}
+                        className="admin-btn admin-btn--secondary admin-btn--small"
+                        aria-label={`Xem đơn hàng của ${customer.name}`}
+                      >
+                        Xem đơn hàng
+                      </Link>
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>

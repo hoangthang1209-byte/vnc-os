@@ -8,6 +8,7 @@ import AdminLogoutButton from "@/components/admin/AdminLogoutButton";
 import AdminEnvironmentBadge from "@/components/admin/AdminEnvironmentBadge";
 import AdminScrollRestoration from "@/components/admin/AdminScrollRestoration";
 import AdminCommandPalette from "@/components/admin/AdminCommandPalette";
+import AdminMultiWindowWorkspace from "@/components/admin/AdminMultiWindowWorkspace";
 import { AdminTitleProvider, useAdminTitle } from "@/components/admin/AdminTitleContext";
 import { useAdminPermissions, type AdminPermissionFlags } from "@/components/admin/AdminPermissionsContext";
 import { WorkspaceModeProvider, useWorkspaceMode } from "@/components/admin/content/WorkspaceModeContext";
@@ -275,6 +276,7 @@ function AdminShellMain({
       ref={mainRef}
       id="admin-content-scroll"
       className={`${styles.main} admin-content-scroll`}
+      data-vnc-workspace={pathname.startsWith("/admin/crm/customers") ? "customers" : pathname.startsWith("/admin/orders") ? "orders" : undefined}
     >
       <Suspense fallback={null}>
         <AdminScrollRestoration />
@@ -305,6 +307,7 @@ function AdminShellMain({
         </div>
         <div className={styles.headerActions}>
           <WorkspaceModeToggle />
+          <AdminMultiWindowWorkspace />
         </div>
       </header>
       <div
@@ -320,7 +323,17 @@ function AdminShellMain({
 export default function AdminShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [sidebarCompact, setSidebarCompact] = useState(false);
   const isLogin = pathname === "/admin/login";
+
+  useEffect(() => {
+    if (!mobileNavOpen) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setMobileNavOpen(false);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [mobileNavOpen]);
 
   useEffect(() => {
     if (isLogin) return;
@@ -340,7 +353,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
     <WorkspaceModeProvider>
       <AdminTitleProvider>
         <AdminCommandPalette />
-        <div className={styles.shell}>
+        <div className={`${styles.shell}${sidebarCompact ? ` ${styles.shellCompact}` : ""}`}>
           {mobileNavOpen ? (
             <button
               type="button"
@@ -366,6 +379,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
                 <AdminEnvironmentBadge />
               </div>
               <div className={styles.sidebarActions}>
+                <button type="button" className={styles.desktopCollapseToggle} onClick={() => setSidebarCompact(v => !v)} aria-pressed={sidebarCompact} aria-label={sidebarCompact ? "Mở rộng menu quản trị" : "Thu gọn menu quản trị"} title={sidebarCompact ? "Mở rộng menu" : "Thu gọn menu"}>{sidebarCompact ? "»" : "«"}</button>
                 <AdminLogoutButton />
                 <button
                   type="button"

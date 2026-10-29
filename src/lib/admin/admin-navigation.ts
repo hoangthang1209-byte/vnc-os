@@ -36,12 +36,48 @@ export const adminDashboardNavItem: AdminNavigationItem = {
 };
 
 /**
- * Lean Admin navigation — primary destinations for ATTD’s 4-person operating team.
+ * VNC OS Admin 2.0 — operations-first navigation for a multi-role production team.
  * Routes not listed remain reachable by URL / contextual links; they are not deleted.
  */
 export const adminNavigationSections: AdminNavigationSection[] = [
   {
-    label: "BÁN HÀNG",
+    label: "ĐƠN HÀNG & VẬN HÀNH",
+    icon: "🏭",
+    platforms: domainItems([
+      {
+        label: "Tất cả đơn hàng",
+        href: "/admin/orders",
+        status: "active",
+        requiredPermissions: ["canViewOrders"],
+      },
+      {
+        label: "Dự án đơn hàng",
+        href: "/admin/orders/projects",
+        status: "active",
+        requiredPermissions: ["canManageUsers"],
+      },
+      {
+        label: "Tiến độ sản xuất",
+        href: "/admin/manufacturing/production-timeline",
+        status: "active",
+        requiredPermissions: ["canViewProduction"],
+      },
+      {
+        label: "Tổng quan sản xuất",
+        href: "/admin/production",
+        status: "active",
+        requiredPermissions: ["canViewProduction"],
+      },
+      {
+        label: "Giao hàng",
+        href: "/admin/delivery",
+        status: "active",
+        requiredPermissions: ["canViewDelivery"],
+      },
+    ]),
+  },
+  {
+    label: "BÁN HÀNG & CRM",
     icon: "💼",
     platforms: domainItems([
       {
@@ -68,12 +104,24 @@ export const adminNavigationSections: AdminNavigationSection[] = [
         status: "active",
         requiredPermissions: ["canAccessQuotes"],
       },
+    ]),
+  },
+  {
+    label: "SOURCING & SRM",
+    icon: "🏷️",
+    platforms: domainItems([
       {
-        label: "Đơn hàng",
-        href: "/admin/orders",
+        label: "Nhà cung cấp",
+        href: "/admin/production-suppliers",
         status: "active",
-        requiredPermissions: ["canViewOrders"],
+        requiredPermissions: ["canViewProduction"],
       },
+    ]),
+  },
+  {
+    label: "TÀI CHÍNH",
+    icon: "💳",
+    platforms: domainItems([
       {
         label: "Giao dịch ngân hàng",
         href: "/admin/bank-transactions",
@@ -92,40 +140,22 @@ export const adminNavigationSections: AdminNavigationSection[] = [
         status: "active",
         requiredPermissions: ["canManageProducts"],
       },
-    ]),
-  },
-  {
-    label: "SẢN XUẤT",
-    icon: "🏭",
-    platforms: domainItems([
       {
-        label: "Tiến độ sản xuất",
-        href: "/admin/manufacturing/production-timeline",
+        label: "Danh mục sản phẩm",
+        href: "/admin/danh-muc",
         status: "active",
-        requiredPermissions: ["canViewProduction"],
+        requiredPermissions: ["canManageProducts"],
       },
       {
-        label: "Tổng quan sản xuất",
-        href: "/admin/production",
+        label: "Media",
+        href: "/admin/media",
         status: "active",
-        requiredPermissions: ["canViewProduction"],
-      },
-      {
-        label: "Nhà cung cấp",
-        href: "/admin/production-suppliers",
-        status: "active",
-        requiredPermissions: ["canViewProduction"],
-      },
-      {
-        label: "Giao hàng",
-        href: "/admin/delivery",
-        status: "active",
-        requiredPermissions: ["canViewDelivery"],
+        requiredPermissions: ["canManageProducts"],
       },
     ]),
   },
   {
-    label: "KỸ THUẬT",
+    label: "MẪU & KỸ THUẬT",
     icon: "📐",
     platforms: domainItems([
       {
@@ -149,7 +179,7 @@ export const adminNavigationSections: AdminNavigationSection[] = [
     ]),
   },
   {
-    label: "CONTENT & SEO",
+    label: "MARKETING & NỘI DUNG",
     icon: "📝",
     platforms: domainItems([
       {
@@ -203,26 +233,14 @@ export const adminNavigationSections: AdminNavigationSection[] = [
     ]),
   },
   {
-    label: "CẤU HÌNH",
+    label: "HỆ THỐNG",
     icon: "⚙️",
     platforms: domainItems([
-      {
-        label: "Media",
-        href: "/admin/media",
-        status: "active",
-        requiredPermissions: ["canManageProducts"],
-      },
       {
         label: "Cấu hình giá",
         href: "/admin/pricing",
         status: "active",
         requiredPermissions: ["canAccessPricing"],
-      },
-      {
-        label: "Danh mục sản phẩm",
-        href: "/admin/danh-muc",
-        status: "active",
-        requiredPermissions: ["canManageProducts"],
       },
       {
         label: "Người dùng",
@@ -278,7 +296,7 @@ export function filterNavigationForWorkspaceMode(
 ): AdminNavigationSection[] {
   if (!isSolo) return sections;
   return sections.map((section) => {
-    if (section.label !== "CONTENT & SEO" && section.label !== "NỘI DUNG") {
+    if (section.label !== "MARKETING & NỘI DUNG" && section.label !== "CONTENT & SEO" && section.label !== "NỘI DUNG") {
       return section;
     }
     return {

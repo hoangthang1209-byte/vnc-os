@@ -462,6 +462,7 @@ model Customer {
   pricingCalculations      PricingCalculation[]
   pricingCostingBatches    PricingCostingBatch[]
   quotes                   Quote[]
+  orderProjects            OrderProject[]
   orders                   Order[]
   techPacks                TechPack[]
   dealerCompanies          DealerCompany[]
@@ -4284,7 +4285,39 @@ enum OrderActivityType {
   NOTE_ADDED
 }
 
+// Project groups repeat customer merchandise programs across multiple batches.
+model OrderProject {
+  id          String       @id @default(cuid())
+  customerId  String
+  code        String       @unique
+  name        String
+  description String?      @db.Text
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  customer    Customer     @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  batches     OrderBatch[]
+
+  @@index([customerId])
+}
+
+model OrderBatch {
+  id          String       @id @default(cuid())
+  projectId   String
+  code        String
+  name        String
+  description String?      @db.Text
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  project     OrderProject @relation(fields: [projectId], references: [id], onDelete: Restrict)
+  orders      Order[]
+
+  @@unique([projectId, code])
+  @@index([projectId])
+}
+
 model Order {
+  batchId                      String?
+  customerPoNo                 String?
   id                           String                    @id @default(cuid())
   orderNo                      String                    @unique
   quoteId                      String?                   @unique
@@ -4358,6 +4391,7 @@ model Order {
   deliveredAt                  DateTime?
   createdAt                    DateTime                  @default(now())
   updatedAt                    DateTime                  @updatedAt
+  batch                        OrderBatch?               @relation(fields: [batchId], references: [id], onDelete: SetNull)
   quote                        Quote?                    @relation(fields: [quoteId], references: [id], onDelete: SetNull)
   customer                     Customer?                 @relation(fields: [customerId], references: [id], onDelete: SetNull)
   contact                      Contact?                  @relation(fields: [contactId], references: [id], onDelete: SetNull)
@@ -4382,6 +4416,8 @@ model Order {
   actualCostClose              OrderActualCostClose?
   actualCostEntries            OrderActualCostEntry[]
 
+  @@index([batchId])
+  @@index([customerPoNo])
   @@index([orderNo])
   @@index([quoteId])
   @@index([customerId])
@@ -4999,6 +5035,8 @@ model MaterialSupplier {
   updatedAt        DateTime               @updatedAt
   materialLinks    MaterialSupplierLink[]
   purchaseRequests PurchaseRequest[]
+  productionSupplierId String?
+  productionSupplier ProductionSupplier? @relation(fields: [productionSupplierId], references: [id], onDelete: SetNull)
 
   @@index([supplierCode])
   @@index([isActive])
@@ -5901,6 +5939,12 @@ model ProductionSupplier {
   code      String           @unique
   name      String
   category  SupplierCategory @default(GENERAL)
+  supplierType String @default("UNKNOWN")
+  verificationStatus String @default("UNVERIFIED")
+  factoryAddress String? @db.Text
+  website String?
+  capabilities String? @db.Text
+  sourceUrl String? @db.Text
   contact   String?
   email     String?
   phone     String?
@@ -5919,6 +5963,9 @@ model ProductionSupplier {
   itemProductionStages      ItemProductionStage[]
   itemProductionBatches     ItemProductionBatch[]
   itemProductionBatchStages ItemProductionBatchStage[]
+  linkedMaterialSuppliers MaterialSupplier[]
+  supplierRfqs SupplierRfq[]
+  supplierScorecards SupplierScorecard[]
 
   @@index([code])
   @@index([isActive])
@@ -6510,4 +6557,42 @@ model AgentDecision {
   agentRun AgentRun @relation(fields: [agentRunId], references: [id], onDelete: Cascade)
 
   @@index([agentRunId, createdAt])
+}
+
+model SupplierRfq {
+  id String @id @default(cuid())
+  supplierId String
+  supplier ProductionSupplier @relation(fields: [supplierId], references: [id], onDelete: Restrict)
+  title String
+  status String @default("DRAFT")
+  productCategory String?
+  quantity Int?
+  unit String?
+  targetPrice Decimal? @db.Decimal(14, 2)
+  quotedPrice Decimal? @db.Decimal(14, 2)
+  currency String @default("VND")
+  moq Int?
+  leadTimeDays Int?
+  deadline DateTime?
+  note String? @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@index([supplierId, status])
+  @@index([deadline])
+}
+
+model SupplierScorecard {
+  id String @id @default(cuid())
+  supplierId String
+  supplier ProductionSupplier @relation(fields: [supplierId], references: [id], onDelete: Restrict)
+  period String
+  qualityScore Int
+  deliveryScore Int
+  priceScore Int
+  responsivenessScore Int
+  note String? @db.Text
+  assessedBy String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@unique([supplierId, period])
 }

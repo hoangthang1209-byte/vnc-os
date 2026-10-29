@@ -68,6 +68,8 @@ export async function listPatterns(input?: {
   search?: string;
   page?: number;
   pageSize?: number;
+  sortBy?: string;
+  sortDir?: string;
 }) {
   const where: Prisma.PatternWhereInput = {};
   if (input?.status) where.status = input.status;
@@ -93,6 +95,13 @@ export async function listPatterns(input?: {
   const pageSize = Math.min(Math.max(input?.pageSize ?? 25, 10), 100);
   const page = Math.max(input?.page ?? 1, 1);
   const skip = (page - 1) * pageSize;
+  const allowedSortFields = ["updatedAt", "code", "name", "status"] as const;
+  const sortField = allowedSortFields.find((field) => field === input?.sortBy) ?? "updatedAt";
+  const sortDirection: Prisma.SortOrder = input?.sortDir === "asc" ? "asc" : "desc";
+  const orderBy: Prisma.PatternOrderByWithRelationInput[] = [
+    { [sortField]: sortDirection },
+    { id: "asc" },
+  ];
 
   const [items, total, allCount, draftCount, approvedCount, archivedCount] =
     await prisma.$transaction([
@@ -111,7 +120,7 @@ export async function listPatterns(input?: {
           },
           _count: { select: { files: true, techPacks: true } },
         },
-        orderBy: [{ updatedAt: "desc" }],
+        orderBy,
         skip,
         take: pageSize,
       }),

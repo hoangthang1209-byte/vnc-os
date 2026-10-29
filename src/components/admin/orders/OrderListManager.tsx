@@ -136,7 +136,8 @@ export default function OrderListManager() {
   const [advancedOpen, setAdvancedOpen] = useState(false);
 
   useEffect(() => {
-    setSearchInput(filters.search);
+    const task = Promise.resolve().then(() => setSearchInput(filters.search));
+    void task;
   }, [filters.search]);
 
   useEffect(() => {
@@ -175,12 +176,18 @@ export default function OrderListManager() {
 
   return (
     <div className="order-ops-dashboard">
-      {canCreateOrders ? (
+      {(canCreateOrders || canViewCrm) ? (
         <header className="order-ops-header">
-          <div />
-          <Link href="/admin/orders/new" className="admin-btn admin-btn--primary">
-            + Tạo đơn hàng
-          </Link>
+          {canViewCrm ? (
+            <Link href="/admin/crm/customers" className="admin-btn admin-btn--secondary">
+              Khách hàng
+            </Link>
+          ) : <div />}
+          {canCreateOrders && (
+            <Link href="/admin/orders/new" className="admin-btn admin-btn--primary">
+              + Tạo đơn hàng
+            </Link>
+          )}
         </header>
       ) : null}
 

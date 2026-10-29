@@ -198,7 +198,6 @@ export function AdminLoadingState({
       title={label}
       tone="admin"
       rows={rows}
-      description="Hệ thống đang đồng bộ dữ liệu vận hành."
     />
   );
 }

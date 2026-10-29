@@ -1,266 +1,38 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 import Link from "next/link";
-import { ArrowUpRight } from "lucide-react";
+import Image from "next/image";
 import { getHomepageData } from "@/features/home/homepage.service";
 import { getPublicSurfaceMedia } from "@/features/media/public-surface-media";
-import { getBrandingSettings } from "@/features/settings/services/settings.service";
-import { buildHomepageMetadata } from "@/lib/seo/indexation-policy";
-import { SITE_NAME, canonicalUrl, buildOgImages } from "@/lib/seo";
-import HomeProductDiscoverySection from "@/components/home/HomeProductDiscoverySection";
-import HomeWorkshopGallerySection from "@/components/home/HomeWorkshopGallerySection";
-import CustomerLogoStrip from "@/components/public/company/CustomerLogoStrip";
-import CaseStudySection from "@/components/public/CaseStudySection";
+import "@/styles/attd-vnc-parity.css";
 
 export const revalidate = 3600;
-
-const TITLE = "ATTD | Đồng phục, nguồn hàng, OEM, quà tặng & merchandise";
-const DESCRIPTION =
-  "ATTD đồng hành cùng doanh nghiệp, đại lý, agency và thương hiệu từ chọn sản phẩm, làm mẫu, sản xuất, hoàn thiện đến giao hàng.";
-
-export async function generateMetadata(): Promise<Metadata> {
-  const branding = await getBrandingSettings();
-  const ogImage = branding.defaultOgImageUrl ?? process.env.NEXT_PUBLIC_DEFAULT_OG_IMAGE ?? undefined;
-  const ogImages = buildOgImages(ogImage);
-
-  return buildHomepageMetadata({
-    title: TITLE,
-    description: DESCRIPTION,
-    openGraph: {
-      title: TITLE,
-      description: DESCRIPTION,
-      url: canonicalUrl("/"),
-      siteName: SITE_NAME,
-      images: ogImages,
-      type: "website",
-    },
-    twitter: { card: "summary_large_image", images: ogImages },
-  });
-}
-
-const SOLUTIONS = [
-  {
-    key: "uniform",
-    href: "/dong-phuc-doanh-nghiep",
-    index: "01",
-    label: "Đồng phục doanh nghiệp",
-    title: "Làm đồng phục doanh nghiệp từ mẫu đến giao hàng.",
-    description: "Tư vấn mẫu, chất liệu, in/thêu, chia size, đóng gói và giao theo kế hoạch của doanh nghiệp.",
-  },
-  {
-    key: "sourcing",
-    href: "/nguon-hang",
-    index: "02",
-    label: "Nguồn hàng B2B",
-    title: "Tìm nguồn hàng ổn định để bán hoặc hoàn thiện theo đơn.",
-    description: "Áo, nón, túi, quà tặng và nhiều nhóm hàng khác, có thông tin số lượng tối thiểu và thời gian rõ ràng.",
-  },
-  {
-    key: "oem",
-    href: "/oem",
-    index: "03",
-    label: "OEM / Private Label",
-    title: "Phát triển sản phẩm riêng theo yêu cầu thương hiệu.",
-    description: "Từ chất liệu, form, màu, nhãn, bao bì đến làm mẫu và sản xuất số lượng lớn.",
-  },
-  {
-    key: "gift",
-    href: "/qua-tang-doanh-nghiep",
-    index: "04",
-    label: "Quà tặng doanh nghiệp",
-    title: "Làm bộ quà tặng theo ngân sách và mục tiêu chương trình.",
-    description: "Kết hợp nhiều sản phẩm, in logo, đóng bộ và hoàn thiện bao bì theo nhận diện thương hiệu.",
-  },
-  {
-    key: "merch",
-    href: "/merchandise",
-    index: "05",
-    label: "Merchandise nghệ sĩ & sự kiện",
-    title: "Sản xuất merchandise cho nghệ sĩ, concert và sự kiện.",
-    description: "Quản lý nhiều mẫu, nhiều size, duyệt mẫu, sản xuất, kiểm hàng, đóng gói và giao theo lịch sự kiện.",
-  },
-] as const;
-
-const OPERATING_MODEL = [
-  ["01", "Tiếp nhận nhu cầu", "Sản phẩm, số lượng, ngân sách, logo, thời gian cần hàng và các yêu cầu đặc biệt."],
-  ["02", "Đề xuất phương án", "ATTD chọn nguồn hàng, đề xuất cấu hình, tính giá và làm mẫu khi cần."],
-  ["03", "Duyệt mẫu", "Chốt mẫu, màu, thiết kế in/thêu, thông số và cách hoàn thiện."],
-  ["04", "Sản xuất", "Điều phối các công đoạn và theo dõi tiến độ theo từng hạng mục."],
-  ["05", "Kiểm hàng & giao", "Kiểm chất lượng, đóng gói, chia đợt và giao theo kế hoạch."],
-] as const;
-
-export default async function HomePage() {
-  const [
-    { cms, latestProducts },
-    heroMedia,
-    uniformMedia,
-    sourcingMedia,
-    oemMedia,
-    giftMedia,
-    merchMedia,
-  ] = await Promise.all([
-    getHomepageData(),
-    getPublicSurfaceMedia("homepage"),
-    getPublicSurfaceMedia("uniform"),
-    getPublicSurfaceMedia("sourcing"),
-    getPublicSurfaceMedia("oem"),
-    getPublicSurfaceMedia("corporateGift"),
-    getPublicSurfaceMedia("merchandise"),
-  ]);
-
-  const mediaByKey = {
-    uniform: uniformMedia,
-    sourcing: sourcingMedia,
-    oem: oemMedia,
-    gift: giftMedia,
-    merch: merchMedia,
-  };
-
-  return (
-    <main className="v7-home">
-      <section className="v7-home-hero">
-        <div className="container v7-home-hero__grid">
-          <div className="v7-home-hero__copy">
-            <p className="v7-kicker">Đồng phục · nguồn hàng · OEM · quà tặng · merchandise</p>
-            <h1>
-              Đồng phục, quà tặng & merchandise.
-              <span className="v7-home-hero__accent">Một đầu mối từ mẫu đến giao hàng.</span>
-            </h1>
-            <p className="v7-home-hero__lead">
-              Bạn chỉ cần cho ATTD biết cần làm gì, số lượng bao nhiêu và khi nào cần hàng.
-              Đội ngũ sẽ cùng bạn chọn phương án phù hợp, báo giá và theo sát đến khi giao hàng.
-            </p>
-            <div className="v7-home-hero__actions">
-              <Link href="/lien-he" className="v7-btn v7-btn--primary">Nhận tư vấn & báo giá</Link>
-              <Link href="/san-pham" className="v7-btn v7-btn--ghost">Xem sản phẩm</Link>
-            </div>
-            <div className="v7-home-hero__meta">
-              <span>Kho · kiểm hàng · đóng gói tại TP.HCM</span>
-              <span>In · thêu · OEM · đóng gói</span>
-              <span>Giao hàng toàn quốc</span>
-            </div>
-          </div>
-
-          <div className="v7-home-hero__visual">
-            {heroMedia ? (
-              <Image
-                src={heroMedia.url}
-                alt={heroMedia.alt}
-                fill
-                priority
-                className="v7-home-hero__image"
-                sizes="(max-width: 900px) 100vw, 52vw"
-              />
-            ) : (
-              <div className="v7-home-hero__fallback v7-home-hero__service-card">
-                <span className="v7-kicker v7-kicker--light">ATTD / TP.HCM</span>
-                <strong>Từ ý tưởng đến sản phẩm.</strong>
-                <ol>
-                  <li><span>01</span> Tư vấn sản phẩm & chất liệu</li>
-                  <li><span>02</span> Làm mẫu & duyệt thiết kế</li>
-                  <li><span>03</span> Sản xuất & hoàn thiện</li>
-                  <li><span>04</span> Kiểm hàng & giao hàng</li>
-                </ol>
-              </div>
-            )}
-            <div className="v7-home-hero__caption">
-              <span>ATTD / TP.HCM</span>
-              <strong>Tư vấn → Làm mẫu → Sản xuất → Giao hàng</strong>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="v7-solutions" id="giai-phap">
-        <div className="container">
-          <header className="v7-section-head">
-            <div>
-              <p className="v7-kicker">ATTD có thể hỗ trợ bạn</p>
-              <h2>Bạn đang cần làm gì?</h2>
-            </div>
-            <p>
-              Chọn đúng nhu cầu để xem cách ATTD triển khai, sản phẩm phù hợp
-              và những thông tin cần chuẩn bị để nhận báo giá nhanh hơn.
-            </p>
-          </header>
-
-          <div className="v7-solutions__list">
-            {SOLUTIONS.map((solution) => {
-              const media = mediaByKey[solution.key];
-              return (
-                <Link key={solution.key} href={solution.href} className={`v7-solution-row${media ? "" : " v7-solution-row--no-media"}`}>
-                  <span className="v7-solution-row__index">{solution.index}</span>
-                  <div className="v7-solution-row__media">
-                    {media ? (
-                      <Image src={media.url} alt={media.alt} fill className="v7-solution-row__image" sizes="(max-width: 760px) 100vw, 34vw" />
-                    ) : null}
-                  </div>
-                  <div className="v7-solution-row__copy">
-                    <span>{solution.label}</span>
-                    <h3>{solution.title}</h3>
-                    <p>{solution.description}</p>
-                  </div>
-                  <ArrowUpRight className="v7-solution-row__arrow" aria-hidden />
-                </Link>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-
-      <section className="v7-operating" id="nang-luc">
-        <div className="container">
-          <header className="v7-section-head v7-section-head--dark">
-            <div>
-              <p className="v7-kicker v7-kicker--light">Cách ATTD làm việc</p>
-              <h2>Một đầu mối theo dự án từ đầu đến cuối.</h2>
-            </div>
-            <p>
-              Thay vì phải làm việc với nhiều bên, bạn có thể trao đổi với một đầu mối
-              từ chọn hàng, làm mẫu, sản xuất, kiểm hàng đến giao hàng.
-            </p>
-          </header>
-
-          <ol className="v7-operating__steps">
-            {OPERATING_MODEL.map(([index, title, description]) => (
-              <li key={index}>
-                <span>{index}</span>
-                <h3>{title}</h3>
-                <p>{description}</p>
-              </li>
-            ))}
-          </ol>
-        </div>
-      </section>
-
-      <HomeProductDiscoverySection products={latestProducts} />
-
-      <section className="v7-proof">
-        <div className="container">
-          <div className="v7-proof__intro">
-            <p className="v7-kicker">Năng lực thực tế</p>
-            <h2>Xem năng lực qua công việc thực tế.</h2>
-            <p>
-              Hình ảnh kho, mẫu thật, công đoạn hoàn thiện và các dự án đã làm giúp bạn đánh giá ATTD trước khi hợp tác.
-            </p>
-          </div>
-          <HomeWorkshopGallerySection gallery={cms.workshopGallery} />
-        </div>
-      </section>
-
-      <CustomerLogoStrip />
-      <CaseStudySection />
-
-      <section className="v7-home-final">
-        <div className="container v7-home-final__inner">
-          <p className="v7-kicker v7-kicker--light">Bắt đầu đơn giản</p>
-          <h2>Bạn chưa chốt sản phẩm cũng không sao.</h2>
-          <p>Hãy gửi nhu cầu, số lượng dự kiến và thời gian cần hàng. ATTD sẽ cùng bạn chọn phương án phù hợp.</p>
-          <Link href="/lien-he" className="v7-home-final__link">
-            Nhận tư vấn & báo giá <ArrowUpRight size={22} />
-          </Link>
-        </div>
-      </section>
-    </main>
-  );
+export const metadata: Metadata = {
+ title:"ATTD | B2B Apparel Sourcing, Blank Garments & Corporate Uniforms",
+ description:"ATTD chuyên cung ứng áo trơn sỉ, đồng phục doanh nghiệp, gia công OEM/ODM và nguồn hàng may mặc cho khách hàng B2B.",
+};
+const offers=[
+ {n:"01",title:"Áo trơn sỉ",desc:"Blank T-shirts, polo, hoodie, chất liệu, màu và size cho khách hàng B2B.",href:"/nguon-hang-ao-tron"},
+ {n:"02",title:"Đồng phục doanh nghiệp",desc:"Phát triển đồng phục theo bộ nhận diện, nhu cầu và số lượng.",href:"/dong-phuc-doanh-nghiep"},
+ {n:"03",title:"OEM / Private Label",desc:"Tư vấn chất liệu, form dáng, nhãn riêng, làm mẫu và sản xuất.",href:"/oem"},
+ {n:"04",title:"Nguồn hàng may mặc",desc:"Tìm nguồn cung phù hợp cho doanh nghiệp, đại lý và đối tác.",href:"/nguon-hang"},
+];
+const concepts=[
+ {title:"Áo thun trơn & Polo",tag:"BLANK APPAREL",desc:"Các lựa chọn áo cơ bản để xây dựng chương trình mua sỉ và in/thêu.",href:"/nguon-hang-ao-tron"},
+ {title:"Đồng phục theo yêu cầu",tag:"CORPORATE UNIFORMS",desc:"Áo đồng phục cho đội ngũ, cửa hàng và các hoạt động doanh nghiệp.",href:"/dong-phuc-doanh-nghiep"},
+ {title:"OEM & Private Label",tag:"APPAREL DEVELOPMENT",desc:"Phát triển thiết kế, mẫu, nhãn và bao bì theo yêu cầu dự án.",href:"/oem"},
+];
+export default async function ATTDHome(){
+ const [{ categories, gridChildCategories, latestProducts, blogPosts }, heroMedia] = await Promise.all([getHomepageData(),getPublicSurfaceMedia("homepage")]);
+ const shownCategories = (gridChildCategories.length ? gridChildCategories : categories).slice(0,6);
+ return <main className="vnc-attd">
+ <section className="hero"><div className="shell hero-grid"><div className="hero-copy"><span className="eyebrow">ATTD / VIETNAM / B2B APPAREL SOURCING</span><h1>Apparel solutions.<br/>Built around your business.</h1><p>Áo trơn sỉ, đồng phục doanh nghiệp và phát triển sản phẩm may mặc theo yêu cầu. ATTD hỗ trợ khách hàng Việt Nam và quốc tế từ brief đến phương án cung ứng.</p><div className="actions"><Link href="/lien-he" className="pill">Gửi yêu cầu báo giá ↗</Link><Link href="/san-pham" className="pill secondary">Khám phá sản phẩm</Link></div></div><div className="hero-photo">{heroMedia ? <Image src={heroMedia.url} alt={heroMedia.alt} fill priority sizes="(max-width: 950px) 100vw, 50vw" style={{objectFit:"cover"}} /> : <div style={{position:"absolute",inset:0,background:"linear-gradient(140deg,#e9e7e3,#a7aea8 55%,#4b5651)",display:"grid",placeItems:"center",fontSize:68,fontWeight:750,color:"white"}}>ATTD</div>}</div></div></section>
+ <div className="shell trust-strip"><span>BLANK APPAREL</span><span>CORPORATE UNIFORMS</span><span>OEM / ODM</span><span>B2B SOURCING</span></div>
+ <section className="section"><div className="shell"><div className="section-head"><span className="eyebrow">OUR SOLUTIONS</span><h2>Một đối tác. Nhiều giải pháp may mặc B2B.</h2><p>Chọn nhóm nhu cầu của bạn để xem hướng triển khai và gửi yêu cầu phù hợp.</p></div><div className="rowlist">{offers.map(x=><Link key={x.n} href={x.href}><span>{x.n}</span><strong>{x.title}</strong><p>{x.desc}</p><span aria-hidden>↗</span></Link>)}</div></div></section>
+ <section className="section soft"><div className="shell"><div className="section-head"><span className="eyebrow">PRODUCT PATHWAYS</span><h2>Khám phá sản phẩm và năng lực của ATTD.</h2><p>Các nhóm sản phẩm minh họa theo nhu cầu cung ứng. Thông số và báo giá được xác nhận theo từng đơn hàng.</p></div><div className="grid">{concepts.map((x,i)=><article className="card" key={x.title}><div className="card-image" style={{background:["linear-gradient(135deg,#dddcd6,#a8a7a0)","linear-gradient(135deg,#d9ddda,#a9b5ad)","linear-gradient(135deg,#ddd9d3,#bfb3aa)"][i]}}><div style={{height:"100%",display:"grid",placeItems:"center",fontFamily:"Manrope,sans-serif",fontSize:34,fontWeight:750,color:"#fff"}}>{["BLANK","UNIFORMS","OEM"][i]}</div></div><div className="card-body"><span className="eyebrow">{x.tag}</span><h3>{x.title}</h3><p>{x.desc}</p><Link href={x.href}>Xem giải pháp ↗</Link></div></article>)}</div><p style={{marginTop:22,fontSize:13,color:"#737875"}}>Hình minh họa đang chờ thư viện ảnh ATTD được duyệt, không đại diện cho hàng có sẵn.</p></div></section>
+ <section className="section"><div className="shell"><div className="section-head"><span className="eyebrow">ACTUAL ATTD CATALOG</span><h2>Danh mục sản phẩm từ hệ thống ATTD.</h2><p>Danh mục được lấy trực tiếp từ nguồn dữ liệu hiện có. Không thay đổi tên hoặc đường dẫn sản phẩm.</p></div><div className="grid">{shownCategories.map(cat=><article className="card" key={cat.id}><Link href={cat.href}><div className="card-image">{cat.imageUrl ? <Image src={cat.imageUrl} alt={cat.name} fill sizes="(max-width: 620px) 100vw, 33vw" style={{objectFit:"cover"}} /> : <div style={{padding:32,fontSize:28,fontWeight:700}}>{cat.name}</div>}</div></Link><div className="card-body"><span className="eyebrow">PRODUCT CATEGORY</span><h3>{cat.name}</h3><Link href={cat.href}>Xem danh mục ↗</Link></div></article>)}</div></div></section>
+ <section className="section soft"><div className="shell"><div className="section-head"><span className="eyebrow">LATEST PRODUCTS</span><h2>Sản phẩm thực tế trên ATTD.</h2><p>Hiển thị sản phẩm đã có trong catalog, sử dụng hình ảnh và đường dẫn hiện hành.</p></div><div className="grid">{latestProducts.slice(0,6).map(product=><article className="card" key={product.id}><Link href={product.href}><div className="card-image">{product.imageUrl ? <Image src={product.imageUrl} alt={product.imageAlt || product.name} fill sizes="(max-width: 620px) 100vw, 33vw" style={{objectFit:"cover"}} /> : <div style={{padding:30,fontWeight:700}}>{product.name}</div>}</div></Link><div className="card-body"><span className="eyebrow">{product.categoryName || "APPAREL"}</span><h3>{product.name}</h3><p>{product.minimumOrderQuantity ? `MOQ: ${product.minimumOrderQuantity} sản phẩm` : "Liên hệ xác nhận số lượng tối thiểu"}</p><Link href={product.href}>Xem sản phẩm ↗</Link></div></article>)}</div><div style={{marginTop:34}}><Link href="/san-pham" className="pill secondary">Xem toàn bộ sản phẩm ↗</Link></div></div></section>
+  <section className="section"><div className="shell"><div className="section-head"><span className="eyebrow">HOW WE WORK</span><h2>Từ nhu cầu đến kế hoạch cung ứng.</h2><p>Quy trình dự án minh bạch để thống nhất sản phẩm, chất lượng và tiến độ.</p></div><div className="grid">{[["01","Gửi brief","Nhu cầu, loại hàng, số lượng và thời gian."],["02","Xây phương án","Chất liệu, quy cách, báo giá và mẫu khi cần."],["03","Triển khai","Sản xuất, kiểm hàng, đóng gói và giao hàng." ]].map(([n,t,d])=><article className="card" key={n}><div className="card-body"><span className="eyebrow">{n}</span><h3>{t}</h3><p>{d}</p></div></article>)}</div></div></section>
+ {blogPosts.length > 0 && <section className="section"><div className="shell"><div className="section-head"><span className="eyebrow">INSIGHTS</span><h2>Bài viết mới từ ATTD.</h2></div><div className="grid">{blogPosts.slice(0,3).map(post=><article className="card" key={post.id}><Link href={post.href}><div className="card-image">{post.imageUrl ? <Image src={post.imageUrl} alt={post.title} fill sizes="(max-width:620px) 100vw, 33vw" style={{objectFit:"cover"}}/> : <div style={{padding:25}}>{post.title}</div>}</div></Link><div className="card-body"><h3>{post.title}</h3><p>{post.excerpt}</p><Link href={post.href}>Đọc bài viết ↗</Link></div></article>)}</div></div></section>}
+ <section className="section dark"><div className="shell cta-row"><div><span className="eyebrow">LET US BUILD TOGETHER</span><h2>Tell us what you need. We will source the right solution.</h2><p>Gửi ý tưởng, số lượng và yêu cầu. ATTD sẽ trao đổi phương án phù hợp với dự án của bạn.</p></div><Link href="/lien-he" className="pill secondary">Trao đổi dự án ↗</Link></div></section>
+ </main>
 }

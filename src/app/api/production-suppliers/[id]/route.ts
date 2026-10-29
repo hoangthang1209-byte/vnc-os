@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
 import {
   getProductionSupplier,
@@ -10,6 +11,12 @@ import { archiveOrDeleteProductionSupplier } from "@/features/production-master/
 import { requireAdminPermission } from "@/lib/permissions/require-admin-permission";
 
 type RouteContext = { params: Promise<{ id: string }> };
+
+const SUPPLIER_TYPES = new Set(["UNKNOWN", "DIRECT_MANUFACTURER", "TRADER", "MIXED", "SERVICE_PROVIDER"]);
+const VERIFICATION_STATUSES = new Set(["UNVERIFIED", "DESK_REVIEWED", "SITE_VISITED", "APPROVED", "REJECTED"]);
+function supplierType(v: unknown) { return typeof v === "string" && SUPPLIER_TYPES.has(v) ? v : "UNKNOWN"; }
+function verificationStatus(v: unknown) { return typeof v === "string" && VERIFICATION_STATUSES.has(v) ? v : "UNVERIFIED"; }
+function optionalText(v: unknown) { return v === null ? null : typeof v === "string" ? v.trim() : undefined; }
 
 export async function GET(req: NextRequest, context: RouteContext) {
   const auth = requireProductionView(req);
@@ -34,9 +41,19 @@ export async function PATCH(req: NextRequest, context: RouteContext) {
   const { id } = await context.params;
   try {
     const body = (await req.json()) as Record<string, unknown>;
+    if (body.verificationStatus === "APPROVED") {
+      const approval = await requireAdminPermission({ platform: "manufacturing", action: "admin", request: req });
+      if (!approval.ok) return approval.response;
+    }
     const updated = await updateProductionSupplier(id, {
       name: typeof body.name === "string" ? body.name : undefined,
-      category: parseSupplierCategory(body.category),
+      category: body.category === undefined ? undefined : parseSupplierCategory(body.category),
+      supplierType: body.supplierType === undefined ? undefined : supplierType(body.supplierType),
+      verificationStatus: body.verificationStatus === undefined ? undefined : verificationStatus(body.verificationStatus),
+      factoryAddress: optionalText(body.factoryAddress),
+      website: optionalText(body.website),
+      capabilities: optionalText(body.capabilities),
+      sourceUrl: optionalText(body.sourceUrl),
       contact: body.contact === null ? null : typeof body.contact === "string" ? body.contact : undefined,
       email: body.email === null ? null : typeof body.email === "string" ? body.email : undefined,
       phone: body.phone === null ? null : typeof body.phone === "string" ? body.phone : undefined,
@@ -46,6 +63,7 @@ export async function PATCH(req: NextRequest, context: RouteContext) {
     });
     return NextResponse.json(updated);
   } catch (err) {
+    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") return NextResponse.json({ message: "Tên nhà cung cấp bị trùng với hồ sơ hiện có." }, { status: 409 });
     if (err instanceof ProductionMasterValidationError) {
       return NextResponse.json({ message: err.message }, { status: 400 });
     }

@@ -359,6 +359,38 @@ describe("automation lane board", () => {
 
   it("maps overall lane states from task truth", () => {
     assert.equal(mapLaneOverallState(taskFixture({ status: "building" })), "dang_build");
+    assert.equal(mapLaneOverallState(taskFixture({ status: "verifying" })), "dang_deploy");
+    assert.equal(mapLaneOverallState(taskFixture({ status: "merging" })), "san_sang_merge");
+    assert.equal(
+      mapLaneOverallState(
+        taskFixture({
+          status: "completed",
+          isOpen: false,
+          productionStatus: {
+            status: "live",
+            mergedCommitSha: "abc",
+            reason: null,
+            checkedAt: "2026-09-21T00:00:00.000Z",
+          },
+        }),
+      ),
+      "production",
+    );
+    assert.equal(
+      mapLaneOverallState(
+        taskFixture({
+          status: "completed",
+          isOpen: false,
+          productionStatus: {
+            status: "deploying",
+            mergedCommitSha: "abc",
+            reason: null,
+            checkedAt: "2026-09-21T00:00:00.000Z",
+          },
+        }),
+      ),
+      "dang_deploy",
+    );
     assert.equal(mapLaneOverallState(taskFixture({ status: "ci_review" })), "dang_kiem_tra");
     assert.equal(mapLaneOverallState(taskFixture({ status: "needs_fix" })), "can_sua");
     assert.equal(mapLaneOverallState(taskFixture({ status: "ready_to_merge" })), "san_sang_merge");
@@ -606,9 +638,24 @@ describe("automation lane board", () => {
       }),
     ]);
 
-    const summary = buildLaneBoardSummary(board);
+    const summary = buildLaneBoardSummary(board, {
+      nowMs: Date.parse("2026-10-24T12:00:00.000Z"),
+      hintsByIssueNumber: new Map([
+        [
+          83,
+          {
+            kind: "agent_run",
+            status: "RUNNING",
+            lastHeartbeatAt: "2026-10-24T11:55:00.000Z",
+            hasVerifiedRunnerLink: true,
+          },
+        ],
+      ]),
+    });
     assert.equal(summary.totalLanes, 7);
     assert.equal(summary.runningCount, 1);
+    assert.equal(summary.runningCountHasUnknown, false);
+    assert.equal(summary.pipelineInProgressCount, 0);
     assert.equal(summary.blockedOrNeedsFixCount, 1);
     assert.equal(summary.productionCount, 1);
 

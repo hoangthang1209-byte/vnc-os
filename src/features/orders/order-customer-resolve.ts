@@ -26,7 +26,9 @@ export async function resolveOrderCustomerSnapshots(
       },
     },
   });
-  if (!customer) return input;
+  if (!customer) {
+    throw new OrderCustomerSnapshotError("Không tìm thấy khách hàng đã chọn. Vui lòng tải lại danh sách khách hàng và chọn lại trước khi tạo đơn.");
+  }
 
   let contact: CrmContactSnapshotSource | null = null;
   if (input.contactId) {

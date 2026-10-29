@@ -377,6 +377,12 @@ export default function AutomationDashboardClient() {
         </p>
       ) : null}
 
+      {data?.configured && view === "active" && data.dataCompleteness?.agentRunHintsUnavailable ? (
+        <p className="admin-alert admin-alert--warning" role="status">
+          Không tải được bằng chứng AgentRun cho bảng lane — số Builder đang chạy có thể hiển thị dấu ? cho
+          đến khi telemetry phục hồi.
+        </p>
+      ) : null}
       {data?.configured && view === "active" && data.dataCompleteness?.closedHistoryUnavailable ? (
         <p className="admin-error" role="status">
           Không thể tải lịch sử task đã đóng (merged/superseded 30 ngày). Dữ liệu task đang mở vẫn hiển thị;
@@ -430,6 +436,7 @@ export default function AutomationDashboardClient() {
               <AutomationLaneBoard
                 tasks={laneBoardData.tasks}
                 laneBoardTasks={laneBoardData.laneBoardTasks}
+                activeBuilderHintsByIssue={laneBoardData.laneBoardActiveBuilderHints}
                 lastUpdatedAt={laneBoardData.fetchedAt}
                 autoRefreshLabel={AUTO_REFRESH_LABEL}
                 writeActionConfigured={laneWriteActionConfigured}

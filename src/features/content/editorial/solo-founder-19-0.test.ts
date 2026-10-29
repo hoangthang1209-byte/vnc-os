@@ -64,7 +64,7 @@ describe("Sprint 19.0 Solo Founder Experience", () => {
 
   it("Solo nav filter hides enterprise Content ops hrefs when present", () => {
     const filtered = filterNavigationForWorkspaceMode(adminNavigationSections, true);
-    const content = filtered.find((s) => s.label === "CONTENT & SEO");
+    const content = filtered.find((s) => s.label === "MARKETING & NỘI DUNG");
     assert.ok(content);
     const hrefs = content.platforms.flatMap((p) => p.items.map((i) => i.href));
     assert.ok(!hrefs.includes("/admin/content/operations"));
@@ -80,9 +80,9 @@ describe("Sprint 19.0 Solo Founder Experience", () => {
 
   it("Team nav keeps Content & SEO primary shortlist unchanged", () => {
     const filtered = filterNavigationForWorkspaceMode(adminNavigationSections, false);
-    const content = filtered.find((s) => s.label === "CONTENT & SEO");
+    const content = filtered.find((s) => s.label === "MARKETING & NỘI DUNG");
     assert.ok(content);
-    const rawContent = adminNavigationSections.find((s) => s.label === "CONTENT & SEO");
+    const rawContent = adminNavigationSections.find((s) => s.label === "MARKETING & NỘI DUNG");
     assert.ok(rawContent);
     assert.deepEqual(
       content.platforms.flatMap((p) => p.items.map((i) => i.href)),

@@ -310,10 +310,11 @@ export async function deactivateCostingSourcePrice(
 export async function mergeCostingSourcePricesForSupplier(
   sourceSupplierId: string,
   targetSupplierId: string,
+  db: Prisma.TransactionClient = prisma,
 ): Promise<{ moved: number; keptOnSource: number }> {
   const [sourcePrices, targetPrices] = await Promise.all([
-    prisma.costingSourcePrice.findMany({ where: { supplierId: sourceSupplierId } }),
-    prisma.costingSourcePrice.findMany({
+    db.costingSourcePrice.findMany({ where: { supplierId: sourceSupplierId } }),
+    db.costingSourcePrice.findMany({
       where: { supplierId: targetSupplierId },
       select: {
         productionMaterialId: true,
@@ -334,14 +335,14 @@ export async function mergeCostingSourcePricesForSupplier(
   for (const price of sourcePrices) {
     const key = price.productionMaterialId ?? price.productionTrimId ?? price.costLibraryItemId ?? "";
     if (targetKeys.has(key)) {
-      await prisma.costingSourcePrice.update({
+      await db.costingSourcePrice.update({
         where: { id: price.id },
         data: { isActive: false },
       });
       keptOnSource += 1;
       continue;
     }
-    await prisma.costingSourcePrice.update({
+    await db.costingSourcePrice.update({
       where: { id: price.id },
       data: { supplierId: targetSupplierId },
     });

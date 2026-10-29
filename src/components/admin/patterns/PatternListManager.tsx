@@ -113,6 +113,9 @@ export default function PatternListManager() {
   const [total, setTotal] = useState(0);
   const [pageCount, setPageCount] = useState(1);
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
+  const [sortBy, setSortBy] = useState("updatedAt");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState("");
@@ -136,7 +139,9 @@ export default function PatternListManager() {
     try {
       const params = new URLSearchParams({
         page: String(page),
-        pageSize: "25",
+        pageSize: String(pageSize),
+        sortBy,
+        sortDir,
       });
       if (statusFilter) params.set("status", statusFilter);
       if (appliedSearch.trim()) params.set("search", appliedSearch.trim());
@@ -159,7 +164,7 @@ export default function PatternListManager() {
     } finally {
       setLoading(false);
     }
-  }, [appliedSearch, page, statusFilter]);
+  }, [appliedSearch, page, pageSize, sortBy, sortDir, statusFilter]);
 
   useEffect(() => {
     // Fetch the current server page whenever filters or pagination change.
@@ -300,8 +305,8 @@ export default function PatternListManager() {
     }
   }
 
-  const firstItem = total === 0 ? 0 : (page - 1) * 25 + 1;
-  const lastItem = Math.min(page * 25, total);
+  const firstItem = total === 0 ? 0 : (page - 1) * pageSize + 1;
+  const lastItem = Math.min(page * pageSize, total);
 
   return (
     <AdminPageShell>
@@ -388,6 +393,39 @@ export default function PatternListManager() {
             <option value="APPROVED">Đã duyệt</option>
             <option value="ARCHIVED">Lưu trữ</option>
           </select>
+          <select
+            className="admin-select"
+            aria-label="Sắp xếp rập"
+            value={`${sortBy}:${sortDir}`}
+            onChange={(event) => {
+              const [field, direction] = event.target.value.split(":");
+              setSortBy(field);
+              setSortDir(direction as "asc" | "desc");
+              setPage(1);
+            }}
+          >
+            <option value="updatedAt:desc">Cập nhật mới nhất</option>
+            <option value="updatedAt:asc">Cập nhật cũ nhất</option>
+            <option value="code:asc">Mã rập A–Z</option>
+            <option value="code:desc">Mã rập Z–A</option>
+            <option value="name:asc">Tên rập A–Z</option>
+            <option value="name:desc">Tên rập Z–A</option>
+            <option value="status:asc">Trạng thái A–Z</option>
+            <option value="status:desc">Trạng thái Z–A</option>
+          </select>
+          <label className={styles.paginationActions}>
+            <span>Hiển thị</span>
+            <select
+              className="admin-select"
+              aria-label="Số rập mỗi trang"
+              value={pageSize}
+              onChange={(event) => { setPageSize(Number(event.target.value)); setPage(1); }}
+            >
+              <option value={25}>25</option>
+              <option value={50}>50</option>
+              <option value={100}>100</option>
+            </select>
+          </label>
           <button type="button" className="admin-btn" onClick={applySearch}>
             Lọc
           </button>

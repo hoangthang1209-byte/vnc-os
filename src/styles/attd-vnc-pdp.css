@@ -1,0 +1,16 @@
+/* ATTD product detail: VNC editorial styling; existing B2B RFQ and data stay unchanged */
+.av-public .v7-pdp{background:#fafaf8;color:#191b1b;font-family:'DM Sans',Arial,sans-serif}
+.av-public .mp-pdp-breadcrumb{background:#fafaf8;border-bottom:1px solid #e5e6e2}
+.av-public .v7-pdp-intro{background:#f2f2ef;border-color:#e5e6e2}
+.av-public .v7-pdp-intro__inner{padding-block:26px;gap:20px}
+.av-public .v7-pdp-intro .v7-kicker{letter-spacing:.16em;text-transform:uppercase;font-size:11px;color:#676b6a}
+.av-public .v7-pdp-intro__link{border-radius:10px;background:#191b1b;color:#fff;padding:13px 19px;font-weight:700}
+.av-public .v7-pdp-context{background:#fafaf8;border-color:#e5e6e2}
+.av-public .v7-pdp-context__links a{border:1px solid #e5e6e2;border-radius:100px;background:#fff;color:#191b1b}
+.av-public .mp-pdp h1,.av-public .mp-pdp h2,.av-public .mp-pdp h3{font-family:Manrope,'DM Sans',sans-serif;letter-spacing:-.035em;color:#191b1b}
+.av-public .mp-pdp h1{font-size:clamp(30px,3.4vw,53px);line-height:1.2}
+.av-public .mp-pdp-section--alt{background:#f2f2ef}
+.av-public .mp-pdp-section-title{font-size:clamp(27px,3.3vw,43px)}
+.av-public .mp-pdp-section-subtitle{color:#676b6a}
+.av-public .mp-pdp a:focus-visible,.av-public .mp-pdp button:focus-visible{outline:3px solid #b72c3d;outline-offset:3px}
+@media(max-width:760px){.av-public .v7-pdp-intro__inner{padding-block:20px}.av-public .v7-pdp-context__links{gap:9px}}

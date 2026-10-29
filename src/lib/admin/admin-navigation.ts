@@ -41,7 +41,7 @@ export const adminDashboardNavItem: AdminNavigationItem = {
  */
 export const adminNavigationSections: AdminNavigationSection[] = [
   {
-    label: "ĐƠN HÀNG & SẢN XUẤT",
+    label: "ĐƠN HÀNG & VẬN HÀNH",
     icon: "🏭",
     platforms: domainItems([
       {
@@ -71,7 +71,7 @@ export const adminNavigationSections: AdminNavigationSection[] = [
     ]),
   },
   {
-    label: "KHÁCH HÀNG & ĐƠN",
+    label: "BÁN HÀNG & CRM",
     icon: "💼",
     platforms: domainItems([
       {
@@ -131,6 +131,18 @@ export const adminNavigationSections: AdminNavigationSection[] = [
       {
         label: "Sản phẩm",
         href: "/admin/products",
+        status: "active",
+        requiredPermissions: ["canManageProducts"],
+      },
+      {
+        label: "Danh mục sản phẩm",
+        href: "/admin/danh-muc",
+        status: "active",
+        requiredPermissions: ["canManageProducts"],
+      },
+      {
+        label: "Media",
+        href: "/admin/media",
         status: "active",
         requiredPermissions: ["canManageProducts"],
       },
@@ -219,22 +231,10 @@ export const adminNavigationSections: AdminNavigationSection[] = [
     icon: "⚙️",
     platforms: domainItems([
       {
-        label: "Media",
-        href: "/admin/media",
-        status: "active",
-        requiredPermissions: ["canManageProducts"],
-      },
-      {
         label: "Cấu hình giá",
         href: "/admin/pricing",
         status: "active",
         requiredPermissions: ["canAccessPricing"],
-      },
-      {
-        label: "Danh mục sản phẩm",
-        href: "/admin/danh-muc",
-        status: "active",
-        requiredPermissions: ["canManageProducts"],
       },
       {
         label: "Người dùng",

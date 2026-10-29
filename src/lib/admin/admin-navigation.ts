@@ -63,12 +63,6 @@ export const adminNavigationSections: AdminNavigationSection[] = [
         requiredPermissions: ["canViewProduction"],
       },
       {
-        label: "Nhà cung cấp",
-        href: "/admin/production-suppliers",
-        status: "active",
-        requiredPermissions: ["canViewProduction"],
-      },
-      {
         label: "Giao hàng",
         href: "/admin/delivery",
         status: "active",
@@ -104,6 +98,24 @@ export const adminNavigationSections: AdminNavigationSection[] = [
         status: "active",
         requiredPermissions: ["canAccessQuotes"],
       },
+    ]),
+  },
+  {
+    label: "SOURCING & SRM",
+    icon: "🏷️",
+    platforms: domainItems([
+      {
+        label: "Nhà cung cấp",
+        href: "/admin/production-suppliers",
+        status: "active",
+        requiredPermissions: ["canViewProduction"],
+      },
+    ]),
+  },
+  {
+    label: "TÀI CHÍNH",
+    icon: "💳",
+    platforms: domainItems([
       {
         label: "Giao dịch ngân hàng",
         href: "/admin/bank-transactions",

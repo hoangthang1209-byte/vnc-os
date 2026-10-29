@@ -36,6 +36,7 @@ export function planSafeParallelDispatch(
   }
   const state = new Map(tasks.map((t) => [t.id, t.state]));
   const locked = new Set<string>();
+  const runningCount = tasks.filter((t) => t.state === "RUNNING").length;
   const selected: string[] = [];
   const deferred: G3DispatchDecision["deferred"] = [];
   for (const task of tasks.filter((t) => t.state === "RUNNING")) {
@@ -51,7 +52,7 @@ export function planSafeParallelDispatch(
     else if (task.resources.length === 0 || task.resources.some((x) => !x.trim())) reason = "unclassified_resources";
     else if (task.dependencies.some((dep) => state.get(dep) !== "COMPLETE")) reason = "dependencies_unverified";
     else if (locked.has("*") || task.resources.some((key) => locked.has(key) || locked.has("*"))) reason = "resource_conflict";
-    else if (selected.length >= concurrencyLimit) reason = "capacity";
+    else if (runningCount + selected.length >= concurrencyLimit) reason = "capacity";
     if (reason) {
       deferred.push({ id: task.id, reason });
       continue;

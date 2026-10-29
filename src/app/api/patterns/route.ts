@@ -36,6 +36,8 @@ export async function GET(req: NextRequest) {
       search: searchParams.get("search") ?? undefined,
       page: Number.isFinite(pageParam) ? pageParam : 1,
       pageSize: Number.isFinite(pageSizeParam) ? pageSizeParam : 25,
+      sortBy: searchParams.get("sortBy") ?? undefined,
+      sortDir: searchParams.get("sortDir") ?? undefined,
     });
     return NextResponse.json(result);
   } catch (err) {

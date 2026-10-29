@@ -28,7 +28,7 @@ class BridgeTests(unittest.TestCase):
     @patch.object(bridge, "api")
     @patch.object(bridge, "validate_launch_issue")
     def test_idempotent_agent_id_per_issue(self, check_issue, api):
-        api.return_value = {"agent": {"id": "bc-test"}, "run": {"id": "run-test"}}
+        api.side_effect = lambda _method, _path, payload: {"agent": {"id": payload["agentId"]}, "run": {"id": "run-test"}}
         with patch.dict(os.environ, {"CURSOR_BRIDGE_MODE": "launch", "CURSOR_ISSUE_NUMBER": "345", "CURSOR_LAUNCH_APPROVED": "true"}):
             bridge.main()
             first = api.call_args.args[2]["agentId"]
@@ -37,6 +37,14 @@ class BridgeTests(unittest.TestCase):
         self.assertEqual(first, second)
         self.assertTrue(first.startswith("bc-"))
         check_issue.assert_called_with("345")
+
+    @patch.object(bridge, "api")
+    @patch.object(bridge, "validate_launch_issue")
+    def test_mismatched_dispatch_acknowledgement_fails_closed(self, _check, api):
+        api.return_value = {"agent": {"id": "bc-unrelated"}, "run": {"id": "run-test"}}
+        with patch.dict(os.environ, {"CURSOR_BRIDGE_MODE": "launch", "CURSOR_ISSUE_NUMBER": "345", "CURSOR_LAUNCH_APPROVED": "true"}):
+            with self.assertRaisesRegex(RuntimeError, "matching agent"):
+                bridge.main()
 
     @patch.object(bridge.subprocess, "run")
     def test_low_risk_issue_must_be_approved(self, run):

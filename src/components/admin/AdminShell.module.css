@@ -450,3 +450,30 @@
 .shell :global(.admin-main-content) :global(button:focus-visible),
 .shell :global(.admin-main-content) :global(a:focus-visible) { outline: 2px solid #e23843; outline-offset: 2px; }
 @media(max-width: 900px) { .sidebar { width: 268px; } .content { padding: 18px 16px 36px; } }
+
+
+/* VNC OS Admin 3.0 — Honeywell-inspired information density, across modules. */
+.shell { --vnc-canvas:#f4f5f7; --vnc-ink:#1d2734; --vnc-muted:#687487; --vnc-line:#e3e6eb; --vnc-accent:#d93a42; background:#f4f5f7; }
+.sidebar { background:#142033; border-color:#22334a; }
+.sidebarTop { background:#142033; }
+.nav { gap:5px; }
+.navSection { padding-top:9px; }
+.sectionLabel { font-size:10px; font-weight:750; letter-spacing:.12em; }
+.navGroup { gap:1px; margin-bottom:8px; }
+.navLink { min-height:34px; padding:7px 10px; font-size:12px; font-weight:580; border-radius:6px; }
+.navLinkActive { background:#2a3a52; box-shadow: inset 3px 0 0 #ec4149; border-left:0; }
+.header { padding:13px 24px; background:#fff; }
+.headerBody { display:flex; flex-direction:column; justify-content:center; }
+.breadcrumbs { margin-bottom:4px; }
+.title { font-size:clamp(18px,2vw,23px); font-weight:740; }
+.content { padding:20px 24px 40px; }
+.shell :global(.admin-main-content) :global(table) { width:100%; font-size:12px; border:1px solid #e5e8ed; border-radius:8px; }
+.shell :global(.admin-main-content) :global(thead) { position:sticky; top:0; z-index:1; }
+.shell :global(.admin-main-content) :global(th) { padding:10px 12px; font-weight:750; color:#3d4859; background:#fafafa; white-space:normal; }
+.shell :global(.admin-main-content) :global(td) { padding:9px 12px; line-height:1.4; }
+.shell :global(.admin-main-content) :global(tr:hover td) { background:#fafbfd; }
+.shell :global(.admin-main-content) :global(input:not([type="checkbox"]):not([type="radio"])),
+.shell :global(.admin-main-content) :global(select),
+.shell :global(.admin-main-content) :global(textarea) { border-radius:6px; }
+.shell :global(.admin-main-content) :global(button) { font-weight:600; }
+@media(max-width:900px) { .header { padding:12px 16px; } .content { padding:16px; } }

@@ -409,3 +409,90 @@
     padding-top: 12px;
   }
 }
+
+
+/* VNC OS Operations Workspace: shared visual language across all Admin routes. */
+.shell {
+  --vnc-canvas: #f3f5f9;
+  --vnc-ink: #182338;
+  --vnc-muted: #71819a;
+  --vnc-line: #e1e7f0;
+  --vnc-accent: #e23843;
+  background: var(--vnc-canvas);
+  color: var(--vnc-ink);
+  font-family: "Be Vietnam Pro", Inter, system-ui, sans-serif;
+}
+.sidebar { flex-basis: 268px; width: 268px; background: #111b2c; border-right: 1px solid #26354c; padding: 16px 12px; }
+.sidebarTop { background: #111b2c; border-bottom-color: #283750; }
+.brandMark { font-size: 21px; letter-spacing: -.045em; }
+.brandSub { color: #a4b4ca; letter-spacing: .22em; }
+.sectionLabel { color: #8fa4c1; font-size: 10px; letter-spacing: .13em; font-weight: 750; }
+.navLink { border-radius: 9px; min-height: 38px; transition: background .15s, color .15s; }
+.navLink:hover { background: #26354d; color: #fff; }
+.navLinkActive { background: #2a3c5b; border-left: 3px solid #ee444e; color: #fff; }
+.main { background: var(--vnc-canvas); min-width: 0; }
+.header { background: rgba(255,255,255,.96); border-bottom: 1px solid var(--vnc-line); box-shadow: 0 1px 1px rgba(14,26,45,.025); }
+.breadcrumbs { color: #8090aa; font-size: 11px; }
+.title { color: #16233b; font-weight: 760; letter-spacing: -.035em; }
+.description { color: #73839e; }
+.content { width: 100%; max-width: none; padding: 24px 28px 48px; }
+/* Page-level surface, tables and form treatment without modifying business logic. */
+.shell :global(.admin-main-content) :global(table) { border-collapse: separate; border-spacing: 0; background: #fff; border-radius: 12px; }
+.shell :global(.admin-main-content) :global(th) { background: #f7f9fc; color: #5e718f; font-size: 11px; letter-spacing: .045em; font-weight: 750; }
+.shell :global(.admin-main-content) :global(th),
+.shell :global(.admin-main-content) :global(td) { border-bottom-color: #e9edf4; }
+.shell :global(.admin-main-content) :global(input),
+.shell :global(.admin-main-content) :global(select),
+.shell :global(.admin-main-content) :global(textarea) { max-width: 100%; }
+.shell :global(.admin-main-content) :global(button) { transition: background-color .15s, border-color .15s, box-shadow .15s; }
+.shell :global(.admin-main-content) :global(input:focus-visible),
+.shell :global(.admin-main-content) :global(select:focus-visible),
+.shell :global(.admin-main-content) :global(button:focus-visible),
+.shell :global(.admin-main-content) :global(a:focus-visible) { outline: 2px solid #e23843; outline-offset: 2px; }
+@media(max-width: 900px) { .sidebar { width: 268px; } .content { padding: 18px 16px 36px; } }
+
+
+/* VNC OS Admin 3.0 — Honeywell-inspired information density, across modules. */
+.shell { --vnc-canvas:#f4f5f7; --vnc-ink:#1d2734; --vnc-muted:#687487; --vnc-line:#e3e6eb; --vnc-accent:#d93a42; background:#f4f5f7; }
+.sidebar { background:#142033; border-color:#22334a; }
+.sidebarTop { background:#142033; }
+.nav { gap:5px; }
+.navSection { padding-top:9px; }
+.sectionLabel { font-size:10px; font-weight:750; letter-spacing:.12em; }
+.navGroup { gap:1px; margin-bottom:8px; }
+.navLink { min-height:34px; padding:7px 10px; font-size:12px; font-weight:580; border-radius:6px; }
+.navLinkActive { background:#2a3a52; box-shadow: inset 3px 0 0 #ec4149; border-left:0; }
+.header { padding:13px 24px; background:#fff; }
+.headerBody { display:flex; flex-direction:column; justify-content:center; }
+.breadcrumbs { margin-bottom:4px; }
+.title { font-size:clamp(18px,2vw,23px); font-weight:740; }
+.content { padding:20px 24px 40px; }
+.shell :global(.admin-main-content) :global(table) { width:100%; font-size:12px; border:1px solid #e5e8ed; border-radius:8px; }
+.shell :global(.admin-main-content) :global(thead) { position:sticky; top:0; z-index:1; }
+.shell :global(.admin-main-content) :global(th) { padding:10px 12px; font-weight:750; color:#3d4859; background:#fafafa; white-space:normal; }
+.shell :global(.admin-main-content) :global(td) { padding:9px 12px; line-height:1.4; }
+.shell :global(.admin-main-content) :global(tr:hover td) { background:#fafbfd; }
+.shell :global(.admin-main-content) :global(input:not([type="checkbox"]):not([type="radio"])),
+.shell :global(.admin-main-content) :global(select),
+.shell :global(.admin-main-content) :global(textarea) { border-radius:6px; }
+.shell :global(.admin-main-content) :global(button) { font-weight:600; }
+@media(max-width:900px) { .header { padding:12px 16px; } .content { padding:16px; } }
+
+
+/* Global primitive for per-module data screens, scoped to the admin shell. */
+.shell :global(.vnc-data-workspace){background:white;border:1px solid #e1e5eb;border-radius:10px;overflow:hidden;color:#1d2734}
+.shell :global(.vnc-data-workspace__header){display:flex;justify-content:space-between;align-items:center;gap:16px;padding:17px 20px 12px}
+.shell :global(.vnc-data-workspace__header h2){font-size:15px;font-weight:760;margin:0}
+.shell :global(.vnc-data-workspace__header p){color:#7b8796;font-size:12px;margin:4px 0 0}
+.shell :global(.vnc-data-workspace__toolbar){display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 20px;border-bottom:1px solid #e8ebef}
+.shell :global(.vnc-data-workspace__toolbar input){width:min(340px,100%);padding:8px 12px;border:1px solid #d9dfe7;border-radius:6px;background:#f9fafb;font-size:12px}
+.shell :global(.vnc-data-workspace__toolbar span){font-size:11px;color:#778396}
+.shell :global(.vnc-data-workspace__scroll){overflow-x:auto;max-width:100%}
+.shell :global(.vnc-data-workspace table){width:100%;border:0;border-collapse:collapse;font-size:12px}
+.shell :global(.vnc-data-workspace th){text-align:left;background:#f9fafb;border-bottom:1px solid #e4e8ef;padding:0}
+.shell :global(.vnc-data-workspace th button){width:100%;text-align:left;padding:11px 14px;color:#455266;font-size:10px;text-transform:uppercase;letter-spacing:.06em;background:transparent;border:0;cursor:pointer}
+.shell :global(.vnc-data-workspace td){padding:11px 14px;border-bottom:1px solid #edf0f4}
+.shell :global(.vnc-data-workspace tbody tr:hover){background:#fafbfd}
+.shell :global(.vnc-data-workspace__footer){display:flex;justify-content:space-between;align-items:center;padding:10px 18px;font-size:11px;color:#6b778a}
+.shell :global(.vnc-data-workspace__footer button){padding:6px 11px;margin-left:6px;border:1px solid #dce1e8;background:white;border-radius:6px}
+.shell :global(.vnc-data-workspace__footer button:disabled){opacity:.45}

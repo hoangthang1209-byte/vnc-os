@@ -9,6 +9,7 @@ import AdminEnvironmentBadge from "@/components/admin/AdminEnvironmentBadge";
 import AdminScrollRestoration from "@/components/admin/AdminScrollRestoration";
 import AdminCommandPalette from "@/components/admin/AdminCommandPalette";
 import AdminMultiWindowWorkspace from "@/components/admin/AdminMultiWindowWorkspace";
+import AdminModuleSwitcher from "@/components/admin/AdminModuleSwitcher";
 import { AdminTitleProvider, useAdminTitle } from "@/components/admin/AdminTitleContext";
 import { useAdminPermissions, type AdminPermissionFlags } from "@/components/admin/AdminPermissionsContext";
 import { WorkspaceModeProvider, useWorkspaceMode } from "@/components/admin/content/WorkspaceModeContext";
@@ -306,6 +307,7 @@ function AdminShellMain({
         </div>
         <div className={styles.headerActions}>
           <WorkspaceModeToggle />
+          <AdminModuleSwitcher />
           <AdminMultiWindowWorkspace />
         </div>
       </header>

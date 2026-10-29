@@ -10,6 +10,7 @@ import type { EmployeeRecord } from "@/features/employees/employee.service";
 import type { OrderDetailRecord } from "@/features/orders/order.types";
 import OrderWorkspaceHeader from "./OrderWorkspaceHeader";
 import OrderWorkspaceSummaryCards from "./OrderWorkspaceSummaryCards";
+import OrderExecutionControl from "./OrderExecutionControl";
 import OrderProductTable from "./OrderProductTable";
 import OrderProductionSummaryPanel from "./OrderProductionSummaryPanel";
 import OrderItemProductionPanel from "@/components/admin/item-production/OrderItemProductionPanel";
@@ -132,16 +133,17 @@ export default function OrderWorkspaceShell(props: OrderWorkspaceShellProps) {
   const [activeTab, setActiveTab] = useState<OrderWorkspaceTab>(defaultTabForRole(roleCode));
 
   useEffect(() => {
+    let nextTab = defaultTabForRole(roleCode);
     try {
       const stored = sessionStorage.getItem(tabStorageKey) as OrderWorkspaceTab | null;
       if (stored && visibleTabs.some((t) => t.key === stored)) {
-        setActiveTab(stored);
-        return;
+        nextTab = stored;
       }
     } catch {
       /* ignore */
     }
-    setActiveTab(defaultTabForRole(roleCode));
+    // Defer React state update to avoid synchronous render cascades in an effect.
+    Promise.resolve().then(() => setActiveTab(nextTab));
   }, [orderId, roleCode, tabStorageKey, visibleTabs]);
 
   const navigateTab = useCallback(
@@ -189,6 +191,8 @@ export default function OrderWorkspaceShell(props: OrderWorkspaceShellProps) {
         canEditOrder={canEditOrder}
         onNavigateTab={navigateTab}
       />
+
+      <OrderExecutionControl order={order} onNavigateTab={navigateTab} canViewFinancials={canViewFinancials} />
 
       <div className="admin-crm-360-tabs order-workspace-tabs" role="tablist">
         {visibleTabs.map((tab) => (

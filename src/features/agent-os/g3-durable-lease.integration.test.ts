@@ -10,19 +10,28 @@ import {
 /**
  * Opt-in REAL PostgreSQL concurrency test, never pointed at Production.
  * Requires an isolated database named *_test or *_ci with the additive G3
- * migration already applied. It does not run in default npm test/CI.
+ * migration already applied. CI uses ONLY its local PostgreSQL attd_ci service;
+ * local manual execution requires an explicit separate test database URL.
  *
  * G3_LEASE_TEST_DATABASE_URL=postgresql://.../vnc_g3_test
  * NODE_OPTIONS=--conditions=react-server npx tsx --test \
  *   src/features/agent-os/g3-durable-lease.integration.test.ts
  */
-const testUrl = process.env.G3_LEASE_TEST_DATABASE_URL;
+const testUrl = process.env.G3_LEASE_TEST_DATABASE_URL ??
+  (process.env.CI === "true" ? process.env.DATABASE_URL : undefined);
 function isIsolatedTestUrl(value: string | undefined): value is string {
-  if (!value || value === process.env.DATABASE_URL) return false;
+  if (!value) return false;
   try {
     const parsed = new URL(value);
-    return /^postgres(ql)?:$/.test(parsed.protocol) &&
-      /(?:_test|_ci)$/.test(decodeURIComponent(parsed.pathname.slice(1)));
+    const dbName = decodeURIComponent(parsed.pathname.slice(1));
+    if (!/^postgres(ql)?:$/.test(parsed.protocol) || !/(?:_test|_ci)$/.test(dbName)) return false;
+    // CI can use its local ephemeral PostgreSQL service; NEVER a remote CI DB.
+    if (value === process.env.DATABASE_URL) {
+      return process.env.CI === "true" &&
+        (parsed.hostname === "localhost" || parsed.hostname === "127.0.0.1") &&
+        dbName.endsWith("_ci");
+    }
+    return true;
   } catch {
     return false;
   }

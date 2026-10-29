@@ -11,6 +11,7 @@ import type { OrderDetailRecord } from "@/features/orders/order.types";
 import OrderWorkspaceHeader from "./OrderWorkspaceHeader";
 import OrderWorkspaceSummaryCards from "./OrderWorkspaceSummaryCards";
 import OrderExecutionControl from "./OrderExecutionControl";
+import OrderBatchAssignment from "./OrderBatchAssignment";
 import OrderProductTable from "./OrderProductTable";
 import OrderProductionSummaryPanel from "./OrderProductionSummaryPanel";
 import OrderItemProductionPanel from "@/components/admin/item-production/OrderItemProductionPanel";
@@ -234,6 +235,10 @@ export default function OrderWorkspaceShell(props: OrderWorkspaceShellProps) {
 
         {activeTab === "products" && (
           <OrderItemProductionPanel orderId={orderId} orderStatus={order.status} />
+        )}
+
+        {activeTab === "info" && (
+          <OrderBatchAssignment orderId={orderId} customerId={order.customerId} canEditOrder={canEditOrder} />
         )}
 
         {activeTab === "info" && (

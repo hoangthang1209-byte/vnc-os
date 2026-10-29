@@ -15,6 +15,14 @@ type AdminBreadcrumbRule = {
  * Non-param paths also match descendants via prefix.
  */
 const breadcrumbRules: AdminBreadcrumbRule[] = [
+  {
+    path: "/admin/supplier-srm",
+    meta: {
+      breadcrumbs: ["SOURCING", "Nhà cung cấp"],
+      title: "Quản lý nhà cung cấp · SRM",
+      description: "Hồ sơ xưởng, xác minh năng lực và yêu cầu báo giá trong VNC OS.",
+    },
+  },
   // ── Dashboard ──────────────────────────────────────────────
   {
     path: "/admin/dashboard",
@@ -919,7 +927,7 @@ export function getAdminBreadcrumbMeta(pathname: string): AdminBreadcrumbMeta {
 
   return {
     breadcrumbs: ["Admin"],
-    title: "ATTD Admin",
-    description: "Quản trị dữ liệu, nội dung và vận hành nội bộ của ATTD.",
+    title: "VNC OS",
+    description: "Quản trị vận hành, sourcing và dữ liệu doanh nghiệp trên VNC OS.",
   };
 }

@@ -63,7 +63,13 @@ export const adminNavigationSections: AdminNavigationSection[] = [
         requiredPermissions: ["canViewProduction"],
       },
       {
-        label: "Nhà cung cấp",
+        label: "Nhà cung cấp · SRM",
+        href: "/admin/supplier-srm",
+        status: "active",
+        requiredPermissions: ["canViewProduction"],
+      },
+      {
+        label: "Danh mục NCC kỹ thuật",
         href: "/admin/production-suppliers",
         status: "active",
         requiredPermissions: ["canViewProduction"],

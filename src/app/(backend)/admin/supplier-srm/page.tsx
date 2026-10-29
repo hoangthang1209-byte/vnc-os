@@ -7,6 +7,8 @@ type Rfq = { id: string; title: string; status: string; supplier: { name: string
 type Score = { id: string; period: string; supplier: { name: string }; weightedScore: number; qualityScore: number; deliveryScore: number; priceScore: number; responsivenessScore: number };
 export default function SupplierSrmPage() {
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+  const [supplierLoading,setSupplierLoading] = useState(true);
+  const [supplierError,setSupplierError] = useState("");
   const [rfqs, setRfqs] = useState<Rfq[]>([]);
   const [scores, setScores] = useState<Score[]>([]);
   const [supplierId, setSupplierId] = useState("");
@@ -35,10 +37,24 @@ export default function SupplierSrmPage() {
   const [quoteLead,setQuoteLead] = useState("");
   const [quoteStatus,setQuoteStatus] = useState("QUOTED");
   async function refresh() {
-    const [s,r,c] = await Promise.all([fetch("/api/production-suppliers?pageSize=1000"),fetch("/api/supplier-rfqs"),fetch("/api/supplier-scorecards")]);
-    if (s.ok) { const v = await s.json(); setSuppliers(v.items ?? []); }
-    if (r.ok) { const v = await r.json(); setRfqs(v.items ?? []); }
-    if (c.ok) { const v = await c.json(); setScores(v.items ?? []); }
+    setSupplierLoading(true);
+    setSupplierError("");
+    try {
+      const s = await fetch("/api/production-suppliers?pageSize=1000", { cache: "no-store" });
+      const data = await s.json().catch(() => ({}));
+      if (!s.ok) {
+        const reason = typeof data.message === "string" ? data.message : "Không tải được danh sách NCC.";
+        throw new Error(`${reason} (HTTP ${s.status}). Vui lòng kiểm tra quyền truy cập hoặc đăng nhập lại.`);
+      }
+      if (!Array.isArray(data.items)) throw new Error("API trả về dữ liệu NCC không hợp lệ.");
+      setSuppliers(data.items);
+    } catch (error) {
+      setSupplierError(error instanceof Error ? error.message : "Không thể kết nối API nhà cung cấp.");
+      setSuppliers([]);
+    } finally { setSupplierLoading(false); }
+    const [r,c] = await Promise.allSettled([fetch("/api/supplier-rfqs"),fetch("/api/supplier-scorecards")]);
+    if (r.status === "fulfilled" && r.value.ok) { const data = await r.value.json(); setRfqs(data.items ?? []); }
+    if (c.status === "fulfilled" && c.value.ok) { const data = await c.value.json(); setScores(data.items ?? []); }
   }
   useEffect(() => { void Promise.resolve().then(() => refresh()); }, []);
   async function submit(url: string, data: Record<string, unknown>) {
@@ -90,9 +106,10 @@ export default function SupplierSrmPage() {
       </form>
     </section>
     <section className="space-y-3 rounded-xl border bg-white p-5">
-      <div className="flex flex-wrap items-center justify-between gap-3"><h2 className="text-lg font-semibold">2. Nhà cung cấp đã lưu ({suppliers.length})</h2><Link href="/admin/production-suppliers" className="text-sm underline">Lọc và quản lý nâng cao</Link></div>
+      <div className="flex flex-wrap items-center justify-between gap-3"><h2 className="text-lg font-semibold">2. Nhà cung cấp đã lưu ({supplierLoading ? "Đang tải" : supplierError ? "Lỗi tải dữ liệu" : suppliers.length})</h2><Link href="/admin/production-suppliers" className="text-sm underline">Lọc và quản lý nâng cao</Link></div>
+      {supplierError && <div role="alert" className="rounded border border-red-300 bg-red-50 p-3 text-sm text-red-800"><strong>Không tải được nhà cung cấp:</strong> {supplierError} <button className="ml-2 underline" type="button" onClick={()=>void refresh()}>Thử lại</button></div>}
       <input className="w-full rounded border p-2" placeholder="Tìm theo tên, mã, số điện thoại, năng lực..." value={entrySearch} onChange={e=>setEntrySearch(e.target.value)}/>
-      <div className="overflow-auto"><table className="w-full text-left text-sm"><thead><tr><th className="p-2">Nhà cung cấp</th><th className="p-2">Loại hình</th><th className="p-2">Xác minh</th><th className="p-2">Liên hệ</th><th className="p-2">Thao tác</th></tr></thead><tbody>{filteredSuppliers.map(s=><tr key={s.id} className="border-t"><td className="p-2"><strong>{s.name}</strong><div className="text-xs text-gray-500">{s.code}</div></td><td className="p-2">{s.supplierType === "DIRECT_MANUFACTURER" ? "Xưởng (chưa chắc đã xác minh)" : s.supplierType === "TRADER" ? "Thương mại" : s.supplierType ?? "Chưa phân loại"}</td><td className="p-2">{s.verificationStatus === "APPROVED" ? "Đã duyệt" : s.verificationStatus === "REJECTED" ? "Không đạt" : "Chưa phê duyệt"}</td><td className="p-2">{s.phone || "—"}</td><td className="p-2"><Link className="underline" href={`/admin/production-suppliers/${s.id}`}>Xem / sửa</Link></td></tr>)}</tbody></table>{filteredSuppliers.length === 0 && <p className="p-4 text-sm text-gray-500">Chưa có nhà cung cấp phù hợp.</p>}</div>
+      <div className="overflow-auto"><table className="w-full text-left text-sm"><thead><tr><th className="p-2">Nhà cung cấp</th><th className="p-2">Loại hình</th><th className="p-2">Xác minh</th><th className="p-2">Liên hệ</th><th className="p-2">Thao tác</th></tr></thead><tbody>{filteredSuppliers.map(s=><tr key={s.id} className="border-t"><td className="p-2"><strong>{s.name}</strong><div className="text-xs text-gray-500">{s.code}</div></td><td className="p-2">{s.supplierType === "DIRECT_MANUFACTURER" ? "Xưởng (chưa chắc đã xác minh)" : s.supplierType === "TRADER" ? "Thương mại" : s.supplierType ?? "Chưa phân loại"}</td><td className="p-2">{s.verificationStatus === "APPROVED" ? "Đã duyệt" : s.verificationStatus === "REJECTED" ? "Không đạt" : "Chưa phê duyệt"}</td><td className="p-2">{s.phone || "—"}</td><td className="p-2"><Link className="underline" href={`/admin/production-suppliers/${s.id}`}>Xem / sửa</Link></td></tr>)}</tbody></table>{!supplierLoading && !supplierError && filteredSuppliers.length === 0 && <p className="p-4 text-sm text-gray-500">Chưa có nhà cung cấp phù hợp.</p>}</div>
     </section>
     <p className="text-sm text-gray-500">Quản lý báo giá và đánh giá NCC. Thông tin thẩm định thực tế cần được xác nhận riêng trước khi phê duyệt.</p>
     <label className="block text-sm">Nhà cung cấp

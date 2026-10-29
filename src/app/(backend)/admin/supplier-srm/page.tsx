@@ -21,6 +21,7 @@ export default function SupplierSrmPage() {
   const [entryPhone,setEntryPhone] = useState("");
   const [entryEmail,setEntryEmail] = useState("");
   const [entryWebsite,setEntryWebsite] = useState("");
+  const [entrySource,setEntrySource] = useState("");
   const [entryContact,setEntryContact] = useState("");
   const [entryNotes,setEntryNotes] = useState("");
   const [entryAddress,setEntryAddress] = useState("");
@@ -55,12 +56,12 @@ export default function SupplierSrmPage() {
     try {
       const response = await fetch("/api/production-suppliers", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: entryName.trim(), phone: entryPhone.trim() || null, email: entryEmail.trim() || null, website: entryWebsite.trim() || null, contact: entryContact.trim() || null, notes: entryNotes.trim() || null, factoryAddress: entryAddress.trim() || null,
+        body: JSON.stringify({ name: entryName.trim(), phone: entryPhone.trim() || null, email: entryEmail.trim() || null, website: entryWebsite.trim() || null, sourceUrl: entrySource.trim() || null, contact: entryContact.trim() || null, notes: entryNotes.trim() || null, factoryAddress: entryAddress.trim() || null,
           capabilities: entryCapabilities.trim() || null, supplierType: entryType, verificationStatus: "UNVERIFIED", isActive: false }),
       });
       const result = await response.json();
       if (!response.ok) throw new Error(result.message ?? "Không thể lưu hồ sơ.");
-      setEntryName(""); setEntryPhone(""); setEntryEmail(""); setEntryWebsite(""); setEntryContact(""); setEntryNotes(""); setEntryAddress(""); setEntryCapabilities(""); setEntryType("UNKNOWN");
+      setEntryName(""); setEntryPhone(""); setEntryEmail(""); setEntryWebsite(""); setEntrySource(""); setEntryContact(""); setEntryNotes(""); setEntryAddress(""); setEntryCapabilities(""); setEntryType("UNKNOWN");
       setMessage("Đã lưu hồ sơ mới ở trạng thái chưa xác minh.");
       await refresh();
     } catch (error) {
@@ -80,6 +81,7 @@ export default function SupplierSrmPage() {
         <label className="text-sm">Người liên hệ<input className="mt-1 w-full rounded border p-2" value={entryContact} onChange={e=>setEntryContact(e.target.value)} placeholder="Tên phụ trách"/></label>
         <label className="text-sm">Email<input type="email" className="mt-1 w-full rounded border p-2" value={entryEmail} onChange={e=>setEntryEmail(e.target.value)} placeholder="email@company.com"/></label>
         <label className="text-sm">Website<input type="url" className="mt-1 w-full rounded border p-2" value={entryWebsite} onChange={e=>setEntryWebsite(e.target.value)} placeholder="https://example.com"/></label>
+        <label className="text-sm">Nguồn tìm thấy xưởng<input type="url" className="mt-1 w-full rounded border p-2" value={entrySource} onChange={e=>setEntrySource(e.target.value)} placeholder="https://..."/></label>
         <label className="text-sm">Loại hình<select className="mt-1 w-full rounded border p-2" value={entryType} onChange={e=>setEntryType(e.target.value)}><option value="UNKNOWN">Chưa xác định</option><option value="DIRECT_MANUFACTURER">Xưởng sản xuất trực tiếp (chưa xác minh)</option><option value="TRADER">Đơn vị thương mại</option><option value="MIXED">Vừa sản xuất vừa thương mại</option><option value="SERVICE_PROVIDER">Dịch vụ</option></select></label>
         <label className="text-sm">Địa chỉ xưởng<input className="mt-1 w-full rounded border p-2" value={entryAddress} onChange={e=>setEntryAddress(e.target.value)} placeholder="Địa chỉ hoặc khu vực sản xuất"/></label>
         <label className="text-sm sm:col-span-2">Năng lực / sản phẩm có thể làm<textarea className="mt-1 w-full rounded border p-2" rows={2} value={entryCapabilities} onChange={e=>setEntryCapabilities(e.target.value)} placeholder="Thú nhồi bông, móc khóa plush, bao bì, MOQ..."/></label>

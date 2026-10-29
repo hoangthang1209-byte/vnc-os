@@ -6,6 +6,16 @@ import { isOwnerLikeSession } from "@/features/auth/admin-permissions";
 type Context = { params: Promise<{ id: string }> };
 
 // Restrict hierarchy changes to the owner until scoped RBAC is implemented.
+export async function GET(req: NextRequest, context: Context) {
+  const session = getAdminSessionFromRequest(req);
+  if (!session.authenticated) return NextResponse.json({ message: "Chưa đăng nhập" }, { status: 401 });
+  if (!isOwnerLikeSession(session)) return NextResponse.json({ message: "Không có quyền xem Batch" }, { status: 403 });
+  const { id } = await context.params;
+  const order = await prisma.order.findUnique({ where: { id }, select: { id: true, batchId: true, customerPoNo: true } });
+  if (!order) return NextResponse.json({ message: "Không tìm thấy Order" }, { status: 404 });
+  return NextResponse.json({ order });
+}
+
 export async function PATCH(req: NextRequest, context: Context) {
   const session = getAdminSessionFromRequest(req);
   if (!session.authenticated) return NextResponse.json({ message: "Chưa đăng nhập" }, { status: 401 });

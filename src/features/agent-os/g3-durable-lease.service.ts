@@ -9,7 +9,7 @@ import { prisma } from "@/lib/prisma";
  * dispatcher, API route or background job. Apply the additive migration on an
  * isolated test DB and pass review before enabling any executor.
  *
- * The DB clock is authoritative. Each claim is a single INSERT ... ON CONFLICT
+ * The DB wall clock is authoritative (clock_timestamp(), not transaction-start\n * timestamp): a claim delayed by a row lock must not be born expired.\n * Each claim is a single INSERT ... ON CONFLICT
  * conditional UPDATE; competing claimers cannot both win. No raw lease token
  * is persisted or returned. Never log a token or include it in event payloads.
  */
@@ -96,9 +96,9 @@ export async function claimDurableG3Lease(
       ("id", "taskRunId", "executorId", "tokenHash", "headSha", "attempt",
        "status", "heartbeatAt", "expiresAt", "createdAt", "updatedAt")
     SELECT ${randomUUID()}, eligible."id", ${executorId}, ${tokenHash}, ${headSha},
-           1, 'CLAIMED', CURRENT_TIMESTAMP,
-           CURRENT_TIMESTAMP + (${ttlMs} * INTERVAL '1 millisecond'),
-           CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+           1, 'CLAIMED', clock_timestamp(),
+           clock_timestamp() + (${ttlMs} * INTERVAL '1 millisecond'),
+           clock_timestamp(), clock_timestamp()
     FROM eligible
     WHERE TRUE
     ON CONFLICT ("taskRunId") DO UPDATE SET
@@ -107,11 +107,11 @@ export async function claimDurableG3Lease(
       "headSha" = EXCLUDED."headSha",
       "attempt" = "G3TaskLease"."attempt" + 1,
       "status" = 'CLAIMED',
-      "heartbeatAt" = CURRENT_TIMESTAMP,
+      "heartbeatAt" = clock_timestamp(),
       "expiresAt" = EXCLUDED."expiresAt",
-      "updatedAt" = CURRENT_TIMESTAMP
+      "updatedAt" = clock_timestamp()
     WHERE ("G3TaskLease"."status" = 'RELEASED'
-           OR "G3TaskLease"."expiresAt" <= CURRENT_TIMESTAMP)
+           OR "G3TaskLease"."expiresAt" <= clock_timestamp())
       AND "G3TaskLease"."tokenHash" <> EXCLUDED."tokenHash"
       AND "G3TaskLease"."attempt" < 2147483647
       AND EXISTS (
@@ -149,9 +149,9 @@ export async function renewDurableG3Lease(
     )
     UPDATE "G3TaskLease" lease SET
       "status" = 'RUNNING',
-      "heartbeatAt" = CURRENT_TIMESTAMP,
-      "expiresAt" = CURRENT_TIMESTAMP + (${ttlMs} * INTERVAL '1 millisecond'),
-      "updatedAt" = CURRENT_TIMESTAMP
+      "heartbeatAt" = clock_timestamp(),
+      "expiresAt" = clock_timestamp() + (${ttlMs} * INTERVAL '1 millisecond'),
+      "updatedAt" = clock_timestamp()
     FROM eligible
     WHERE lease."taskRunId" = eligible."id"
       AND lease."taskRunId" = ${taskRunId}
@@ -159,7 +159,7 @@ export async function renewDurableG3Lease(
       AND lease."tokenHash" = ${tokenHash}
       AND lease."headSha" = ${headSha}
       AND lease."status" IN ('CLAIMED', 'RUNNING')
-      AND lease."expiresAt" > CURRENT_TIMESTAMP
+      AND lease."expiresAt" > clock_timestamp()
       AND EXISTS (
         SELECT 1 FROM "TaskRun" task
         JOIN "AgentRun" run ON run."id" = task."agentRunId"
@@ -184,14 +184,14 @@ export async function releaseDurableG3Lease(
   const rows = await db.$queryRaw<G3DurableLease[]>`
     UPDATE "G3TaskLease" SET
       "status" = 'RELEASED',
-      "expiresAt" = CURRENT_TIMESTAMP,
-      "updatedAt" = CURRENT_TIMESTAMP
+      "expiresAt" = clock_timestamp(),
+      "updatedAt" = clock_timestamp()
     WHERE "taskRunId" = ${taskRunId}
       AND "executorId" = ${executorId}
       AND "tokenHash" = ${tokenHash}
       AND "headSha" = ${headSha}
       AND "status" IN ('CLAIMED', 'RUNNING')
-      AND "expiresAt" > CURRENT_TIMESTAMP
+      AND "expiresAt" > clock_timestamp()
     RETURNING "taskRunId", "executorId", "headSha", "attempt",
               "status", "heartbeatAt", "expiresAt"
   `;

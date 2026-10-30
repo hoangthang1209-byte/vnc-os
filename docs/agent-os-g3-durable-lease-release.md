@@ -10,7 +10,9 @@ an autonomous executor has run.
 - Additive `G3TaskLease` model and PostgreSQL migration; one lease row per
   G2 `TaskRun` via a unique index and cascading FK.
 - Atomic conditional `INSERT ... ON CONFLICT ... DO UPDATE ... WHERE` claim
-  using the **database clock**; at most one concurrent claimant succeeds.
+  using the **database wall clock** (`clock_timestamp()`), not PostgreSQL's
+  transaction-start `CURRENT_TIMESTAMP`; a lock wait or long-running transaction
+  must not create an immediately expired lease. At most one concurrent claimant succeeds.
 - Renew/release require exact task ID, executor identity, SHA, hashed token,
   nonterminal task (renew), active lease and unexpired TTL. Reclaim requires a
   fresh token and increments attempt; old tokens cannot renew or release.

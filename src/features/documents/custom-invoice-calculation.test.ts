@@ -11,13 +11,13 @@ test("calculates sample fee invoice in USD exactly", () => {
   assert.equal(formatMinor(result.totalMinor,"USD"),"209.00");
 });
 test("keeps decimal calculations exact", () => {
-  assert.equal(lineAmountMinor("3","0.10","USD"),30n);
-  assert.equal(toMinor("1.005","USD"),101n);
-  assert.equal(toMinor("1.5","VND"),2n);
+  assert.equal(lineAmountMinor("3","0.10","USD"),BigInt(30));
+  assert.equal(toMinor("1.005","USD"),BigInt(101));
+  assert.equal(toMinor("1.5","VND"),BigInt(2));
 });
 test("applies discount, extra charge and tax", () => {
   const result = calculateCustomInvoice({currency:"USD", lines:[{ description:"Fee",quantity:"1",unit:"set",unitPrice:"100" }], discount:"10", extraCharge:"5", tax:"2"});
-  assert.equal(result.totalMinor,9700n);
+  assert.equal(result.totalMinor,BigInt(9700));
 });
 test("rejects invalid lines and discounts", () => {
   assert.throws(()=>calculateCustomInvoice({currency:"USD",lines:[]}));

@@ -31,6 +31,7 @@ export default function MultisiteStudio(){
   const [loading,setLoading]=useState(false);
   const [editing,setEditing]=useState<{id:string;version:number}|null>(null);
   const [selectedRevision,setSelectedRevision]=useState<{pageId:string;revision:Revision;publishedRevisionId:string|null}|null>(null);
+  const [revisionHistory,setRevisionHistory]=useState<Revision[]>([]);
   const [notice,setNotice]=useState("");
   const [error,setError]=useState("");
   const refresh=useCallback(async (selected:SiteId)=>{
@@ -52,7 +53,7 @@ export default function MultisiteStudio(){
       if(!response.ok)throw Error(payload.message||"Unable to load revision");
       const revision:Revision|undefined=payload.page?.revisions?.[0];
       if(!revision || !Array.isArray(revision.content?.blocks))throw Error("No editable revision found");
-      setEditing({id:page.id,version:revision.version});setSelectedRevision({pageId:page.id,revision,publishedRevisionId:payload.page.publishedRevisionId});setSlug(page.slug);setTitle(typeof (revision.content as {title?:unknown}).title==="string"?(revision.content as {title:string}).title:page.title);
+      setEditing({id:page.id,version:revision.version});setSelectedRevision({pageId:page.id,revision,publishedRevisionId:payload.page.publishedRevisionId});setRevisionHistory(payload.page.revisions||[]);setSlug(page.slug);setTitle(typeof (revision.content as {title?:unknown}).title==="string"?(revision.content as {title:string}).title:page.title);
       setBlocks(revision.content.blocks.filter((b:Block)=>["hero","richText","cta"].includes(b.type)).map((b:Block)=>({type:b.type,data:b.data})));
       if(revision.content.blocks.some((b:Block)=>!["hero","richText","cta"].includes(b.type))) {
         setEditing(null);throw Error("This page contains advanced blocks. Editing is disabled to prevent data loss.");
@@ -71,12 +72,12 @@ export default function MultisiteStudio(){
       const updated=await fetch("/api/admin/content-studio/pages/"+encodeURIComponent(pageId)+"?siteId="+encodeURIComponent(site),{cache:"no-store"});
       const detail=await updated.json();if(!updated.ok)throw Error(detail.message||"Refresh failed");
       const next:Revision|undefined=detail.page?.revisions?.find((r:Revision)=>r.id===revision.id);
-      if(next)setSelectedRevision({pageId,revision:next,publishedRevisionId:detail.page.publishedRevisionId});
+      if(next)setSelectedRevision({pageId,revision:next,publishedRevisionId:detail.page.publishedRevisionId});setRevisionHistory(detail.page.revisions||[]);
       setNotice(action==="review"?"Revision sent for independent review.":action==="approve"?"Revision approved. Publishing is a separate action.":"Approved revision published.");
       await refresh(site);
     }catch(e){setError(e instanceof Error?e.message:"Workflow action failed");}finally{setLoading(false);}
   };
-  const seed=()=>{setSelectedRevision(null);setEditing(null);const sample=examples[site];setSlug(sample.slug);setTitle(sample.title);setBlocks(sample.blocks);setNotice("Example loaded in editor only. Save as draft to write to Content Studio.");};
+  const seed=()=>{setRevisionHistory([]);setSelectedRevision(null);setEditing(null);const sample=examples[site];setSlug(sample.slug);setTitle(sample.title);setBlocks(sample.blocks);setNotice("Example loaded in editor only. Save as draft to write to Content Studio.");};
   const changeBlock=(index:number,key:string,value:string)=>setBlocks(old=>old.map((block,i)=>i===index?{...block,data:{...block.data,[key]:value}}:block));
   const addBlock=(type:Block["type"])=>setBlocks(old=>[...old,{type,data:type==="hero"?{headline:"",subtitle:""}:type==="cta"?{label:"",href:"/"}:{text:""}}]);
   const save=async()=>{setNotice("");setError("");setLoading(true);try{
@@ -107,7 +108,7 @@ export default function MultisiteStudio(){
         </div>)}
         <div style={{display:"flex",gap:8,flexWrap:"wrap",marginTop:15}}>{(["hero","richText","cta"] as const).map(v=><button key={v} type="button" onClick={()=>addBlock(v)} style={button}>+ {v}</button>)}</div>
         <button type="button" onClick={()=>void save()} disabled={loading||!title.trim()} style={{...button,marginTop:22,background:"#123e32",color:"#fff"}}>{editing?"Save new DRAFT revision":"Save DRAFT"} — {site}</button>
-        {selectedRevision?<section style={{marginTop:20,padding:14,border:"1px solid #ccd8ce",borderRadius:9}}><h3>Revision #{selectedRevision.revision.version}</h3><p>Status: <strong>{selectedRevision.revision.status}</strong> · Author: {selectedRevision.revision.authorId||"unattributed"} · Approved by: {selectedRevision.revision.approvedById||"—"}</p><p>Published: {selectedRevision.publishedRevisionId===selectedRevision.revision.id?"Yes":"No"}</p><div style={{display:"flex",gap:8,flexWrap:"wrap"}}><button type="button" disabled={loading||selectedRevision.revision.status!=="DRAFT"} onClick={()=>void workflow("review")} style={button}>Submit for review</button><button type="button" disabled={loading||selectedRevision.revision.status!=="IN_REVIEW"} onClick={()=>void workflow("approve")} style={button}>Approve (authorized reviewer)</button><button type="button" disabled={loading||selectedRevision.revision.status!=="APPROVED"} onClick={()=>void workflow("publish")} style={button}>Publish approved revision</button></div><p style={{fontSize:12}}>Your account must have cms.approve to approve. An author cannot approve their own revision.</p></section>:null}
+        {selectedRevision?<section style={{marginTop:20,padding:14,border:"1px solid #ccd8ce",borderRadius:9}}><h3>Revision #{selectedRevision.revision.version}</h3><p>Status: <strong>{selectedRevision.revision.status}</strong> · Author: {selectedRevision.revision.authorId||"unattributed"} · Approved by: {selectedRevision.revision.approvedById||"—"}</p><p>Published: {selectedRevision.publishedRevisionId===selectedRevision.revision.id?"Yes":"No"}</p><div style={{display:"flex",gap:8,flexWrap:"wrap"}}><button type="button" disabled={loading||selectedRevision.revision.status!=="DRAFT"} onClick={()=>void workflow("review")} style={button}>Submit for review</button><button type="button" disabled={loading||selectedRevision.revision.status!=="IN_REVIEW"} onClick={()=>void workflow("approve")} style={button}>Approve (authorized reviewer)</button><button type="button" disabled={loading||selectedRevision.revision.status!=="APPROVED"} onClick={()=>void workflow("publish")} style={button}>Publish approved revision</button></div><p style={{fontSize:12}}>Your account must have cms.approve to approve. An author cannot approve their own revision.</p><h4>Revision history (newest first)</h4><ol style={{paddingLeft:20}}>{revisionHistory.map(r=><li key={r.id} style={{fontSize:12,marginBottom:6}}>v{r.version} · {r.status} · Author: {r.authorId||"unattributed"} · Approved by: {r.approvedById||"—"} · {r.publishedAt?"Published "+new Date(r.publishedAt).toLocaleString():"Not published"}</li>)}</ol></section>:null}
         {notice?<p role="status" style={{color:"#12613c"}}>{notice}</p>:null}{error?<p role="alert" style={{color:"#a03527"}}>{error}</p>:null}
         <p style={{fontSize:12,color:"#64776b"}}>Drafts require database schema deployment. A 503 response means the Content Studio migration is not yet installed. No direct publishing is exposed.</p>
       </section>

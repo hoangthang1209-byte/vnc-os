@@ -48,10 +48,10 @@ export async function GET(request: NextRequest) {
       }>>`
         SELECT COUNT(*) FILTER (WHERE finished_at IS NOT NULL AND rolled_back_at IS NULL) AS applied_count,
           COUNT(*) FILTER (WHERE finished_at IS NULL AND rolled_back_at IS NULL) AS failed_count,
-          (SELECT migration_name FROM "_prisma_migrations"
+          (SELECT migration_name FROM "public"."_prisma_migrations"
            WHERE finished_at IS NOT NULL AND rolled_back_at IS NULL
            ORDER BY finished_at DESC LIMIT 1) AS latest_name
-        FROM "_prisma_migrations"
+        FROM "public"."_prisma_migrations"
       `;
       migrationCount = Number(history[0]?.applied_count ?? 0);
       failedMigrations = Number(history[0]?.failed_count ?? 0);
@@ -67,8 +67,8 @@ export async function GET(request: NextRequest) {
         prismaMigrations: row.migration_history,
       },
       migrations: { appliedCount: migrationCount, failedCount: failedMigrations, latestName: latestMigration },
-      migrationEligible: row.agent_run && row.task_run && row.migration_history && failedMigrations === 0,
-      note: "Read-only preflight; does not authorize migration or execution.",
+      minimumSchemaPrerequisitesPresent: row.agent_run && row.task_run && row.migration_history && failedMigrations === 0,
+      note: "Read-only table-presence preflight only; does not establish Neon project/branch identity, schema drift compatibility, backup readiness, or migration authorization.",
     }, { headers: { "Cache-Control": "no-store" } });
   } catch {
     return NextResponse.json({ message: "Database diagnostic unavailable" }, { status: 503, headers: { "Cache-Control": "no-store" } });

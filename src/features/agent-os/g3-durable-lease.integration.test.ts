@@ -157,6 +157,58 @@ describe("G3 durable lease PostgreSQL CAS (isolated DB only)", { skip: !isIsolat
     }
   });
 
+  it("recomputes takeover expiry after waiting for a locked lease row", async () => {
+    if (!isIsolatedTestUrl(testUrl)) return;
+    const db = new PrismaClient({ datasources: { db: { url: testUrl } } });
+    const run = await db.agentRun.create({
+      data: { agentId: "G3_LEASE_CONFLICT_CLOCK_TEST", triggerSource: "MANUAL_OWNER" },
+    });
+    try {
+      const task = await db.taskRun.create({ data: { agentRunId: run.id } });
+      const original = {
+        taskRunId: task.id, executorId: "original-worker",
+        token: "isolated-original-clock-token-123", headSha: "d".repeat(40), ttlMs: 60_000,
+      };
+      assert.equal((await claimDurableG3Lease(original, db)).ok, true);
+      assert.equal((await releaseDurableG3Lease(original, db)).ok, true);
+
+      let unlock!: () => void;
+      let locked!: () => void;
+      const held = new Promise<void>((resolve) => { unlock = resolve; });
+      const acquired = new Promise<void>((resolve) => { locked = resolve; });
+      const blocker = db.$transaction(async (tx) => {
+        // Lock ONLY the existing G3TaskLease row, not TaskRun/AgentRun.
+        // The contender can build EXCLUDED.expiresAt, but must wait for this lock.
+        await tx.$executeRaw`UPDATE "G3TaskLease"
+          SET "updatedAt" = clock_timestamp() WHERE "taskRunId" = ${task.id}`;
+        locked();
+        await held;
+      }, { timeout: 10_000 });
+      await acquired;
+
+      const contender = {
+        ...original, executorId: "takeover-worker",
+        token: "isolated-takeover-clock-token-456", ttlMs: 1_000,
+      };
+      const pendingClaim = claimDurableG3Lease(contender, db);
+      // Longer than TTL: EXCLUDED.expiresAt is stale if reused after ON CONFLICT wait.
+      await new Promise((resolve) => setTimeout(resolve, 1_500));
+      unlock();
+      await blocker;
+      const claimed = await pendingClaim;
+      assert.equal(claimed.ok, true, "released lease can be taken over after lock wait");
+      if (claimed.ok) {
+        assert.ok(claimed.lease.expiresAt.getTime() > Date.now() + 200,
+          "takeover TTL must start after the conflict row lock is acquired");
+      }
+      assert.equal((await renewDurableG3Lease(contender, db)).ok, true,
+        "takeover must not be immediately expired");
+    } finally {
+      await db.agentRun.delete({ where: { id: run.id } });
+      await db.$disconnect();
+    }
+  });
+
   it("serializes claim and heartbeat against uncommitted wait transitions", async () => {
     if (!isIsolatedTestUrl(testUrl)) return;
     const db = new PrismaClient({ datasources: { db: { url: testUrl } } });

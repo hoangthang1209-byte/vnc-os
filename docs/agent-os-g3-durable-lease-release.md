@@ -1,0 +1,96 @@
+# G3 durable lease CAS — release and safety gate (#311)
+
+Status: **DRAFT / NOT ENABLED / NOT PRODUCTION VERIFIED**. This is a
+reviewable implementation slice on the **existing** Agent OS, not a new system.
+Do not use the presence of this code or a Vercel READY badge as evidence that
+an autonomous executor has run.
+
+## Scope
+
+- Additive `G3TaskLease` model and PostgreSQL migration; one lease row per
+  G2 `TaskRun` via a unique index and cascading FK.
+- Atomic conditional `INSERT ... ON CONFLICT ... DO UPDATE ... WHERE` claim
+  using the **database wall clock** (`clock_timestamp()`), not PostgreSQL's
+  transaction-start `CURRENT_TIMESTAMP`; a lock wait or long-running transaction
+  must not create an immediately expired lease. The `ON CONFLICT DO UPDATE`
+  takeover path **recomputes** expiry after the conflicting lease-row lock is
+  acquired; `EXCLUDED.expiresAt` would be stale if the row was locked longer
+  than the TTL. The isolated PostgreSQL suite covers that lock-wait regression.
+  At most one concurrent claimant succeeds.
+- Renew/release require exact task ID, executor identity, SHA, hashed token,
+  nonterminal task (renew), active lease and unexpired TTL. Reclaim requires a
+  fresh token and increments attempt; old tokens cannot renew or release.
+- Store SHA-256 of lease token only. Caller owns secret generation/storage.
+  No token should appear in logs, events, API responses or PR comments.
+- No runner launch, no background worker, no API exposure, no new secrets, no
+  production database change. There is intentionally **no dispatch wiring**.
+- Claim and heartbeat now lock eligible parent `AgentRun` and child `TaskRun`
+  rows before writing the lease, serializing with concurrent status updates.
+  Isolated PostgreSQL regression tests race uncommitted `WAITING_*` transitions
+  against claim and heartbeat. All orchestration transitions must use normal
+  database row updates and preserve consistent parent/child lock order;
+  deadlock/serialization errors must fail closed (no runner launch).
+  This does not replace transactional pause/release/event correlation.
+
+## Review gates before any merge or migration
+
+1. Exact-head lint/typecheck/security/tests/build + independent security/code
+   review, P0=0, P1=0, no blocking P2. Review SQL under concurrent claims,
+   PostgreSQL clock behavior, Prisma schema/migration parity and token fencing.
+2. Confirm the additive migration is non-destructive, check migration history,
+   lock scope, rollback/forward-fix, and Neon branch compatibility. Do not
+   apply it to Neon Production without a separate approved release gate.
+3. Apply migration **only to an isolated PostgreSQL test database** named
+   `*_test` or `*_ci`, never the production database. The GitHub CI job uses
+   local `attd_ci` PostgreSQL with `prisma db push` and runs the concurrency
+   test automatically. For manual execution, set a separate
+   `G3_LEASE_TEST_DATABASE_URL`, distinct from `DATABASE_URL`.
+4. Run or inspect the concurrency test:
+   `NODE_OPTIONS=--conditions=react-server npx tsx --test src/features/agent-os/g3-durable-lease.integration.test.ts`.
+   Collect two-claimer winner evidence, expired takeover, stale-token
+   rejection, terminal TaskRun fence and crash/restart recovery evidence.
+5. Demonstrate transactionally correlated `AgentEvent` / `AgentDecision`
+   audit records, watchdog and shared-resource locking before wiring a real
+   executor. The CAS lease **alone** does not meet those gates.
+6. Only after executor authentication/heartbeat is independently verified,
+   run a low-risk two-task E2E pilot: issue -> claim -> executor -> code/PR ->
+   exact-head CI -> independent review -> merge -> exact-SHA PRODUCTION READY ->
+   authenticated smoke. Record links in #311.
+
+## Known limitations / follow-ups
+
+- **WAITING_HUMAN / WAITING_EXTERNAL policy (fail closed):** the lease service
+  intentionally refuses new claims and heartbeats unless the TaskRun is
+  `QUEUED` or `RUNNING`. The orchestration layer must explicitly release the
+  current lease when entering either waiting state, stop the executor, and
+  record the wait reason; it must never keep executing with an old token.
+  Resume requires a persisted transition back to `QUEUED` or `RUNNING`, a
+  fresh claim with a new token and incremented attempt, and a fresh exact-head
+  check. If release fails or the worker crashes, do not resume work until the
+  old lease has expired and a fresh claim succeeds. Isolated PostgreSQL tests
+  exercise wait-state claim/heartbeat fencing and fresh-token resume; this
+  does **not** prove atomic state-transition-plus-release or a live runner.
+- **Parent AgentRun waiting-state fence:** a child TaskRun in QUEUED/RUNNING
+  is not eligible for claim or heartbeat while its parent AgentRun is
+  WAITING_HUMAN or WAITING_EXTERNAL. Claim/renew require the parent to be
+  QUEUED/RUNNING (positive allowlist, not merely nonterminal). Release is
+  permitted during a parent wait; resume requires a fresh claim/token and
+  incremented attempt. Isolated PostgreSQL tests cover both parent wait states.
+  Orchestration must still make parent/child transitions and lease release
+  transactional before any dispatch is enabled.
+- This slice does not yet create transactional `AgentEvent` records or
+  coordinate shared-file locks across distinct TaskRuns.
+- Lease token hashing is not an authentication mechanism. Provider-neutral
+  executor identity must be authenticated by an approved adapter before use.
+- A runner must fail closed if claim/renew returns `not_claimed`, if the
+  database is unreachable, if the task becomes terminal, or if its PR head
+  changes. No synthetic BUILDING state is permitted.
+- The integration test runs against the local ephemeral `attd_ci` database
+  in GitHub CI (`CI=true`, localhost only), after CI schema preparation. For
+  manual runs it is opt-in with an explicitly separate isolated test DB.
+  A passing test is necessary but not proof of live executor dispatch.
+- Production migration rollback must be reviewed separately because removing
+  a live lease table would be destructive. Prefer forward-fix and disabling
+  dispatch rather than dropping production data.
+
+Canonical: #197, #237, #310, #311. Related merged guard PRs: #312, #313.

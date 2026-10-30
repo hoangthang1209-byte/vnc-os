@@ -34,7 +34,7 @@ export async function POST(
       if (!page) return { status: 404, message: "Page not found for site" };
       const revision = await tx.studioPageRevision.findFirst({
         where: { id: input.revisionId as string, pageId },
-        select: { id: true, status: true, approvedById: true, publishedAt: true },
+        select: { id: true, status: true, approvedById: true, publishedAt: true, content: true },
       });
       if (!revision) return { status: 404, message: "Revision not found" };
       const latest = await tx.studioPageRevision.findFirst({ where: { pageId }, orderBy: { version: "desc" }, select: { id: true } });
@@ -47,7 +47,7 @@ export async function POST(
       }
       await tx.studioPage.update({
         where: { id: page.id },
-        data: { publishedRevisionId: revision.id },
+        data: { publishedRevisionId: revision.id, ...((revision.content as {title?:unknown}|null)?.title && typeof (revision.content as {title?:unknown}).title === "string" && (revision.content as {title:string}).title.length <= 180 ? { title: (revision.content as {title:string}).title.trim() } : {}) } ,
       });
       await tx.studioPageRevision.update({
         where: { id: revision.id },

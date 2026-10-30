@@ -26,12 +26,13 @@ export default function OrderExecutionControl({ order, onNavigateTab, canViewFin
   const tasks: Array<{ label: string; done: boolean; tab: OrderWorkspaceTab }> = [
     { label: "Khách hàng", done: Boolean(order.customerId), tab: "info" },
     { label: "Danh sách sản phẩm", done: order.items.length > 0, tab: "products" },
-    { label: "Phân bổ size", done: order.items.length > 0 && unbalancedItems.length === 0, tab: "products" },
+    { label: "Phân bổ size", done: order.items.length > 0 && order.items.every((item) => item.variants.length > 0) && unbalancedItems.length === 0, tab: "products" },
     { label: "Phụ trách sản xuất", done: Boolean(order.productionOwnerId), tab: "info" },
     { label: "Hạn sản xuất", done: Boolean(order.productionDueDate), tab: "info" },
     { label: "Thông tin giao hàng", done: Boolean(order.deliveryAddress || order.deliveryRecipientName), tab: "delivery" },
   ];
   const remaining = tasks.filter((task) => !task.done).length;
+  const pendingTasks = tasks.filter((task) => !task.done);
 
   return (
     <section className="admin-card" aria-label="Kiểm soát thực hiện đơn hàng" style={{ padding: 16, marginBlock: 16 }}>
@@ -57,6 +58,20 @@ export default function OrderExecutionControl({ order, onNavigateTab, canViewFin
           Có {unbalancedItems.length} dòng hàng có tổng phân size khác số lượng đặt. Kiểm tra trước khi chốt kế hoạch cắt.
         </p>
       )}
+      {pendingTasks.length > 0 && (
+        <div style={{ padding: "12px 14px", marginBottom: 12, border: "1px solid #fed7aa", background: "#fff7ed", borderRadius: 10 }}>
+          <strong style={{ fontSize: 13 }}>Việc cần xử lý tiếp theo</strong>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 8 }}>
+            {pendingTasks.map((task) => (
+              <button type="button" key={task.label} className="admin-btn admin-btn--secondary admin-btn--small" onClick={() => onNavigateTab(task.tab)}>
+                Bổ sung {task.label.toLowerCase()}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+      <details>
+        <summary style={{ fontSize: 13, cursor: "pointer", marginBottom: 8 }}>Xem checklist đầy đủ ({tasks.length} mục)</summary>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
         {tasks.map((task) => (
           <button
@@ -70,6 +85,7 @@ export default function OrderExecutionControl({ order, onNavigateTab, canViewFin
           </button>
         ))}
       </div>
+      </details>
     </section>
   );
 }

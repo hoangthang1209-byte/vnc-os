@@ -191,6 +191,16 @@ export default function OrderListManager() {
         </header>
       ) : null}
 
+      <section aria-label="Hướng dẫn xử lý đơn hàng" style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap", padding: "12px 16px", marginBottom: 12, background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 12 }}>
+        <div style={{ flex: "1 1 280px" }}>
+          <strong style={{ display: "block", fontSize: 14 }}>Bảng điều hành đơn hàng</strong>
+          <span style={{ color: "#64748b", fontSize: 12 }}>Chọn KPI hoặc bộ lọc để xử lý đơn cần ưu tiên. Cảnh báo có thể trùng nhau, không cộng dồn thành số đơn.</span>
+        </div>
+        <Link href="/admin/orders/projects" className="admin-btn admin-btn--secondary admin-btn--small">
+          Dự án / Batch
+        </Link>
+      </section>
+
       {summary && (
         <div className="order-ops-kpi-grid">
           {summary.kpis.map((kpi) => (
@@ -362,10 +372,10 @@ export default function OrderListManager() {
                   <th>Khách hàng</th>
                   <th>Sản phẩm / Số lượng</th>
                   <th>Deadline giao</th>
-                  <th>Tiến độ</th>
+                  <th title="Tiến độ ghi nhận từ các item, có thể khác trạng thái chung của đơn">Tiến độ item</th>
                   <th>Người phụ trách</th>
                   <th>Giao hàng</th>
-                  <th>Cảnh báo</th>
+                  <th title="Một đơn có thể có nhiều cảnh báo cùng lúc">Việc cần xử lý</th>
                   <th />
                 </tr>
               </thead>

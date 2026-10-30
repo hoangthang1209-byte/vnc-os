@@ -1,5 +1,5 @@
 import PDFDocument from "pdfkit";
-import { resolve } from "node:path";
+import { resolve as resolvePath } from "node:path";
 import { calculateCustomInvoice, formatMinor, type InvoiceCurrency, type InvoiceLine } from "./custom-invoice-calculation";
 
 type InvoicePdfInput = {
@@ -52,8 +52,8 @@ export function renderInvoicePdf(invoice: InvoicePdfInput): Promise<Buffer> {
   const bank = object(invoice.bankDetails);
   return new Promise((resolve, reject) => {
     const pdf = new PDFDocument({size:"A4", margin:45, bufferPages:true});
-    pdf.registerFont("Body",resolve(process.cwd(),"node_modules/dejavu-fonts-ttf/ttf/DejaVuSans.ttf"));
-    pdf.registerFont("Heading",resolve(process.cwd(),"node_modules/dejavu-fonts-ttf/ttf/DejaVuSans-Bold.ttf"));
+    pdf.registerFont("Body",resolvePath(process.cwd(),"node_modules/dejavu-fonts-ttf/ttf/DejaVuSans.ttf"));
+    pdf.registerFont("Heading",resolvePath(process.cwd(),"node_modules/dejavu-fonts-ttf/ttf/DejaVuSans-Bold.ttf"));
     const chunks: Buffer[]=[];
     pdf.on("data",(chunk:Buffer)=>chunks.push(chunk));
     pdf.on("error",reject);

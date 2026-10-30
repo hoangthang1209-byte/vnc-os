@@ -98,8 +98,24 @@ describe("G3 durable lease PostgreSQL CAS (isolated DB only)", { skip: !isIsolat
       if (resumedLease.ok) assert.equal(resumedLease.lease.attempt, 4);
       assert.equal((await renewDurableG3Lease(third, db)).ok, false, "pre-wait token remains fenced");
 
+      // Parent AgentRun WAITING_* must fence an otherwise runnable child TaskRun.
+      // This protects human/external approval boundaries even when child status
+      // remains RUNNING. Release before parent pause; resume with a new token.
+      await db.agentRun.update({ where: { id: run.id }, data: { status: "WAITING_HUMAN" } });
+      assert.equal((await renewDurableG3Lease(resumed, db)).ok, false, "parent human wait blocks heartbeat");
+      assert.equal((await claimDurableG3Lease({ ...resumed, token: "isolated-parent-wait-token" }, db)).ok, false, "parent human wait blocks claim");
+      assert.equal((await releaseDurableG3Lease(resumed, db)).ok, true, "owner may release during parent wait");
+      await db.agentRun.update({ where: { id: run.id }, data: { status: "WAITING_EXTERNAL" } });
+      assert.equal((await claimDurableG3Lease({ ...resumed, token: "isolated-parent-external-token" }, db)).ok, false, "parent external wait blocks claim");
+      await db.agentRun.update({ where: { id: run.id }, data: { status: "RUNNING" } });
+      const parentResumed = { ...resumed, token: "isolated-parent-resume-token" };
+      const parentResumeLease = await claimDurableG3Lease(parentResumed, db);
+      assert.equal(parentResumeLease.ok, true, "parent resume requires fresh claim");
+      if (parentResumeLease.ok) assert.equal(parentResumeLease.lease.attempt, 5);
+      assert.equal((await renewDurableG3Lease(resumed, db)).ok, false, "pre-parent-wait token remains fenced");
+
       await db.taskRun.update({ where: { id: task.id }, data: { status: "SUCCEEDED" } });
-      assert.equal((await renewDurableG3Lease(resumed, db)).ok, false, "terminal TaskRun cannot heartbeat");
+      assert.equal((await renewDurableG3Lease(parentResumed, db)).ok, false, "terminal TaskRun cannot heartbeat");
       assert.equal((await claimDurableG3Lease({ ...resumed, token: "isolated-new-token-0000" }, db)).ok, false);
     } finally {
       await db.agentRun.delete({ where: { id: run.id } });

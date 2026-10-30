@@ -22,7 +22,7 @@ test("creates A4 payment request PDF with Vietnamese names", async () => {
 });
 
 test("refuses inconsistent saved total", async () => {
-  await assert.rejects(renderInvoicePdf({
+  await assert.rejects(async () => renderInvoicePdf({
     invoiceNo:"TEST",recipientName:"Test",issuerName:"Test",currency:"USD",
     total:"999.99",issueDate:new Date("2026-10-30"),
     lines:[{description:"Sample",quantity:"1",unit:"set",unitPrice:"5"}],

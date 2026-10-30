@@ -27,7 +27,7 @@
   if(productRef&&selectedProduct&&/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(selectedProduct)&&selectedProduct.length<=100){productRef.value=selectedProduct;}
   const host=document.getElementById('approved-gallery');
   if(host){
-    fetch('./media-gallery.json').then(r=>r.ok?r.json():null).then(data=>{
+    fetch((document.documentElement.lang==='vi'?'../':'./')+'media-gallery.json').then(r=>r.ok?r.json():null).then(data=>{
       const assets=(data&&Array.isArray(data.assets)?data.assets:[]).filter(a=>{
         try{return a.approved===true&&a.visibility==='PUBLIC'&&new URL(a.url).protocol==='https:'&&typeof a.alt==='string'&&a.alt.trim()}catch{return false}
       });

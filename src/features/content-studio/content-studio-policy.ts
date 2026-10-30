@@ -19,7 +19,7 @@ export function validateStudioBlocks(value: unknown): Array<{ type: string; data
     if (!block || typeof block !== "object" || Array.isArray(block)) throw new Error("Invalid content block");
     const type = (block as Record<string, unknown>).type;
     const data = (block as Record<string, unknown>).data;
-    if (!["hero", "richText", "image", "gallery", "faq", "cta", "process"].includes(String(type))) throw new Error("Unsupported block type");
+    if (!["hero", "richText", "image", "gallery", "faq", "cta", "process", "product"].includes(String(type))) throw new Error("Unsupported block type");
     if (!data || typeof data !== "object" || Array.isArray(data)) throw new Error("Invalid block data");
     if (JSON.stringify(data).length > 20_000) throw new Error("Block exceeds limit");
     return { type: String(type), data: data as Record<string, unknown> };

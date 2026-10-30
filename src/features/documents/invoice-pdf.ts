@@ -1,4 +1,5 @@
 import PDFDocument from "pdfkit";
+import { resolve } from "node:path";
 import { calculateCustomInvoice, formatMinor, type InvoiceCurrency, type InvoiceLine } from "./custom-invoice-calculation";
 
 type InvoicePdfInput = {
@@ -25,7 +26,7 @@ function str(value: unknown): string {
   return typeof value === "string" ? value : "";
 }
 function safe(value: unknown): string {
-  return str(value).replace(/[^\x20-\x7e]/g, "?").slice(0, 500);
+  return str(value).slice(0, 500);
 }
 function lineItems(value: unknown): InvoiceLine[] {
   if (!Array.isArray(value)) throw new Error("Invoice has no line items");
@@ -51,6 +52,8 @@ export function renderInvoicePdf(invoice: InvoicePdfInput): Promise<Buffer> {
   const bank = object(invoice.bankDetails);
   return new Promise((resolve, reject) => {
     const pdf = new PDFDocument({size:"A4", margin:45, bufferPages:true});
+    pdf.registerFont("Body",resolve(process.cwd(),"node_modules/dejavu-fonts-ttf/ttf/DejaVuSans.ttf"));
+    pdf.registerFont("Heading",resolve(process.cwd(),"node_modules/dejavu-fonts-ttf/ttf/DejaVuSans-Bold.ttf"));
     const chunks: Buffer[]=[];
     pdf.on("data",(chunk:Buffer)=>chunks.push(chunk));
     pdf.on("error",reject);
@@ -58,19 +61,19 @@ export function renderInvoicePdf(invoice: InvoicePdfInput): Promise<Buffer> {
     const row = (left:string,right:string) => {
       if (pdf.y > 715) pdf.addPage();
       const y = pdf.y;
-      pdf.font("Helvetica").fontSize(9).text(safe(left),45,y,{width:360});
+      pdf.font("Body").fontSize(9).text(safe(left),45,y,{width:360});
       pdf.text(safe(right),410,y,{width:140,align:"right"});
       pdf.y = Math.max(pdf.y,y+20);
     };
     pdf.fillColor("#111827").font("Helvetica-Bold").fontSize(18).text(safe(invoice.issuerName));
-    pdf.font("Helvetica").fontSize(9).text(safe(invoice.issuerAddress)).moveDown();
-    pdf.font("Helvetica-Bold").fontSize(19).text("COMMERCIAL INVOICE");
-    pdf.font("Helvetica").fontSize(10).text("PAYMENT REQUEST - NOT A VAT TAX INVOICE").moveDown();
+    pdf.font("Body").fontSize(9).text(safe(invoice.issuerAddress)).moveDown();
+    pdf.font("Heading").fontSize(19).text("COMMERCIAL INVOICE");
+    pdf.font("Body").fontSize(10).text("PAYMENT REQUEST - NOT A VAT TAX INVOICE").moveDown();
     pdf.fontSize(9).text("Invoice No.: "+safe(invoice.invoiceNo));
     pdf.text("Issue Date: "+invoice.issueDate.toISOString().slice(0,10));
     if(invoice.dueDate) pdf.text("Due Date: "+invoice.dueDate.toISOString().slice(0,10));
     pdf.moveDown().font("Helvetica-Bold").fontSize(10).text("BILL TO");
-    pdf.font("Helvetica").text(safe(invoice.recipientName));
+    pdf.font("Body").text(safe(invoice.recipientName));
     if(invoice.recipientAddress) pdf.fontSize(9).text(safe(invoice.recipientAddress));
     pdf.moveDown().font("Helvetica-Bold").fontSize(10).text("ITEMS");
     pdf.moveDown(0.3);
@@ -83,17 +86,17 @@ export function renderInvoicePdf(invoice: InvoicePdfInput): Promise<Buffer> {
     if(totals.discountMinor) row("Discount","-"+currency+" "+formatMinor(totals.discountMinor,currency));
     if(totals.extraChargeMinor) row("Additional charges",currency+" "+formatMinor(totals.extraChargeMinor,currency));
     if(totals.taxMinor) row("Tax / other charge",currency+" "+formatMinor(totals.taxMinor,currency));
-    pdf.font("Helvetica-Bold").fontSize(12);
+    pdf.font("Heading").fontSize(12);
     row("TOTAL DUE",currency+" "+invoice.total);
     if(pdf.y>660)pdf.addPage();
     pdf.moveDown().font("Helvetica-Bold").fontSize(10).text("PAYMENT DETAILS");
-    pdf.font("Helvetica").fontSize(9);
+    pdf.font("Body").fontSize(9);
     for(const [label,key] of [["Beneficiary","beneficiary"],["Bank","bank"],["Account","account"],["SWIFT","swift"]] as const) {
       const value=safe(bank[key]);if(value)pdf.text(label+": "+value);
     }
     if(invoice.notes) {
       pdf.moveDown().font("Helvetica-Bold").text("Notes");
-      pdf.font("Helvetica").text(safe(invoice.notes));
+      pdf.font("Body").text(safe(invoice.notes));
     }
     pdf.moveDown().fontSize(8).fillColor("#6b7280")
       .text("This document is a commercial payment request and is not a Vietnamese VAT e-invoice.");

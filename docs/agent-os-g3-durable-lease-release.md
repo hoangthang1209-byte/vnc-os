@@ -12,7 +12,11 @@ an autonomous executor has run.
 - Atomic conditional `INSERT ... ON CONFLICT ... DO UPDATE ... WHERE` claim
   using the **database wall clock** (`clock_timestamp()`), not PostgreSQL's
   transaction-start `CURRENT_TIMESTAMP`; a lock wait or long-running transaction
-  must not create an immediately expired lease. At most one concurrent claimant succeeds.
+  must not create an immediately expired lease. The `ON CONFLICT DO UPDATE`
+  takeover path **recomputes** expiry after the conflicting lease-row lock is
+  acquired; `EXCLUDED.expiresAt` would be stale if the row was locked longer
+  than the TTL. The isolated PostgreSQL suite covers that lock-wait regression.
+  At most one concurrent claimant succeeds.
 - Renew/release require exact task ID, executor identity, SHA, hashed token,
   nonterminal task (renew), active lease and unexpired TTL. Reclaim requires a
   fresh token and increments attempt; old tokens cannot renew or release.

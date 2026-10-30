@@ -27,6 +27,9 @@ export async function GET(request: NextRequest, context: RouteContext) {
 /** Append a revision rather than mutate published or prior drafts. */
 export async function PUT(request: NextRequest, context: RouteContext) {
   const denied = await authorize(); if (denied) return denied;
+  const session = await getAdminSessionFromCookies();
+  const actorId = session.userId || session.employeeId || (session.mode === "owner" ? "owner" : null);
+  if (!actorId) return NextResponse.json({ message: "Identifiable CMS author required" }, { status: 403 });
   const { pageId } = await context.params;
   let data: {siteId?:unknown; blocks?:unknown; title?:unknown; expectedVersion?:unknown};
   try { data = await request.json(); } catch { return NextResponse.json({ message: "Invalid JSON" }, { status: 400 }); }
@@ -40,7 +43,7 @@ export async function PUT(request: NextRequest, context: RouteContext) {
       if (!page) return { error: "NOT_FOUND" };
       const latest = await tx.studioPageRevision.findFirst({ where: { pageId }, orderBy: { version: "desc" }, select: { version: true } });
       if (!latest || latest.version !== data.expectedVersion) return { error: "CONFLICT" };
-      const revision = await tx.studioPageRevision.create({ data: { pageId, version: latest.version + 1, status: "DRAFT", content: { blocks } as Prisma.InputJsonValue } });
+      const revision = await tx.studioPageRevision.create({ data: { pageId, version: latest.version + 1, status: "DRAFT", authorId: actorId, content: { blocks } as Prisma.InputJsonValue } });
       await tx.studioPage.update({ where: { id: pageId }, data: { title: (data.title as string).trim() } });
       return { revision: { id: revision.id, version: revision.version, status: revision.status } };
     });

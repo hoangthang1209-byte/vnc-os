@@ -1,5 +1,6 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
+import StudioProductEditor from "./StudioProductEditor";
 
 type SiteId = "attd.vn" | "vietnamclothing.vn";
 type Page = { id:string; slug:string; title:string; publishedRevisionId:string|null; updatedAt:string };
@@ -113,6 +114,7 @@ export default function MultisiteStudio(){
         <p style={{fontSize:12,color:"#64776b"}}>Drafts require database schema deployment. A 503 response means the Content Studio migration is not yet installed. No direct publishing is exposed.</p>
       </section>
     </div>
+    {site==="vietnamclothing.vn"?<StudioProductEditor />:null}
   </main>;
 }
 const panel:React.CSSProperties={padding:22,border:"1px solid #d2dcd4",borderRadius:12,background:"#f9faf7"};

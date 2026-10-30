@@ -37,6 +37,8 @@ export async function POST(
         select: { id: true, status: true, approvedById: true, publishedAt: true },
       });
       if (!revision) return { status: 404, message: "Revision not found" };
+      const latest = await tx.studioPageRevision.findFirst({ where: { pageId }, orderBy: { version: "desc" }, select: { id: true } });
+      if (latest?.id !== revision.id) return { status: 409, message: "Only latest approved revision may be published" };
       if (!canPublishStudioRevision(revision.status, revision.approvedById)) {
         return { status: 409, message: "Revision must be independently approved before publishing" };
       }

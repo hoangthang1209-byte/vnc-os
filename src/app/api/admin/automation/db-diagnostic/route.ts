@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminSessionFromRequest } from "@/lib/admin-auth/get-admin-session";
-import { isOwnerLikeSession } from "@/features/auth/admin-permissions";
+import { diagnosticAccessStatus } from "@/features/agent-os/g3-production-db-diagnostic-access";
 
 /**
  * Read-only G3 production schema preflight. Never returns DATABASE_URL, server
@@ -9,14 +9,10 @@ import { isOwnerLikeSession } from "@/features/auth/admin-permissions";
  */
 export async function GET(request: NextRequest) {
   const session = getAdminSessionFromRequest(request);
-  if (!session.authenticated) {
-    return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
-  }
-  if (!isOwnerLikeSession(session)) {
-    return NextResponse.json({ message: "Forbidden" }, { status: 403 });
-  }
-  if (process.env.VERCEL_ENV !== "production") {
-    return NextResponse.json({ message: "Production diagnostic only" }, { status: 404 });
+  const denied = diagnosticAccessStatus(session, process.env.VERCEL_ENV);
+  if (denied !== null) {
+    const message = denied === 401 ? "Unauthorized" : denied === 403 ? "Forbidden" : "Not found";
+    return NextResponse.json({ message }, { status: denied, headers: { "Cache-Control": "no-store" } });
   }
 
   try {

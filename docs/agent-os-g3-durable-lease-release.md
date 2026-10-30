@@ -57,6 +57,14 @@ an autonomous executor has run.
   old lease has expired and a fresh claim succeeds. Isolated PostgreSQL tests
   exercise wait-state claim/heartbeat fencing and fresh-token resume; this
   does **not** prove atomic state-transition-plus-release or a live runner.
+- **Parent AgentRun waiting-state fence:** a child TaskRun in QUEUED/RUNNING
+  is not eligible for claim or heartbeat while its parent AgentRun is
+  WAITING_HUMAN or WAITING_EXTERNAL. Claim/renew require the parent to be
+  QUEUED/RUNNING (positive allowlist, not merely nonterminal). Release is
+  permitted during a parent wait; resume requires a fresh claim/token and
+  incremented attempt. Isolated PostgreSQL tests cover both parent wait states.
+  Orchestration must still make parent/child transitions and lease release
+  transactional before any dispatch is enabled.
 - This slice does not yet create transactional `AgentEvent` records or
   coordinate shared-file locks across distinct TaskRuns.
 - Lease token hashing is not an authentication mechanism. Provider-neutral

@@ -1,26 +1,102 @@
 import PDFDocument from "pdfkit";
-type InvoicePdfInput = {invoiceNo:string;recipientName:string;issuerName:string;currency:string;total:string;subtotal:string;issueDate:Date;lines:unknown;notes?:string|null};
-export function renderInvoicePdf(invoice:InvoicePdfInput): Promise<Buffer> {
- return new Promise((resolve,reject)=>{
-  const pdf=new PDFDocument({size:"A4",margin:45});const chunks:Buffer[]=[];
-  pdf.on("data",(chunk:Buffer)=>chunks.push(chunk));pdf.on("error",reject);pdf.on("end",()=>resolve(Buffer.concat(chunks)));
-  pdf.fontSize(17).font("Helvetica-Bold").text(invoice.issuerName.slice(0,160)).moveDown(0.7);
-  pdf.fontSize(19).text("COMMERCIAL INVOICE").fontSize(10).font("Helvetica").text("Payment Request - Not a VAT invoice").moveDown();
-  pdf.text("Invoice No.: "+invoice.invoiceNo).text("Date: "+invoice.issueDate.toISOString().slice(0,10)).moveDown();
-  pdf.font("Helvetica-Bold").text("BILL TO").font("Helvetica").text(invoice.recipientName.slice(0,160)).moveDown(1.5);
-  pdf.font("Helvetica-Bold").text("DESCRIPTION",45,pdf.y).moveDown(0.3);
-  const lines=Array.isArray(invoice.lines)?invoice.lines:[];
-  for(const raw of lines.slice(0,100)){
-   const line=raw as Record<string,unknown>;
-   const description=String(line.description??"").replace(/[^\x20-\x7E]/g,"?").slice(0,130);
-   const qty=String(line.quantity??"");
-   const price=String(line.unitPrice??"");
-   pdf.font("Helvetica").fontSize(10).text(description+" | Qty: "+qty+" | Unit price: "+invoice.currency+" "+price,{width:500}).moveDown(0.4);
-   if(pdf.y>690)pdf.addPage();
+import { calculateCustomInvoice, formatMinor, type InvoiceCurrency, type InvoiceLine } from "./custom-invoice-calculation";
+
+type InvoicePdfInput = {
+  invoiceNo: string;
+  recipientName: string;
+  recipientAddress?: string | null;
+  issuerName: string;
+  issuerAddress?: string | null;
+  currency: string;
+  total: string;
+  issueDate: Date;
+  dueDate?: Date | null;
+  lines: unknown;
+  adjustments?: unknown;
+  bankDetails?: unknown;
+  notes?: string | null;
+};
+
+function object(value: unknown): Record<string, unknown> {
+  return value !== null && typeof value === "object" && !Array.isArray(value)
+    ? value as Record<string, unknown> : {};
+}
+function str(value: unknown): string {
+  return typeof value === "string" ? value : "";
+}
+function safe(value: unknown): string {
+  return str(value).replace(/[^\x20-\x7e]/g, "?").slice(0, 500);
+}
+function lineItems(value: unknown): InvoiceLine[] {
+  if (!Array.isArray(value)) throw new Error("Invoice has no line items");
+  return value.map(raw => {
+    const row = object(raw);
+    return {description:str(row.description), quantity:str(row.quantity), unit:str(row.unit), unitPrice:str(row.unitPrice)};
+  });
+}
+
+/** PDF generated from saved invoice fields, without client-side monetary calculations. */
+export function renderInvoicePdf(invoice: InvoicePdfInput): Promise<Buffer> {
+  const currency = invoice.currency as InvoiceCurrency;
+  const adjustments = object(invoice.adjustments);
+  const totals = calculateCustomInvoice({
+    currency, lines: lineItems(invoice.lines),
+    discount: str(adjustments.discount) || "0",
+    extraCharge: str(adjustments.extraCharge) || "0",
+    tax: str(adjustments.tax) || "0",
+  });
+  if (formatMinor(totals.totalMinor, currency) !== invoice.total) {
+    throw new Error("Saved invoice total does not match line items");
   }
-  pdf.moveDown().font("Helvetica-Bold").fontSize(12).text("TOTAL DUE: "+invoice.currency+" "+invoice.total,{align:"right"}).moveDown();
-  if(invoice.notes)pdf.font("Helvetica").fontSize(9).text(invoice.notes.slice(0,700));
-  pdf.moveDown().fontSize(9).text("This document is a commercial payment request, not a Vietnamese VAT invoice.");
-  pdf.end();
- });
+  const bank = object(invoice.bankDetails);
+  return new Promise((resolve, reject) => {
+    const pdf = new PDFDocument({size:"A4", margin:45, bufferPages:true});
+    const chunks: Buffer[]=[];
+    pdf.on("data",(chunk:Buffer)=>chunks.push(chunk));
+    pdf.on("error",reject);
+    pdf.on("end",()=>resolve(Buffer.concat(chunks)));
+    const row = (left:string,right:string) => {
+      if (pdf.y > 715) pdf.addPage();
+      const y = pdf.y;
+      pdf.font("Helvetica").fontSize(9).text(safe(left),45,y,{width:360});
+      pdf.text(safe(right),410,y,{width:140,align:"right"});
+      pdf.y = Math.max(pdf.y,y+20);
+    };
+    pdf.fillColor("#111827").font("Helvetica-Bold").fontSize(18).text(safe(invoice.issuerName));
+    pdf.font("Helvetica").fontSize(9).text(safe(invoice.issuerAddress)).moveDown();
+    pdf.font("Helvetica-Bold").fontSize(19).text("COMMERCIAL INVOICE");
+    pdf.font("Helvetica").fontSize(10).text("PAYMENT REQUEST - NOT A VAT TAX INVOICE").moveDown();
+    pdf.fontSize(9).text("Invoice No.: "+safe(invoice.invoiceNo));
+    pdf.text("Issue Date: "+invoice.issueDate.toISOString().slice(0,10));
+    if(invoice.dueDate) pdf.text("Due Date: "+invoice.dueDate.toISOString().slice(0,10));
+    pdf.moveDown().font("Helvetica-Bold").fontSize(10).text("BILL TO");
+    pdf.font("Helvetica").text(safe(invoice.recipientName));
+    if(invoice.recipientAddress) pdf.fontSize(9).text(safe(invoice.recipientAddress));
+    pdf.moveDown().font("Helvetica-Bold").fontSize(10).text("ITEMS");
+    pdf.moveDown(0.3);
+    totals.lines.forEach((item,index) => {
+      row((index+1)+". "+item.description+"   x"+item.quantity+" "+item.unit+" @ "+item.unitPrice,
+          currency+" "+formatMinor(item.amountMinor,currency));
+    });
+    pdf.moveDown().font("Helvetica-Bold");
+    row("Subtotal",currency+" "+formatMinor(totals.subtotalMinor,currency));
+    if(totals.discountMinor) row("Discount","-"+currency+" "+formatMinor(totals.discountMinor,currency));
+    if(totals.extraChargeMinor) row("Additional charges",currency+" "+formatMinor(totals.extraChargeMinor,currency));
+    if(totals.taxMinor) row("Tax / other charge",currency+" "+formatMinor(totals.taxMinor,currency));
+    pdf.font("Helvetica-Bold").fontSize(12);
+    row("TOTAL DUE",currency+" "+invoice.total);
+    if(pdf.y>660)pdf.addPage();
+    pdf.moveDown().font("Helvetica-Bold").fontSize(10).text("PAYMENT DETAILS");
+    pdf.font("Helvetica").fontSize(9);
+    for(const [label,key] of [["Beneficiary","beneficiary"],["Bank","bank"],["Account","account"],["SWIFT","swift"]] as const) {
+      const value=safe(bank[key]);if(value)pdf.text(label+": "+value);
+    }
+    if(invoice.notes) {
+      pdf.moveDown().font("Helvetica-Bold").text("Notes");
+      pdf.font("Helvetica").text(safe(invoice.notes));
+    }
+    pdf.moveDown().fontSize(8).fillColor("#6b7280")
+      .text("This document is a commercial payment request and is not a Vietnamese VAT e-invoice.");
+    pdf.end();
+  });
 }

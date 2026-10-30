@@ -43,7 +43,8 @@ export function heartbeatG3Lease(args: {
   const {lease,token,headSha,nowMs,ttlMs} = args;
   if (token !== lease.token || headSha !== lease.headSha) return {ok:false,reason:"stale_token"};
   if (!Number.isSafeInteger(nowMs) || !Number.isSafeInteger(ttlMs) ||
-      ttlMs < 1_000 || ttlMs > 3_600_000 || nowMs < lease.heartbeatAtMs) return {ok:false,reason:"invalid"};
+      ttlMs < 1_000 || ttlMs > 3_600_000 || nowMs < lease.heartbeatAtMs ||
+      !Number.isSafeInteger(nowMs + ttlMs)) return {ok:false,reason:"invalid"};
   if (lease.expiresAtMs <= nowMs) return {ok:false,reason:"expired"};
   if (lease.status === "RELEASED") return {ok:false,reason:"not_running"};
   return {ok:true,lease:{...lease,heartbeatAtMs:nowMs,expiresAtMs:nowMs+ttlMs,status:"RUNNING"}};

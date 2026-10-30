@@ -32,6 +32,8 @@ export function claimG3Lease(args: {
     return {ok:false,reason:"active_lease"};
   }
   if (previous && previous.attempt >= Number.MAX_SAFE_INTEGER) return {ok:false,reason:"invalid"};
+  if (previous && previous.token === token) return {ok:false,reason:"stale_token"};
+  if (!Number.isSafeInteger(nowMs + ttlMs)) return {ok:false,reason:"invalid"};
   return {ok:true,lease:{taskId,executorId,token,headSha,attempt:(previous?.attempt ?? 0)+1,
     expiresAtMs:nowMs+ttlMs,heartbeatAtMs:nowMs,status:"CLAIMED"}};
 }

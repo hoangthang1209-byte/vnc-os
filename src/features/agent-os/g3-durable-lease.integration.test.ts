@@ -128,4 +128,70 @@ describe("G3 durable lease PostgreSQL CAS (isolated DB only)", { skip: !isIsolat
       await db.$disconnect();
     }
   });
+  it("serializes claim and heartbeat against uncommitted wait transitions", async () => {
+    if (!isIsolatedTestUrl(testUrl)) return;
+    const db = new PrismaClient({ datasources: { db: { url: testUrl } } });
+    const run = await db.agentRun.create({
+      data: { agentId: "G3_LEASE_STATUS_RACE_TEST", triggerSource: "MANUAL_OWNER" },
+    });
+    try {
+      const task = await db.taskRun.create({ data: { agentRunId: run.id } });
+      const lease = {
+        taskRunId: task.id, executorId: "race-test-worker",
+        token: "isolated-race-test-token-123", headSha: "b".repeat(40), ttlMs: 60_000,
+      };
+
+      // Hold a row update uncommitted while claim/renew starts in another session.
+      // Without row-lock serialization, READ COMMITTED may accept a stale
+      // QUEUED/RUNNING snapshot and grant a lease after a WAITING_* transition.
+      async function whileTransitionHeld(
+        transition: (tx: Parameters<Parameters<typeof db.$transaction>[0]>[0]) => Promise<unknown>,
+        operation: () => Promise<unknown>,
+      ): Promise<unknown> {
+        let signalStarted!: () => void;
+        let release!: () => void;
+        const started = new Promise<void>((resolve) => { signalStarted = resolve; });
+        const held = new Promise<void>((resolve) => { release = resolve; });
+        const transaction = db.$transaction(async (tx) => {
+          await transition(tx);
+          signalStarted();
+          await held;
+        }, { timeout: 10_000 });
+        await started;
+        const pending = operation();
+        // Give the independent connection time to reach the row-lock boundary.
+        await new Promise((resolve) => setTimeout(resolve, 100));
+        release();
+        await transaction;
+        return pending;
+      }
+
+      const claimedDuringTaskPause = await whileTransitionHeld(
+        (tx) => tx.taskRun.update({ where: { id: task.id }, data: { status: "WAITING_HUMAN" } }),
+        () => claimDurableG3Lease(lease, db),
+      );
+      assert.equal((claimedDuringTaskPause as { ok: boolean }).ok, false, "task pause must fence in-flight claim");
+      assert.equal(await db.g3TaskLease.count({ where: { taskRunId: task.id } }), 0);
+
+      await db.taskRun.update({ where: { id: task.id }, data: { status: "RUNNING" } });
+      const claimedDuringParentPause = await whileTransitionHeld(
+        (tx) => tx.agentRun.update({ where: { id: run.id }, data: { status: "WAITING_EXTERNAL" } }),
+        () => claimDurableG3Lease(lease, db),
+      );
+      assert.equal((claimedDuringParentPause as { ok: boolean }).ok, false, "parent pause must fence in-flight claim");
+      assert.equal(await db.g3TaskLease.count({ where: { taskRunId: task.id } }), 0);
+
+      await db.agentRun.update({ where: { id: run.id }, data: { status: "RUNNING" } });
+      assert.equal((await claimDurableG3Lease(lease, db)).ok, true);
+      const renewedDuringPause = await whileTransitionHeld(
+        (tx) => tx.agentRun.update({ where: { id: run.id }, data: { status: "WAITING_HUMAN" } }),
+        () => renewDurableG3Lease(lease, db),
+      );
+      assert.equal((renewedDuringPause as { ok: boolean }).ok, false, "parent pause must fence in-flight heartbeat");
+    } finally {
+      await db.agentRun.delete({ where: { id: run.id } });
+      await db.$disconnect();
+    }
+  });
+
 });

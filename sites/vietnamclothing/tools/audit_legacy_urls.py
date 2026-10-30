@@ -20,7 +20,7 @@ def main():
         items = list(reader)
     paths = defaultdict(list)
     for idx, row in enumerate(items):
-        for key in ("legacy_path", "old_path", "source_path", "url", "path"):
+        for key in ("legacy_url", "legacy_path", "old_path", "source_path", "url", "path"):
             value = (row.get(key) or "").strip()
             if value:
                 normalized = urlsplit(value).path.rstrip("/") or "/"

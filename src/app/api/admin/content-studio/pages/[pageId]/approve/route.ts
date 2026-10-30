@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getAdminSessionFromCookies } from "@/lib/admin-auth/get-admin-session";
 import { can } from "@/features/auth/admin-permissions";
 import { isContentSiteId } from "@/features/content-studio/content-studio-policy";
+import { validatedStudioProduct } from "@/features/content-studio/product-feed";
 
 /**
  * Independent approval gate. CMS editors cannot approve merely because they
@@ -22,16 +23,17 @@ export async function POST(request: NextRequest, context: { params: Promise<{ pa
   }
   try {
     const result = await prisma.$transaction(async tx => {
-      const page = await tx.studioPage.findFirst({ where: { id: pageId, siteId: body.siteId as string }, select: { id: true } });
+      const page = await tx.studioPage.findFirst({ where: { id: pageId, siteId: body.siteId as string }, select: { id: true, slug: true } });
       if (!page) return { status: 404, message: "Page not found" };
       const latest = await tx.studioPageRevision.findFirst({ where: { pageId }, orderBy: { version: "desc" }, select: { id: true } });
       if (latest?.id !== body.revisionId) return { status: 409, message: "Only latest revision can be approved" };
       const revision = await tx.studioPageRevision.findFirst({
         where: { id: body.revisionId, pageId },
-        select: { id: true, status: true, authorId: true },
+        select: { id: true, status: true, authorId: true, content: true },
       });
       if (!revision?.authorId) return { status: 409, message: "Revision author missing; resave a new draft with attribution" };
       if (revision.authorId === actorId) return { status: 403, message: "Authors cannot approve their own revisions" };
+      if (page.slug.startsWith("/products/") && !validatedStudioProduct(page.slug, revision.content)) return { status: 409, message: "Bilingual product content and approved media required" };
       if (revision.status !== "IN_REVIEW") return { status: 409, message: "Revision must be submitted for review first" };
       const changed = await tx.studioPageRevision.updateMany({
         where: { id: revision.id, pageId, status: "IN_REVIEW", approvedById: null },

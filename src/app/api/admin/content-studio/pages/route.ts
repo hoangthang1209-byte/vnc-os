@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
   try {
     const site = CONTENT_SITES[input.siteId];
     const page = await prisma.$transaction(async (tx) => {
-      await tx.studioSite.upsert({ where: { id: input.siteId as string }, update: {}, create: { id: input.siteId as string, ...site } });
+      await tx.studioSite.upsert({ where: { id: input.siteId as string }, update: {}, create: { id: input.siteId as string, domain: site.domain, name: site.name, locale: site.locale } });
       return tx.studioPage.create({
         data: {
           siteId: input.siteId as string, slug, title: (input.title as string).trim(),

@@ -36,6 +36,12 @@ def check(path):
             errors.append(f"{label}: publication and media rights approvals required")
         if not isinstance(p.get("title"), str) or not p["title"].strip():
             errors.append(f"{label}: missing title")
+        translations = p.get("vi")
+        if not isinstance(translations, dict) or not all(isinstance(translations.get(k), str) and translations[k].strip() for k in ("title", "summary", "description")):
+            errors.append(f"{label}: Vietnamese title/summary/description required for bilingual publishing")
+        for k in ("summary", "description"):
+            if not isinstance(p.get(k), str) or not p[k].strip():
+                errors.append(f"{label}: English {k} required")
         media = p.get("media", [])
         if not isinstance(media, list) or not media:
             errors.append(f"{label}: missing media")

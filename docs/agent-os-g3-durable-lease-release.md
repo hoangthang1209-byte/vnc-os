@@ -18,6 +18,13 @@ an autonomous executor has run.
   No token should appear in logs, events, API responses or PR comments.
 - No runner launch, no background worker, no API exposure, no new secrets, no
   production database change. There is intentionally **no dispatch wiring**.
+- Claim and heartbeat now lock eligible parent `AgentRun` and child `TaskRun`
+  rows before writing the lease, serializing with concurrent status updates.
+  Isolated PostgreSQL regression tests race uncommitted `WAITING_*` transitions
+  against claim and heartbeat. All orchestration transitions must use normal
+  database row updates and preserve consistent parent/child lock order;
+  deadlock/serialization errors must fail closed (no runner launch).
+  This does not replace transactional pause/release/event correlation.
 
 ## Review gates before any merge or migration
 

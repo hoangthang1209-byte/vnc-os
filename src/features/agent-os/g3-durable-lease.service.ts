@@ -81,18 +81,26 @@ export async function claimDurableG3Lease(
   const { taskRunId, executorId, headSha, ttlMs } = input;
   const tokenHash = hashToken(input.token);
   const rows = await db.$queryRaw<G3DurableLease[]>`
+    WITH eligible AS MATERIALIZED (
+      -- Lock the status rows before evaluating eligibility. Concurrent parent/task
+      -- WAITING_* or terminal transitions must serialize with a lease claim.
+      SELECT task."id"
+      FROM "TaskRun" task
+      INNER JOIN "AgentRun" run ON run."id" = task."agentRunId"
+      WHERE task."id" = ${taskRunId}
+        AND task."status" IN ('QUEUED', 'RUNNING')
+        AND run."status" IN ('QUEUED', 'RUNNING')
+      FOR UPDATE OF task, run
+    )
     INSERT INTO "G3TaskLease"
       ("id", "taskRunId", "executorId", "tokenHash", "headSha", "attempt",
        "status", "heartbeatAt", "expiresAt", "createdAt", "updatedAt")
-    SELECT ${randomUUID()}, task."id", ${executorId}, ${tokenHash}, ${headSha},
+    SELECT ${randomUUID()}, eligible."id", ${executorId}, ${tokenHash}, ${headSha},
            1, 'CLAIMED', CURRENT_TIMESTAMP,
            CURRENT_TIMESTAMP + (${ttlMs} * INTERVAL '1 millisecond'),
            CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
-    FROM "TaskRun" task
-    INNER JOIN "AgentRun" run ON run."id" = task."agentRunId"
-    WHERE task."id" = ${taskRunId}
-      AND task."status" IN ('QUEUED', 'RUNNING')
-      AND run."status" IN ('QUEUED', 'RUNNING')
+    FROM eligible
+    WHERE TRUE
     ON CONFLICT ("taskRunId") DO UPDATE SET
       "executorId" = EXCLUDED."executorId",
       "tokenHash" = EXCLUDED."tokenHash",
@@ -128,12 +136,25 @@ export async function renewDurableG3Lease(
   const { taskRunId, executorId, headSha, ttlMs } = input;
   const tokenHash = hashToken(input.token);
   const rows = await db.$queryRaw<G3DurableLease[]>`
+    WITH eligible AS MATERIALIZED (
+      -- Recheck parent and task eligibility under row locks so a concurrent
+      -- pause/terminal transition cannot race a successful heartbeat.
+      SELECT task."id"
+      FROM "TaskRun" task
+      INNER JOIN "AgentRun" run ON run."id" = task."agentRunId"
+      WHERE task."id" = ${taskRunId}
+        AND task."status" IN ('QUEUED', 'RUNNING')
+        AND run."status" IN ('QUEUED', 'RUNNING')
+      FOR UPDATE OF task, run
+    )
     UPDATE "G3TaskLease" lease SET
       "status" = 'RUNNING',
       "heartbeatAt" = CURRENT_TIMESTAMP,
       "expiresAt" = CURRENT_TIMESTAMP + (${ttlMs} * INTERVAL '1 millisecond'),
       "updatedAt" = CURRENT_TIMESTAMP
-    WHERE lease."taskRunId" = ${taskRunId}
+    FROM eligible
+    WHERE lease."taskRunId" = eligible."id"
+      AND lease."taskRunId" = ${taskRunId}
       AND lease."executorId" = ${executorId}
       AND lease."tokenHash" = ${tokenHash}
       AND lease."headSha" = ${headSha}

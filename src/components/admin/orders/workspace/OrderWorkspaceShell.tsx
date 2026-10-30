@@ -170,8 +170,6 @@ export default function OrderWorkspaceShell(props: OrderWorkspaceShellProps) {
         <span>{order.orderNo}</span>
       </nav>
 
-      <h1 className="order-workspace-page-title">Chi tiết đơn hàng</h1>
-
       <OrderWorkspaceHeader
         order={order}
         bundle={workspaceData.bundle}
@@ -185,15 +183,22 @@ export default function OrderWorkspaceShell(props: OrderWorkspaceShellProps) {
         onOpenCorrection={onOpenCorrection}
       />
 
-      <OrderWorkspaceSummaryCards
-        order={order}
-        bundle={workspaceData.bundle}
-        canViewFinancials={canViewFinancials}
-        canEditOrder={canEditOrder}
-        onNavigateTab={navigateTab}
-      />
-
       <OrderExecutionControl order={order} onNavigateTab={navigateTab} canViewFinancials={canViewFinancials} />
+
+      <details className="order-workspace-secondary-summary" style={{ margin: "12px 0 20px" }}>
+        <summary style={{ cursor: "pointer", padding: "12px 16px", border: "1px solid #e2e8f0", borderRadius: 10, fontWeight: 600 }}>
+          Xem tổng quan khách hàng, tài chính và các mốc giao hàng
+        </summary>
+        <div style={{ marginTop: 12 }}>
+          <OrderWorkspaceSummaryCards
+            order={order}
+            bundle={workspaceData.bundle}
+            canViewFinancials={canViewFinancials}
+            canEditOrder={canEditOrder}
+            onNavigateTab={navigateTab}
+          />
+        </div>
+      </details>
 
       <div className="admin-crm-360-tabs order-workspace-tabs" role="tablist">
         {visibleTabs.map((tab) => (
@@ -294,14 +299,21 @@ export default function OrderWorkspaceShell(props: OrderWorkspaceShellProps) {
       </div>
 
       {activeTab === "products" && (
-        <OrderWorkspaceLowerSections
-          order={order}
-          orderId={orderId}
-          productionFileCount={workspaceData.productionFileCount}
-          canViewFinancials={canViewFinancials}
-          roleCode={roleCode}
-          onNavigateTab={navigateTab}
-        />
+        <details style={{ marginTop: 20 }}>
+          <summary style={{ cursor: "pointer", padding: "12px 16px", border: "1px solid #e2e8f0", borderRadius: 10, fontWeight: 600 }}>
+            Tài liệu, lịch giao, lịch sử và thông tin bổ sung
+          </summary>
+          <div style={{ marginTop: 12 }}>
+            <OrderWorkspaceLowerSections
+              order={order}
+              orderId={orderId}
+              productionFileCount={workspaceData.productionFileCount}
+              canViewFinancials={canViewFinancials}
+              roleCode={roleCode}
+              onNavigateTab={navigateTab}
+            />
+          </div>
+        </details>
       )}
     </div>
   );

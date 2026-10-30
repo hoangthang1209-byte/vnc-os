@@ -105,6 +105,12 @@ describe("G3 durable lease PostgreSQL CAS (isolated DB only)", { skip: !isIsolat
       assert.equal((await renewDurableG3Lease(resumed, db)).ok, false, "parent human wait blocks heartbeat");
       assert.equal((await claimDurableG3Lease({ ...resumed, token: "isolated-parent-wait-token" }, db)).ok, false, "parent human wait blocks claim");
       assert.equal((await releaseDurableG3Lease(resumed, db)).ok, true, "owner may release during parent wait");
+      const deniedAfterRelease = await claimDurableG3Lease(
+        { ...resumed, token: "isolated-parent-reclaim-denied-token" }, db,
+      );
+      assert.equal(deniedAfterRelease.ok, false, "released lease cannot be reclaimed while parent is waiting");
+      const heldLease = await db.g3TaskLease.findUniqueOrThrow({ where: { taskRunId: task.id } });
+      assert.equal(heldLease.status, "RELEASED", "denied claim must not change the existing lease");
       await db.agentRun.update({ where: { id: run.id }, data: { status: "WAITING_EXTERNAL" } });
       assert.equal((await claimDurableG3Lease({ ...resumed, token: "isolated-parent-external-token" }, db)).ok, false, "parent external wait blocks claim");
       await db.agentRun.update({ where: { id: run.id }, data: { status: "RUNNING" } });

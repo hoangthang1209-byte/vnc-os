@@ -26,6 +26,16 @@ describe("G3 executor lease guard",()=>{
     const b=releaseG3Lease({lease:a.lease,token:params.token,nowMs:11000});
     assert.equal(b.ok,true);if(b.ok)assert.equal(b.lease.status,"RELEASED");
   });
+  it("requires a fresh token for a reclaimed lease",()=>{
+    const a=claimG3Lease(params);if(!a.ok)throw Error("claim");
+    const released=releaseG3Lease({lease:a.lease,token:params.token,nowMs:11000});
+    if(!released.ok)throw Error("release");
+    assert.deepEqual(claimG3Lease({...params,nowMs:12000,previous:released.lease}),{ok:false,reason:"stale_token"});
+    assert.equal(claimG3Lease({...params,nowMs:12000,token:"brand-new-lease-token-123",previous:released.lease}).ok,true);
+  });
+  it("rejects unsafe integer expiration arithmetic",()=>{
+    assert.equal(claimG3Lease({...params,nowMs:Number.MAX_SAFE_INTEGER-500,ttlMs:1000}).ok,false);
+  });
   it("rejects malformed and unbounded leases",()=>{
     assert.equal(claimG3Lease({...params,headSha:"not-a-sha"}).ok,false);
     assert.equal(claimG3Lease({...params,ttlMs:7200000}).ok,false);

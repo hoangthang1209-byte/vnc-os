@@ -35,6 +35,9 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   const access = await guard();
   if (access.response) return access.response;
+  const session = await getAdminSessionFromCookies();
+  const actorId = session.userId || session.employeeId || (session.mode === "owner" ? "owner" : null);
+  if (!actorId) return NextResponse.json({ message: "Identifiable CMS author required" }, { status: 403 });
   let input: { siteId: unknown; slug: unknown; title: unknown; blocks: unknown };
   try {
     input = await request.json();
@@ -58,7 +61,7 @@ export async function POST(request: NextRequest) {
       return tx.studioPage.create({
         data: {
           siteId: input.siteId as string, slug, title: (input.title as string).trim(),
-          revisions: { create: { version: 1, status: "DRAFT", content: JSON.parse(JSON.stringify({ blocks })) as Prisma.InputJsonValue } },
+          revisions: { create: { version: 1, status: "DRAFT", authorId: actorId, content: JSON.parse(JSON.stringify({ blocks })) as Prisma.InputJsonValue } },
         },
         select: { id: true, siteId: true, slug: true, title: true },
       });

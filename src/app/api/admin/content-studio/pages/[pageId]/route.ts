@@ -43,8 +43,8 @@ export async function PUT(request: NextRequest, context: RouteContext) {
       if (!page) return { error: "NOT_FOUND" };
       const latest = await tx.studioPageRevision.findFirst({ where: { pageId }, orderBy: { version: "desc" }, select: { version: true } });
       if (!latest || latest.version !== data.expectedVersion) return { error: "CONFLICT" };
-      const revision = await tx.studioPageRevision.create({ data: { pageId, version: latest.version + 1, status: "DRAFT", authorId: actorId, content: { blocks } as Prisma.InputJsonValue } });
-      await tx.studioPage.update({ where: { id: pageId }, data: { title: (data.title as string).trim() } });
+      const revision = await tx.studioPageRevision.create({ data: { pageId, version: latest.version + 1, status: "DRAFT", authorId: actorId, content: { title: (data.title as string).trim(), blocks } as Prisma.InputJsonValue } });
+      // Draft metadata is not exposed until the revision is approved and published.
       return { revision: { id: revision.id, version: revision.version, status: revision.status } };
     });
     if ("error" in result) return NextResponse.json({ message: result.error === "NOT_FOUND" ? "Page not found" : "Version conflict: refresh before saving" }, { status: result.error === "NOT_FOUND" ? 404 : 409 });

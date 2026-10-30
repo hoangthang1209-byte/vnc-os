@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getAdminSessionFromCookies } from "@/lib/admin-auth/get-admin-session";
 import { can } from "@/features/auth/admin-permissions";
 import { isContentSiteId, canPublishStudioRevision } from "@/features/content-studio/content-studio-policy";
+import { validatedStudioProduct } from "@/features/content-studio/product-feed";
 
 /**
  * Publish an already-approved immutable revision, never a draft.
@@ -29,7 +30,7 @@ export async function POST(
     const result = await prisma.$transaction(async (tx) => {
       const page = await tx.studioPage.findFirst({
         where: { id: pageId, siteId: input.siteId as string },
-        select: { id: true, siteId: true, publishedRevisionId: true },
+        select: { id: true, siteId: true, slug: true, publishedRevisionId: true },
       });
       if (!page) return { status: 404, message: "Page not found for site" };
       const revision = await tx.studioPageRevision.findFirst({
@@ -39,6 +40,7 @@ export async function POST(
       if (!revision) return { status: 404, message: "Revision not found" };
       const latest = await tx.studioPageRevision.findFirst({ where: { pageId }, orderBy: { version: "desc" }, select: { id: true } });
       if (latest?.id !== revision.id) return { status: 409, message: "Only latest approved revision may be published" };
+      if (page.slug.startsWith("/products/") && !validatedStudioProduct(page.slug, revision.content)) return { status: 409, message: "Bilingual product/media publishing gate failed" };
       if (!canPublishStudioRevision(revision.status, revision.approvedById)) {
         return { status: 409, message: "Revision must be independently approved before publishing" };
       }

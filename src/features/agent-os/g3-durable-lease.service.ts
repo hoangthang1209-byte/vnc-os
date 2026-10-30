@@ -108,7 +108,9 @@ export async function claimDurableG3Lease(
       "attempt" = "G3TaskLease"."attempt" + 1,
       "status" = 'CLAIMED',
       "heartbeatAt" = clock_timestamp(),
-      "expiresAt" = EXCLUDED."expiresAt",
+      -- Compute expiry AFTER acquiring the conflicting lease-row lock.
+      -- EXCLUDED.expiresAt was computed before ON CONFLICT lock waits.
+      "expiresAt" = clock_timestamp() + (${ttlMs} * INTERVAL '1 millisecond'),
       "updatedAt" = clock_timestamp()
     WHERE ("G3TaskLease"."status" = 'RELEASED'
            OR "G3TaskLease"."expiresAt" <= clock_timestamp())

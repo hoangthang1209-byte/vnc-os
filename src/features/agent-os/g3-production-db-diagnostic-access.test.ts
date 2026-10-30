@@ -1,10 +1,13 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { diagnosticAccessStatus } from "./g3-production-db-diagnostic-access";
-import type { AdminSessionUser } from "@/features/auth/admin-session.types";
+import type { AdminSessionMode, AdminSessionUser } from "@/features/auth/admin-session.types";
 
-function session(authenticated: boolean, mode: string): AdminSessionUser {
-  return { authenticated, mode, permissions: new Map() } as AdminSessionUser;
+function session(authenticated: boolean, mode: AdminSessionMode): AdminSessionUser {
+  return {
+    authenticated, mode, userId: null, username: null, employeeId: null,
+    roleId: null, roleCode: null, legacyEmployeeRole: null, permissions: new Map(),
+  };
 }
 
 test("unauthenticated session denied 401, even outside production", () => {

@@ -52,7 +52,7 @@ export default function MultisiteStudio(){
       if(!response.ok)throw Error(payload.message||"Unable to load revision");
       const revision:Revision|undefined=payload.page?.revisions?.[0];
       if(!revision || !Array.isArray(revision.content?.blocks))throw Error("No editable revision found");
-      setEditing({id:page.id,version:revision.version});setSelectedRevision({pageId:page.id,revision,publishedRevisionId:payload.page.publishedRevisionId});setSlug(page.slug);setTitle(page.title);
+      setEditing({id:page.id,version:revision.version});setSelectedRevision({pageId:page.id,revision,publishedRevisionId:payload.page.publishedRevisionId});setSlug(page.slug);setTitle(typeof (revision.content as {title?:unknown}).title==="string"?(revision.content as {title:string}).title:page.title);
       setBlocks(revision.content.blocks.filter((b:Block)=>["hero","richText","cta"].includes(b.type)).map((b:Block)=>({type:b.type,data:b.data})));
       if(revision.content.blocks.some((b:Block)=>!["hero","richText","cta"].includes(b.type))) {
         setEditing(null);throw Error("This page contains advanced blocks. Editing is disabled to prevent data loss.");

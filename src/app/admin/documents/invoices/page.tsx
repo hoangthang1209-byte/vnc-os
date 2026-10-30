@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 type Line={description:string;quantity:string;unit:string;unitPrice:string};
 export default function CustomInvoicePage(){
  const [invoiceNo,setInvoiceNo]=useState("");const [recipientName,setRecipientName]=useState("");
@@ -16,7 +16,7 @@ export default function CustomInvoicePage(){
   const response=await fetch("/api/admin/documents/invoices",{cache:"no-store"});
   if(response.ok){const data=await response.json();setInvoices(data.invoices??[]);}
  }
- useEffect(()=>{void refresh();},[]);
+
  async function issue(id:string){
   setMessage("Issuing invoice...");
   try {

@@ -68,7 +68,7 @@ export default function CustomInvoicePage(){
   </div>
   <p role="status" style={{marginTop:12}}>{message}</p>
   <section style={{marginTop:32}}>
-    <h2 style={{fontSize:20,fontWeight:600}}>Saved invoices</h2>
+    <h2 style={{fontSize:20,fontWeight:600}}>Saved invoices</h2>\n    <button type="button" onClick={()=>void refresh()} style={{margin:"8px 0",padding:8,border:"1px solid #ccc"}}>Refresh saved invoices</button>
     {invoices.map(invoice=><div key={invoice.id} style={{display:"flex",flexWrap:"wrap",alignItems:"center",gap:12,padding:"12px 0",borderBottom:"1px solid #ddd"}}>
       <span style={{flex:"1 1 220px"}}>{invoice.invoiceNo} · {invoice.recipientName} · {invoice.currency} {invoice.total} · {invoice.status}</span>
       {invoice.status==="DRAFT"&&<button type="button" onClick={()=>void issue(invoice.id)}>Issue</button>}

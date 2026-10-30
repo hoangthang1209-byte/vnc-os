@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, type Prisma } from "@prisma/client";
 import {
   claimDurableG3Lease,
   releaseDurableG3Lease,
@@ -145,7 +145,7 @@ describe("G3 durable lease PostgreSQL CAS (isolated DB only)", { skip: !isIsolat
       // Without row-lock serialization, READ COMMITTED may accept a stale
       // QUEUED/RUNNING snapshot and grant a lease after a WAITING_* transition.
       async function whileTransitionHeld(
-        transition: (tx: Parameters<Parameters<typeof db.$transaction>[0]>[0]) => Promise<unknown>,
+        transition: (tx: Prisma.TransactionClient) => Promise<unknown>,
         operation: () => Promise<unknown>,
       ): Promise<unknown> {
         let signalStarted!: () => void;

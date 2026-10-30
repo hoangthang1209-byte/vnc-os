@@ -128,6 +128,35 @@ describe("G3 durable lease PostgreSQL CAS (isolated DB only)", { skip: !isIsolat
       await db.$disconnect();
     }
   });
+  it("uses DB wall clock after a long transaction to avoid immediately expired claims", async () => {
+    if (!isIsolatedTestUrl(testUrl)) return;
+    const db = new PrismaClient({ datasources: { db: { url: testUrl } } });
+    const run = await db.agentRun.create({
+      data: { agentId: "G3_LEASE_DB_CLOCK_TEST", triggerSource: "MANUAL_OWNER" },
+    });
+    try {
+      const task = await db.taskRun.create({ data: { agentRunId: run.id } });
+      // PostgreSQL CURRENT_TIMESTAMP is fixed at transaction start. A 1.5s
+      // wait followed by a 1s lease would create an already-expired lease.
+      await db.$transaction(async (tx) => {
+        await tx.$queryRaw<Array<{ slept: string }>>`SELECT pg_sleep(1.5)::text AS slept`;
+        const claimed = await claimDurableG3Lease({
+          taskRunId: task.id, executorId: "clock-test-worker",
+          token: "isolated-clock-test-token-123", headSha: "c".repeat(40),
+          ttlMs: 1_000,
+        }, tx);
+        assert.equal(claimed.ok, true);
+        if (claimed.ok) {
+          assert.ok(claimed.lease.expiresAt.getTime() > Date.now() + 300,
+            "newly claimed lease must not already be expired after transaction wait");
+        }
+      }, { timeout: 10_000 });
+    } finally {
+      await db.agentRun.delete({ where: { id: run.id } });
+      await db.$disconnect();
+    }
+  });
+
   it("serializes claim and heartbeat against uncommitted wait transitions", async () => {
     if (!isIsolatedTestUrl(testUrl)) return;
     const db = new PrismaClient({ datasources: { db: { url: testUrl } } });

@@ -106,6 +106,13 @@ export async function claimDurableG3Lease(
            OR "G3TaskLease"."expiresAt" <= CURRENT_TIMESTAMP)
       AND "G3TaskLease"."tokenHash" <> EXCLUDED."tokenHash"
       AND "G3TaskLease"."attempt" < 2147483647
+      AND EXISTS (
+        SELECT 1 FROM "TaskRun" task
+        JOIN "AgentRun" run ON run."id" = task."agentRunId"
+        WHERE task."id" = "G3TaskLease"."taskRunId"
+          AND task."status" IN ('QUEUED', 'RUNNING')
+          AND run."status" IN ('QUEUED', 'RUNNING')
+      )
     RETURNING "taskRunId", "executorId", "headSha", "attempt",
               "status", "heartbeatAt", "expiresAt"
   `;

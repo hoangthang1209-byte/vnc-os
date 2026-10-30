@@ -69,7 +69,7 @@ function result(rows: G3DurableLease[]): G3DurableLeaseResult {
 }
 
 /**
- * Only a QUEUED/RUNNING TaskRun with nonterminal AgentRun may be claimed.
+ * Only a QUEUED/RUNNING TaskRun whose parent AgentRun is QUEUED/RUNNING may be claimed.
  * Expired/released leases may be reclaimed with a NEW token; attempt increases.
  * A failed claim must never launch a runner. This is not proof of execution.
  */
@@ -92,7 +92,7 @@ export async function claimDurableG3Lease(
     INNER JOIN "AgentRun" run ON run."id" = task."agentRunId"
     WHERE task."id" = ${taskRunId}
       AND task."status" IN ('QUEUED', 'RUNNING')
-      AND run."status" NOT IN ('SUCCEEDED', 'FAILED', 'CANCELLED')
+      AND run."status" IN ('QUEUED', 'RUNNING')
     ON CONFLICT ("taskRunId") DO UPDATE SET
       "executorId" = EXCLUDED."executorId",
       "tokenHash" = EXCLUDED."tokenHash",
@@ -137,7 +137,7 @@ export async function renewDurableG3Lease(
         JOIN "AgentRun" run ON run."id" = task."agentRunId"
         WHERE task."id" = lease."taskRunId"
           AND task."status" IN ('QUEUED', 'RUNNING')
-          AND run."status" NOT IN ('SUCCEEDED', 'FAILED', 'CANCELLED')
+          AND run."status" IN ('QUEUED', 'RUNNING')
       )
     RETURNING "taskRunId", "executorId", "headSha", "attempt",
               "status", "heartbeatAt", "expiresAt"

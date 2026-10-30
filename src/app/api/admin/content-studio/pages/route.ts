@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
       return tx.studioPage.create({
         data: {
           siteId: input.siteId as string, slug, title: (input.title as string).trim(),
-          revisions: { create: { version: 1, status: "DRAFT", authorId: actorId, content: JSON.parse(JSON.stringify({ blocks })) as Prisma.InputJsonValue } },
+          revisions: { create: { version: 1, status: "DRAFT", authorId: actorId, content: JSON.parse(JSON.stringify({ title: (input.title as string).trim(), blocks })) as Prisma.InputJsonValue } },
         },
         select: { id: true, siteId: true, slug: true, title: true },
       });

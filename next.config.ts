@@ -24,6 +24,9 @@ const nextConfig: NextConfig = {
   ],
   outputFileTracingIncludes: {
     "/api/quotes/[id]/pdf": PDF_RUNTIME_TRACE_INCLUDES,
+    "/api/admin/documents/invoices/[id]/pdf": [
+      "./node_modules/dejavu-fonts-ttf/ttf/DejaVuSans*.ttf",
+    ],
     "/api/quotes/public/[token]/pdf": PDF_RUNTIME_TRACE_INCLUDES,
     "/api/quotes/pdf-renderer-health": PDF_RUNTIME_TRACE_INCLUDES,
     "/api/quotes/pdf-health": PDF_RUNTIME_TRACE_INCLUDES,

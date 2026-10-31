@@ -6662,6 +6662,8 @@ model VncBankAccount {
   accountName String
   bankName    String
   accountNo   String
+  accountAddress String? @db.Text
+  bankAddress String? @db.Text
   swift       String?
   currency    String?
   branch      String?

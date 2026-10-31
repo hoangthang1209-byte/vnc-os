@@ -1,7 +1,9 @@
 "use client";
 import { useState } from "react";
+import { useAdminPermissions } from "@/components/admin/AdminPermissionsContext";
 type Line={description:string;quantity:string;unit:string;unitPrice:string};
 export default function CustomInvoiceManager(){
+ const {permissions}=useAdminPermissions();
  const [invoiceNo,setInvoiceNo]=useState("");const [recipientName,setRecipientName]=useState("");
  const [issuerName,setIssuerName]=useState("");const [currency,setCurrency]=useState("USD");
  const [issueDate,setIssueDate]=useState(new Date().toISOString().slice(0,10));
@@ -62,8 +64,8 @@ export default function CustomInvoiceManager(){
   </div>
   <label style={{display:"block",marginTop:16}}>Notes<textarea value={notes} onChange={e=>setNotes(e.target.value)} style={{display:"block",padding:10,width:"100%",border:"1px solid #ccc"}}/></label>
   <div style={{marginTop:24,display:"flex",gap:12}}>
-   <button type="button" onClick={save} style={{padding:"12px 20px",background:"#111",color:"white",borderRadius:6}}>Save Invoice</button>
-   {pdfId&&!issued&&<button type="button" onClick={()=>void issue(pdfId)} style={{padding:"12px 20px",background:"#b91c1c",color:"white",borderRadius:6}}>Issue invoice</button>}
+   <button type="button" onClick={save} disabled={!permissions.canCreateCustomInvoice} style={{padding:"12px 20px",background:"#111",color:"white",borderRadius:6}}>Save Invoice</button>
+   {pdfId&&!issued&&permissions.canIssueCustomInvoice&&<button type="button" onClick={()=>void issue(pdfId)} style={{padding:"12px 20px",background:"#b91c1c",color:"white",borderRadius:6}}>Issue invoice</button>}
    {pdfId&&issued&&<a href={`/api/admin/documents/invoices/${encodeURIComponent(pdfId)}/pdf`} style={{padding:12,border:"1px solid #999",borderRadius:6}}>Download final PDF</a>}
   </div>
   <p role="status" style={{marginTop:12}}>{message}</p>
@@ -72,7 +74,7 @@ export default function CustomInvoiceManager(){
     <button type="button" onClick={()=>void refresh()} style={{margin:"8px 0",padding:8,border:"1px solid #ccc"}}>Refresh saved invoices</button>
     {invoices.map(invoice=><div key={invoice.id} style={{display:"flex",flexWrap:"wrap",alignItems:"center",gap:12,padding:"12px 0",borderBottom:"1px solid #ddd"}}>
       <span style={{flex:"1 1 220px"}}>{invoice.invoiceNo} · {invoice.recipientName} · {invoice.currency} {invoice.total} · {invoice.status}</span>
-      {invoice.status==="DRAFT"&&<button type="button" onClick={()=>void issue(invoice.id)}>Issue</button>}
+      {invoice.status==="DRAFT"&&permissions.canIssueCustomInvoice&&<button type="button" onClick={()=>void issue(invoice.id)}>Issue</button>}
       {invoice.status==="ISSUED"&&<a href={`/api/admin/documents/invoices/${encodeURIComponent(invoice.id)}/pdf`}>Download PDF</a>}
     </div>)}
   </section>

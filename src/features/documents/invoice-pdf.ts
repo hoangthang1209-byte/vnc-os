@@ -2,6 +2,7 @@ import PDFDocument from "pdfkit";
 import { resolve as resolvePath } from "node:path";
 import { calculateCustomInvoice, formatMinor, type InvoiceCurrency, type InvoiceLine } from "./custom-invoice-calculation";
 import { vncLogoPngBuffer } from "./vnc-invoice-brand";
+import { loadInvoiceInterFont } from "./inter-font";
 
 type InvoicePdfInput = {
   invoiceNo: string; recipientName: string; recipientAddress?: string | null;
@@ -16,16 +17,19 @@ function items(v:unknown):InvoiceLine[]{
  if(!Array.isArray(v))throw new Error("Invoice has no line items");
  return v.map(raw=>{const r=object(raw);return {description:str(r.description),quantity:str(r.quantity),unit:str(r.unit),unitPrice:str(r.unitPrice)};});
 }
-export function renderInvoicePdf(invoice:InvoicePdfInput):Promise<Buffer>{
+export async function renderInvoicePdf(invoice:InvoicePdfInput):Promise<Buffer>{
  const currency=invoice.currency as InvoiceCurrency,adjustments=object(invoice.adjustments);
  const totals=calculateCustomInvoice({currency,lines:items(invoice.lines),discount:str(adjustments.discount)||"0",extraCharge:str(adjustments.extraCharge)||"0",tax:str(adjustments.tax)||"0"});
  if(formatMinor(totals.totalMinor,currency)!==invoice.total)throw new Error("Saved invoice total does not match line items");
  const bank=object(invoice.bankDetails);
+ const inter=await loadInvoiceInterFont();
  return new Promise((resolve,reject)=>{
   const pdf=new PDFDocument({size:"A4",margin:L,bufferPages:true});
   // Retain the proven Unicode font for PDF; the document uses the same enterprise sizing as the web preview.
-  pdf.registerFont("Body",resolvePath(process.cwd(),"node_modules/dejavu-fonts-ttf/ttf/DejaVuSans.ttf"));
-  pdf.registerFont("Heading",resolvePath(process.cwd(),"node_modules/dejavu-fonts-ttf/ttf/DejaVuSans-Bold.ttf"));
+  // Use the exact Inter font loaded by the A4 browser preview.
+  // Unicode-capable DejaVu remains a safe fallback when external font retrieval fails.
+  pdf.registerFont("Body",inter??resolvePath(process.cwd(),"node_modules/dejavu-fonts-ttf/ttf/DejaVuSans.ttf"));
+  pdf.registerFont("Heading",inter??resolvePath(process.cwd(),"node_modules/dejavu-fonts-ttf/ttf/DejaVuSans-Bold.ttf"));
   const chunks:Buffer[]=[];
   pdf.on("data",(b:Buffer)=>chunks.push(b));pdf.on("error",reject);pdf.on("end",()=>resolve(Buffer.concat(chunks)));
   let y=L;

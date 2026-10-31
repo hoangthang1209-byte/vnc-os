@@ -11,7 +11,7 @@ import type { Prisma } from "@prisma/client";
 export async function POST(request:NextRequest,context:{params:Promise<{id:string}>}) {
   const session=getAdminSessionFromRequest(request);
   if(!session.authenticated)return NextResponse.json({error:"Unauthorized"},{status:401});
-  if(!can(session,"documents.approve"))return NextResponse.json({error:"Forbidden"},{status:403});
+  if(!can(session,"orders.view_financials") || !can(session,"payments.manage"))return NextResponse.json({error:"Forbidden"},{status:403});
   const {id}=await context.params;
   try {
     const result=await prisma.$transaction(async tx=>{

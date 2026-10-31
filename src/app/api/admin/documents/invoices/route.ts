@@ -72,8 +72,19 @@ export async function POST(request: NextRequest) {
     const issueDate=strictDate(body.issueDate);
     const dueDate=body.dueDate ? strictDate(body.dueDate):null;
     if(dueDate && dueDate < issueDate) throw new Error("Due date precedes issue date");
-    const invoice=await prisma.customPaymentInvoice.create({data:{
-      invoiceNo:required(body.invoiceNo,80),
+    const year=issueDate.getUTCFullYear();
+    const invoice=await prisma.$transaction(async tx=>{
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`vnc-custom-invoice-${year}`}))`;
+      const prefix=`CI-${year}-`;
+      const existing=await tx.customPaymentInvoice.findMany({where:{invoiceNo:{startsWith:prefix}},select:{invoiceNo:true}});
+      const next=existing.reduce((max,row)=>{
+        const suffix=row.invoiceNo.slice(prefix.length);
+        return /^[0-9]+$/.test(suffix)?Math.max(max,Number(suffix)):max;
+      },0)+1;
+      if(!Number.isSafeInteger(next))throw new Error('Invoice sequence exhausted');
+      const invoiceNo=prefix+String(next).padStart(4,'0');
+      return tx.customPaymentInvoice.create({data:{
+      invoiceNo,
       createdByUserId:creatorSession.userId,
       createdByEmployeeId:creatorSession.employeeId,
       createdByDisplayName:creatorName.slice(0,250),
@@ -107,9 +118,10 @@ export async function POST(request: NextRequest) {
       dueDate,
       notes:optional(body.notes,2000)
     }});
+    },{maxWait:5000,timeout:15000});
     return NextResponse.json({id:invoice.id,invoiceNo:invoice.invoiceNo,total:invoice.total},{status:201});
   } catch(error) {
-    if (typeof error==="object" && error && "code" in error && error.code==="P2002") return NextResponse.json({error:"Số Invoice đã tồn tại. Hãy mở bản nháp cũ hoặc nhập số Invoice khác."},{status:409});
+    if (typeof error==="object" && error && "code" in error && error.code==="P2002") return NextResponse.json({error:"Xung đột số Invoice tự động. Vui lòng thử lưu lại."},{status:409});
     if (typeof error==="object" && error && "code" in error && error.code==="P2021") return NextResponse.json({error:"Database migration required"},{status:503});
     if(error instanceof Error && /Invalid decimal amount/.test(error.message))return NextResponse.json({error:"Số tiền không hợp lệ. Chỉ dùng số như 20 hoặc 20.50; không nhập 020, dấu phẩy hay chữ."},{status:400});
     if(error instanceof Error && /Description required|Missing or invalid required field/.test(error.message))return NextResponse.json({error:"Thiếu nội dung khoản thu hoặc trường bắt buộc. Kiểm tra các khoản thu trống và thông tin công ty/khách hàng."},{status:400});

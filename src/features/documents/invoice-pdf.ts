@@ -40,7 +40,7 @@ export function renderInvoicePdf(invoice:InvoicePdfInput):Promise<Buffer>{
    const h=height(value,width,bold,size);ensure(h+space);write(value,L,y,width,bold,size,color);y+=h+space;
   }
   function companyHeader(){
-   pdf.image(vncLogoPngBuffer(),L,43,{fit:[163,50],align:"left"});
+   pdf.image(vncLogoPngBuffer(),L,43,{fit:[163,50]});
    write("COMMERCIAL",324,49,225,true,19,NAVY,"right");
    write("INVOICE",324,74,225,true,19,NAVY,"right");
    write("PAYMENT REQUEST",343,102,206,false,8,GREY,"right");

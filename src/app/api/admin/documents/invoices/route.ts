@@ -7,7 +7,7 @@ import { calculateCustomInvoice, formatMinor, type InvoiceCurrency, type Invoice
 function authorize(request: NextRequest, permission: string) {
   const session=getAdminSessionFromRequest(request);
   if (!session.authenticated) return NextResponse.json({error:"Unauthorized"},{status:401});
-  if (!can(session,permission)) return NextResponse.json({error:"Forbidden"},{status:403});
+  if (!can(session,"orders.view_financials") || !can(session,permission)) return NextResponse.json({error:"Forbidden"},{status:403});
   return null;
 }
 function required(value: unknown, max=250): string {
@@ -25,7 +25,7 @@ function strictDate(value: unknown): Date {
   return parsed;
 }
 export async function POST(request: NextRequest) {
-  const refused=authorize(request,"documents.create");if(refused)return refused;
+  const refused=authorize(request,"quotes.create");if(refused)return refused;
   try {
     const data:unknown=await request.json();
     if (!data || typeof data!=="object" || Array.isArray(data)) throw new Error("Invalid invoice");
@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
   }
 }
 export async function GET(request:NextRequest) {
-  const refused=authorize(request,"documents.view");if(refused)return refused;
+  const refused=authorize(request,"orders.view_financials");if(refused)return refused;
   try {
     const invoices=await prisma.customPaymentInvoice.findMany({take:100,orderBy:{createdAt:"desc"},select:{id:true,invoiceNo:true,status:true,recipientName:true,currency:true,total:true,createdAt:true}});
     return NextResponse.json({invoices});

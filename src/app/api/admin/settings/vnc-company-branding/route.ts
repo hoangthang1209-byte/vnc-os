@@ -15,9 +15,12 @@ function mediaUrl(value: unknown): string | null {
   if(value===null || value==="") return null;
   if(typeof value!=="string" || value.length>2000) throw new Error("Invalid image URL");
   const url=value.trim();
-  if(url.startsWith("/") && !url.startsWith("//") && !url.includes("\\")) return url;
   const parsed=new URL(url);
   if(parsed.protocol!=="https:" || parsed.username || parsed.password) throw new Error("HTTPS image URL required");
+  // Only media backends whose images are supported by document PDF rendering.
+  if(!(parsed.hostname==="res.cloudinary.com" || parsed.hostname.endsWith(".public.blob.vercel-storage.com"))) {
+    throw new Error("Chọn ảnh Cloudinary hoặc Vercel Blob trong Media Library.");
+  }
   if(!/\.(png|jpe?g|webp|ico|svg)(?:$|\?)/i.test(parsed.pathname+parsed.search)) {
     throw new Error("Expected image file URL");
   }

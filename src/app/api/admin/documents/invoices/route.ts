@@ -62,6 +62,7 @@ export async function POST(request: NextRequest) {
     }
     const legalEntityId=body.legalEntityId==null||body.legalEntityId===""?null:required(body.legalEntityId,100);
     const bankAccountId=body.bankAccountId==null||body.bankAccountId===""?null:required(body.bankAccountId,100);
+    if(!legalEntityId||!bankAccountId)return NextResponse.json({error:"Vui lòng chọn pháp nhân và tài khoản ngân hàng từ Cấu hình chung VNC OS."},{status:400});
     const entity=legalEntityId?await prisma.vncLegalEntity.findUnique({where:{id:legalEntityId}}):null;
     if(legalEntityId&&(!entity||!entity.isActive))return NextResponse.json({error:"Pháp nhân đã chọn không tồn tại hoặc không còn hoạt động."},{status:400});
     const account=bankAccountId?await prisma.vncBankAccount.findUnique({where:{id:bankAccountId}}):null;

@@ -59,6 +59,7 @@ export async function POST(request:NextRequest,context:{params:Promise<{id:strin
     logAdminAuditEvent({action:"custom_invoice_issued",userId:session.userId,employeeId:session.employeeId,route:request.nextUrl.pathname,detail:{id:result.id,invoiceNo:result.invoiceNo}});
     return NextResponse.json(result);
   }catch(error) {
+    if(typeof error==="object"&&error&&"code" in error&&error.code==="P2021")return NextResponse.json({error:"Cấu hình công ty VNC chưa được migrate. Vui lòng liên hệ quản trị hệ thống."},{status:503});
     console.error("[custom invoice issue]",error);
     return NextResponse.json({error:"Unable to issue invoice"},{status:500});
   }

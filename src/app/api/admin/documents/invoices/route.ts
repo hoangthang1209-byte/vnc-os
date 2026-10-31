@@ -66,6 +66,14 @@ export async function POST(request: NextRequest) {
       if(customerId&&order.customerId&&customerId!==order.customerId)
         return NextResponse.json({error:"Khách hàng Invoice không trùng với khách hàng trên đơn hàng đã liên kết."},{status:400});
     }
+    // Allow verified employee selection for standalone invoices when an Order is not yet in VNC OS.
+    const selectedEmployeeId=body.preparedByEmployeeId==null||body.preparedByEmployeeId===""?null:required(body.preparedByEmployeeId,100);
+    if(!preparedByName&&selectedEmployeeId){
+      const staff=await prisma.employee.findUnique({where:{id:selectedEmployeeId},select:{id:true,fullName:true,isActive:true}});
+      if(!staff||!staff.isActive)return NextResponse.json({error:"Sales/Account được chọn không tồn tại hoặc đã ngừng hoạt động."},{status:400});
+      preparedByName=staff.fullName.trim();
+      preparedByEmployeeId=staff.id;
+    }
     const legalEntityId=body.legalEntityId==null||body.legalEntityId===""?null:required(body.legalEntityId,100);
     const bankAccountId=body.bankAccountId==null||body.bankAccountId===""?null:required(body.bankAccountId,100);
     const entity=legalEntityId?await prisma.vncLegalEntity.findUnique({where:{id:legalEntityId}}):null;

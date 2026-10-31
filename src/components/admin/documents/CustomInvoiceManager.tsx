@@ -56,7 +56,7 @@ export default function CustomInvoiceManager(){
   return ()=>{mounted=false};
  },[]);
  async function save(){
-  if(!invoiceNo.trim()||!issuerName.trim()||!recipientName.trim()){setMessage("Vui lòng nhập số Invoice, tên bên phát hành và tên khách hàng.");return;}
+  if(!issuerName.trim()||!recipientName.trim()){setMessage("Vui lòng nhập tên bên phát hành và tên khách hàng.");return;}
   const blankLine=lines.findIndex(line=>!line.description.trim());
   if(blankLine>=0){setMessage("Khoản thu "+(blankLine+1)+" chưa có nội dung. Hãy nhập mô tả hoặc xóa khoản thu này.");return;}
   const numeric=[...lines.flatMap(line=>[line.quantity,line.unitPrice]),discount,extraCharge,tax];
@@ -65,9 +65,9 @@ export default function CustomInvoiceManager(){
   if(swift.trim()&&!/^[A-Za-z]{6}[A-Za-z0-9]{2}([A-Za-z0-9]{3})?$/.test(swift.trim())){setMessage("SWIFT/BIC gồm 8 hoặc 11 ký tự, khác với số tài khoản. Nếu không có hãy để trống.");return;}
   setBusy(true);setMessage("Đang lưu bản nháp...");
   try{
-   const r=await fetch("/api/admin/documents/invoices",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({invoiceNo,customerId:customerId||null,orderId:orderId||null,legalEntityId:legalEntityId||null,bankAccountId:bankAccountId||null,recipientName,recipientAddress,recipientEmail,issuerName,issuerAddress,issuerTaxId,currency,issueDate,dueDate,lines,beneficiary,bank,bankAccount,accountAddress,bankAddress,branch,swift,notes,discount,extraCharge,tax})});
+   const r=await fetch("/api/admin/documents/invoices",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({customerId:customerId||null,orderId:orderId||null,legalEntityId:legalEntityId||null,bankAccountId:bankAccountId||null,recipientName,recipientAddress,recipientEmail,issuerName,issuerAddress,issuerTaxId,currency,issueDate,dueDate,lines,beneficiary,bank,bankAccount,accountAddress,bankAddress,branch,swift,notes,discount,extraCharge,tax})});
    const data=await r.json();if(!r.ok)throw new Error(data.error||"Không thể lưu bản nháp");
-   setPdfId(data.id);setIssued(false);setMessage("Đã lưu bản nháp "+data.invoiceNo+".");await refresh();
+   setInvoiceNo(data.invoiceNo);setPdfId(data.id);setIssued(false);setMessage("Đã lưu bản nháp "+data.invoiceNo+".");await refresh();
   }catch(error){setMessage(error instanceof Error?error.message:"Lưu không thành công");}
   finally{setBusy(false);}
  }
@@ -92,7 +92,7 @@ export default function CustomInvoiceManager(){
     <div className={s.panelHead}><h2>Thông tin chứng từ</h2><span className={s.pill}>Không cần liên kết đơn hàng</span></div>
     <div className={s.body}>
      <div className={s.section}><p className={s.sectionTitle}>01 / Thông tin cơ bản</p><div className={s.fields3}>
-      {field("Số Invoice *",invoiceNo,setInvoiceNo,"CI-2026-0001")}
+      <div className={s.field}><label>Số Invoice — tự động</label><input className={s.input} value={invoiceNo||"Hệ thống cấp số khi lưu bản nháp"} readOnly aria-label="Số Invoice do hệ thống tự cấp" /></div>
       {field("Ngày phát hành",issueDate,setIssueDate,"","date")}
       <div className={s.field}><label>Loại tiền</label><select className={s.select} value={currency} onChange={e=>{setCurrency(e.target.value);setPdfId("");}}><option>USD</option><option>VND</option><option>EUR</option></select></div>
       {field("Hạn thanh toán",dueDate,setDueDate,"","date")}

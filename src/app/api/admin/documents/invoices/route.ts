@@ -45,20 +45,40 @@ export async function POST(request: NextRequest) {
       const customer=await prisma.customer.findUnique({where:{id:customerId},select:{id:true}});
       if(!customer)return NextResponse.json({error:"Khách hàng liên kết không tồn tại trong CRM."},{status:400});
     }
+    const legalEntityId=body.legalEntityId==null||body.legalEntityId===""?null:required(body.legalEntityId,100);
+    const bankAccountId=body.bankAccountId==null||body.bankAccountId===""?null:required(body.bankAccountId,100);
+    const entity=legalEntityId?await prisma.vncLegalEntity.findUnique({where:{id:legalEntityId}}):null;
+    if(legalEntityId&&(!entity||!entity.isActive))return NextResponse.json({error:"Pháp nhân đã chọn không tồn tại hoặc không còn hoạt động."},{status:400});
+    const account=bankAccountId?await prisma.vncBankAccount.findUnique({where:{id:bankAccountId}}):null;
+    if(bankAccountId&&(!account||!account.isActive||account.legalEntityId!==legalEntityId))
+      return NextResponse.json({error:"Tài khoản ngân hàng không thuộc pháp nhân đã chọn hoặc đã ngừng hoạt động."},{status:400});
+    if(account?.currency&&account.currency!==currency)
+      return NextResponse.json({error:"Loại tiền Invoice phải trùng loại tiền của tài khoản nhận thanh toán."},{status:400});
     const issueDate=strictDate(body.issueDate);
     const dueDate=body.dueDate ? strictDate(body.dueDate):null;
     if(dueDate && dueDate < issueDate) throw new Error("Due date precedes issue date");
     const invoice=await prisma.customPaymentInvoice.create({data:{
       invoiceNo:required(body.invoiceNo,80),
       customerId,
+      legalEntityId,
+      bankAccountId,
       currency,
       recipientName:required(body.recipientName,250),
       recipientEmail:optional(body.recipientEmail,250),
       recipientAddress:optional(body.recipientAddress,1000),
-      issuerName:required(body.issuerName,250),
-      issuerAddress:optional(body.issuerAddress,1000),
-      issuerTaxId:optional(body.issuerTaxId,80),
-      bankDetails:{bank:optional(body.bank,200),account:optional(body.bankAccount,100),beneficiary:optional(body.beneficiary,200),swift:optional(body.swift,80)},
+      issuerName:entity?.legalName??required(body.issuerName,250),
+      issuerAddress:entity?.address??optional(body.issuerAddress,1000),
+      issuerTaxId:entity?.taxCode??optional(body.issuerTaxId,80),
+      bankDetails:{
+        bank:account?.bankName??optional(body.bank,200),
+        account:account?.accountNo??optional(body.bankAccount,100),
+        beneficiary:account?.accountName??optional(body.beneficiary,200),
+        swift:account?.swift??optional(body.swift,80),
+        accountAddress:account?.accountAddress??optional(body.accountAddress,1500),
+        bankAddress:account?.bankAddress??optional(body.bankAddress,1500),
+        branch:account?.branch??optional(body.branch,200),
+        currency:account?.currency??currency,
+      },
       lines,
       adjustments,
       subtotal:formatMinor(totals.subtotalMinor,currency),

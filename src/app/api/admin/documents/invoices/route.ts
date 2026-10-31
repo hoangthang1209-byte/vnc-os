@@ -45,6 +45,14 @@ export async function POST(request: NextRequest) {
       const customer=await prisma.customer.findUnique({where:{id:customerId},select:{id:true}});
       if(!customer)return NextResponse.json({error:"Khách hàng liên kết không tồn tại trong CRM."},{status:400});
     }
+    const orderId=body.orderId==null||body.orderId===""?null:required(body.orderId,100);
+    if(orderId){
+      if(!can(getAdminSessionFromRequest(request),"orders.view"))return NextResponse.json({error:"Bạn chưa có quyền liên kết đơn hàng."},{status:403});
+      const order=await prisma.order.findUnique({where:{id:orderId},select:{id:true,customerId:true}});
+      if(!order)return NextResponse.json({error:"Đơn hàng được chọn không tồn tại."},{status:400});
+      if(customerId&&order.customerId&&customerId!==order.customerId)
+        return NextResponse.json({error:"Khách hàng Invoice không trùng với khách hàng trên đơn hàng đã liên kết."},{status:400});
+    }
     const legalEntityId=body.legalEntityId==null||body.legalEntityId===""?null:required(body.legalEntityId,100);
     const bankAccountId=body.bankAccountId==null||body.bankAccountId===""?null:required(body.bankAccountId,100);
     const entity=legalEntityId?await prisma.vncLegalEntity.findUnique({where:{id:legalEntityId}}):null;
@@ -60,6 +68,7 @@ export async function POST(request: NextRequest) {
     const invoice=await prisma.customPaymentInvoice.create({data:{
       invoiceNo:required(body.invoiceNo,80),
       customerId,
+      orderId,
       legalEntityId,
       bankAccountId,
       currency,

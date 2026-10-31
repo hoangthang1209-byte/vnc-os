@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getAdminSessionFromRequest } from "@/lib/admin-auth/get-admin-session";
 import { can } from "@/features/auth/admin-permissions";
 import type { Prisma } from "@prisma/client";
+import { logAdminAuditEvent } from "@/features/auth/admin-audit-log";
 
 /**
  * Issuance freezes the exact commercial payment request at the time of issue.
@@ -42,6 +43,7 @@ export async function POST(request:NextRequest,context:{params:Promise<{id:strin
     });
     if(!result)return NextResponse.json({error:"Not found"},{status:404});
     if("error" in result)return NextResponse.json(result,{status:409});
+    logAdminAuditEvent({action:"custom_invoice_issued",userId:session.userId,employeeId:session.employeeId,route:request.nextUrl.pathname,detail:{id:result.id,invoiceNo:result.invoiceNo}});
     return NextResponse.json(result);
   }catch(error) {
     console.error("[custom invoice issue]",error);

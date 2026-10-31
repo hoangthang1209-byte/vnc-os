@@ -5750,6 +5750,7 @@ model Pattern {
   patternSupplier ProductionSupplier?  @relation(fields: [patternSupplierId], references: [id], onDelete: SetNull)
   files           PatternFile[]
   measurements    PatternMeasurement[]
+  measurementAnnotations Json?
   techPacks       TechPack[]
 
   @@index([productCategoryId])

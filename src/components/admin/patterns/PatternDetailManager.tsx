@@ -2,6 +2,9 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import dynamic from "next/dynamic";
+
+const PatternMeasurementAnnotationEditor = dynamic(() => import("./PatternMeasurementAnnotationEditor"));
 import {
   AdminLoadingState,
   AdminPageShell,
@@ -397,6 +400,7 @@ export default function PatternDetailManager({ patternId }: { patternId: string 
   } | null>(null);
   const [measurementSaving, setMeasurementSaving] = useState(false);
   const [measurementEditing, setMeasurementEditing] = useState(false);
+  const [annotationEditorOpen, setAnnotationEditorOpen] = useState(false);
   const [measurementBaseline, setMeasurementBaseline] = useState<MeasurementDraftRow | null>(null);
   const [categories, setCategories] = useState<ProductCategoryPickerItem[]>([]);
   const [selectedCustomer, setSelectedCustomer] = useState<CrmCustomerRecord | null>(null);
@@ -942,6 +946,21 @@ export default function PatternDetailManager({ patternId }: { patternId: string 
             onSave={(rows) => saveMeasurements(rows)}
           />
         </section>
+
+        <div style={{ marginTop: 16 }}>
+          <button type="button" className="admin-btn" aria-expanded={annotationEditorOpen}
+            onClick={() => setAnnotationEditorOpen((open) => !open)}>
+            {annotationEditorOpen ? "Đóng sơ đồ đường đo" : "Mở sơ đồ đường đo / Vẽ POM"}
+          </button>
+          {annotationEditorOpen && (
+            <PatternMeasurementAnnotationEditor
+              patternId={patternId}
+              files={pattern.files}
+              measurements={pattern.measurements}
+              readOnly={readOnly}
+            />
+          )}
+        </div>
 
         <div className="pattern-workspace__secondary">
           <section className="pattern-workspace__panel admin-panel">

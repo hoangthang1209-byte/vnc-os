@@ -8,7 +8,7 @@ type InvoicePdfInput = {
   invoiceNo: string; recipientName: string; recipientAddress?: string | null;
   issuerName: string; issuerAddress?: string | null; currency: string; total: string;
   issueDate: Date; dueDate?: Date | null; lines: unknown; adjustments?: unknown;
-  bankDetails?: unknown; notes?: string | null; createdByDisplayName?: string | null;
+  bankDetails?: unknown; notes?: string | null; createdByDisplayName?: string | null; preparedByName?: string | null;
 };
 const L=48, R=547, W=R-L, BOTTOM=747, INK="#222c39", NAVY="#273647", GREY="#77818f", LIGHT="#e9edf1";
 function object(v:unknown):Record<string,unknown>{return v&&typeof v==="object"&&!Array.isArray(v)?v as Record<string,unknown>:{};}
@@ -137,11 +137,11 @@ export async function renderInvoicePdf(invoice:InvoicePdfInput):Promise<Buffer>{
    block("PAYMENT TERMS & NOTES",W,8.5,true,NAVY,8);
    block(invoice.notes.slice(0,1700),W,7.8,false,INK,10);
   }
-  // Creator is an internal audit field; display only the verified stored snapshot.
-  if(invoice.createdByDisplayName && invoice.createdByDisplayName!=="Legacy / not recorded"){
+  // Sales/Account is the document preparer, independent of the system audit creator.
+  if(invoice.preparedByName){
    y+=8;ensure(28);
    write("PREPARED BY",L,y,145,true,6.8,GREY);
-   write(invoice.createdByDisplayName.slice(0,160),L+167,y,332,false,7.8,INK);
+   write(invoice.preparedByName.slice(0,160),L+167,y,332,false,7.8,INK);
    y+=24;
   }
   const pageRange=pdf.bufferedPageRange();

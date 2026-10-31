@@ -12,7 +12,8 @@ type AdminAuditEvent = {
     | "role_permissions_updated"
     | "forbidden_route"
     | "forbidden_api"
-    | "forbidden_data";
+    | "forbidden_data"
+    | "custom_invoice_issued";
   userId?: string | null;
   actorUserId?: string | null;
   employeeId?: string | null;

@@ -6596,3 +6596,33 @@ model SupplierScorecard {
   updatedAt DateTime @updatedAt
   @@unique([supplierId, period])
 }
+
+
+//// Standalone commercial payment requests (not VAT e-invoices).
+model CustomPaymentInvoice {
+  id            String   @id @default(cuid())
+  invoiceNo     String   @unique
+  status        String   @default("DRAFT")
+  currency      String   @default("USD")
+  recipientName String
+  recipientEmail String?
+  recipientAddress String? @db.Text
+  issuerName    String
+  issuerAddress String? @db.Text
+  issuerTaxId   String?
+  bankDetails   Json?
+  lines         Json
+  adjustments   Json
+  subtotal      String
+  total         String
+  issueDate     DateTime
+  dueDate       DateTime?
+  notes         String? @db.Text
+  issuedSnapshot Json?
+  issuedAt      DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([status, createdAt])
+  @@index([recipientName])
+}

@@ -104,6 +104,12 @@ export const adminNavigationSections: AdminNavigationSection[] = [
         status: "active",
         requiredPermissions: ["canAccessQuotes"],
       },
+      {
+        label: "Custom Invoice",
+        href: "/admin/documents/invoices",
+        status: "active",
+        requiredPermissions: ["canViewFinancials"],
+      },
     ]),
   },
   {

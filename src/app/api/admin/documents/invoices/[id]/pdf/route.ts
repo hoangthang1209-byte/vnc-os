@@ -7,7 +7,7 @@ import { renderInvoicePdf } from "@/features/documents/invoice-pdf";
 export async function GET(request:NextRequest, context:{params:Promise<{id:string}>}) {
   const session=getAdminSessionFromRequest(request);
   if(!session.authenticated)return NextResponse.json({error:"Unauthorized"},{status:401});
-  if(!can(session,"documents.export"))return NextResponse.json({error:"Forbidden"},{status:403});
+  if(!can(session,"orders.view_financials"))return NextResponse.json({error:"Forbidden"},{status:403});
   const {id}=await context.params;
   try{
     const invoice=await prisma.customPaymentInvoice.findUnique({where:{id}});

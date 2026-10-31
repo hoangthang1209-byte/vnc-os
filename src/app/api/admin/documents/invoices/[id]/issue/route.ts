@@ -26,6 +26,9 @@ export async function POST(request:NextRequest,context:{params:Promise<{id:strin
         typeof bank.account!=="string" || !bank.account.trim()) {
         return {error:"Verified beneficiary, bank and account are required before issue"};
       }
+      if(bank.swift && (typeof bank.swift!=="string" || !/^[A-Za-z]{6}[A-Za-z0-9]{2}([A-Za-z0-9]{3})?$/.test(bank.swift.trim()))) {
+        return {error:"SWIFT/BIC phải gồm 8 hoặc 11 ký tự đúng cấu trúc. Không nhập số tài khoản vào ô SWIFT."};
+      }
       const snapshot={
         invoiceNo:invoice.invoiceNo,
         recipientName:invoice.recipientName,recipientEmail:invoice.recipientEmail,

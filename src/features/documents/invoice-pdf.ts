@@ -2,7 +2,6 @@ import PDFDocument from "pdfkit";
 import { resolve as resolvePath } from "node:path";
 import { calculateCustomInvoice, formatMinor, type InvoiceCurrency, type InvoiceLine } from "./custom-invoice-calculation";
 import { vncLogoPngBuffer } from "./vnc-invoice-brand";
-import { prisma } from "@/lib/prisma";
 import { loadInvoiceInterFont } from "./inter-font";
 
 type InvoicePdfInput = {
@@ -10,12 +9,11 @@ type InvoicePdfInput = {
   issuerName: string; issuerAddress?: string | null; currency: string; total: string;
   issueDate: Date; dueDate?: Date | null; lines: unknown; adjustments?: unknown;
   bankDetails?: unknown; notes?: string | null; createdByDisplayName?: string | null;
+  companyLogoUrl?: string | null;
 };
-async function companyLogoBuffer(): Promise<Buffer> {
+async function companyLogoBuffer(source: string | null | undefined): Promise<Buffer> {
   const fallback=vncLogoPngBuffer();
   try {
-    const settings=await prisma.vncOsCompanyBranding.findUnique({where:{id:"default"},select:{logoUrl:true}});
-    const source=settings?.logoUrl;
     if(!source)return fallback;
     const url=new URL(source);
     // Do not fetch arbitrary user-controlled URLs from the PDF server.
@@ -45,7 +43,7 @@ export async function renderInvoicePdf(invoice:InvoicePdfInput):Promise<Buffer>{
  if(formatMinor(totals.totalMinor,currency)!==invoice.total)throw new Error("Saved invoice total does not match line items");
  const bank=object(invoice.bankDetails);
  const inter=await loadInvoiceInterFont();
- const logoBuffer=await companyLogoBuffer();
+ const logoBuffer=await companyLogoBuffer(invoice.companyLogoUrl);
  return new Promise((resolve,reject)=>{
   const pdf=new PDFDocument({size:"A4",margin:L,bufferPages:true});
   // Retain the proven Unicode font for PDF; the document uses the same enterprise sizing as the web preview.

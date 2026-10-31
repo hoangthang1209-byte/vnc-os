@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { useAdminPermissions } from "@/components/admin/AdminPermissionsContext";
 import s from "./CustomInvoiceManager.module.css";
+import { VNC_LOGO_PNG_DATA_URI } from "@/features/documents/vnc-invoice-brand";
 import { isValidInvoiceNumericInput } from "@/features/documents/custom-invoice-calculation";
 type Line={description:string;quantity:string;unit:string;unitPrice:string};
 type SavedInvoice={id:string;invoiceNo:string;status:string;recipientName:string;currency:string;total:string};
@@ -119,13 +120,31 @@ export default function CustomInvoiceManager(){
    <aside className={s.previewWrap}><div className={s.panel}>
     <div className={s.panelHead}><h2>Xem trước Invoice</h2><span className={s.pill}>A4 · Minh họa</span></div>
     <div className={s.paperOuter}><div className={s.paper}>
-     <div className={s.paperHeader}><div><div className={s.paperIssuer}>{issuerName||"YOUR COMPANY"}</div><div style={{marginTop:5,color:"#7b8798"}}>{issuerAddress||"Company address"}</div></div><div><div className={s.paperTitle}>COMMERCIAL<br/>INVOICE</div><div style={{textAlign:"right",color:"#7d8795",marginTop:4}}>PAYMENT REQUEST</div></div></div>
-     <div className={s.paperMeta}><div><div className={s.paperCaption}>BILL TO</div><div style={{fontWeight:750,marginTop:7}}>{recipientName||"Customer name"}</div><div style={{color:"#798698",marginTop:4}}>{recipientAddress||"Customer address"}</div></div><div style={{textAlign:"right"}}><div><b>No.</b> {invoiceNo||"—"}</div><div style={{marginTop:6}}><b>Date</b> {issueDate||"—"}</div><div style={{marginTop:6}}><b>Currency</b> {currency}</div></div></div>
-     <table className={s.paperTable}><thead><tr><th>Mô tả</th><th className={s.right}>SL</th><th className={s.right}>Đơn giá</th><th className={s.right}>Thành tiền</th></tr></thead><tbody>
-      {lines.map((l,i)=><tr key={i}><td>{l.description||"—"}</td><td className={s.right}>{l.quantity}</td><td className={s.right}>{amount(l.unitPrice,currency)}</td><td className={s.right}>{amount(String((Number(l.quantity)||0)*(Number(l.unitPrice)||0)),currency)}</td></tr>)}
+     <div className={s.paperHeader}>
+       <div className={s.paperBrand}>
+        {/* Official VNC logo, bundled as a trusted image asset. */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={VNC_LOGO_PNG_DATA_URI} alt="Vietnam Clothing Manufacturing" className={s.paperLogo}/>
+       </div>
+       <div className={s.paperTitleBlock}>
+        <div className={s.paperTitle}>COMMERCIAL<br/>INVOICE</div>
+        <div className={s.paperSubtitle}>PAYMENT REQUEST</div>
+       </div>
+     </div>
+     <div className={s.paperParties}>
+      <div className={s.paperParty}><div className={s.paperCaption}>ISSUED BY</div><div className={s.paperPartyName}>{issuerName||"Vietnam Clothing Manufacturing"}</div><div className={s.paperPartyAddress}>{issuerAddress||"Ho Chi Minh City, Vietnam"}</div></div>
+      <div className={s.paperParty}><div className={s.paperCaption}>BILL TO</div><div className={s.paperPartyName}>{recipientName||"Customer name"}</div><div className={s.paperPartyAddress}>{recipientAddress||"Customer address"}</div></div>
+     </div>
+     <div className={s.paperMetaEnterprise}>
+      {([{label:"INVOICE NUMBER",value:invoiceNo||"—"},{label:"ISSUE DATE",value:issueDate||"—"},{label:"DUE DATE",value:dueDate||"—"}]).map(meta=><div className={s.paperMetaCell} key={meta.label}><span className={s.paperCaption}>{meta.label}</span><strong>{meta.value}</strong></div>)}
+     </div>
+     <div className={s.paperTableTitle}>INVOICE ITEMS</div>
+     <table className={s.paperTable}><thead><tr><th>DESCRIPTION</th><th className={s.right}>QTY</th><th>UNIT</th><th className={s.right}>UNIT PRICE</th><th className={s.right}>AMOUNT</th></tr></thead><tbody>
+      {lines.map((l,i)=><tr key={i}><td>{l.description||"—"}</td><td className={s.right}>{l.quantity}</td><td>{l.unit}</td><td className={s.right}>{amount(l.unitPrice,currency)}</td><td className={s.right}>{amount(String((Number(l.quantity)||0)*(Number(l.unitPrice)||0)),currency)}</td></tr>)}
      </tbody></table>
-     <div className={s.total}><span>TOTAL DUE</span><span>{currency} {amount(String(estimated),currency)}</span></div>
-     <div style={{marginTop:24,lineHeight:1.7}}><span className={s.paperCaption}>PAYMENT DETAILS</span><div>{beneficiary||"Beneficiary"} · {bank||"Bank"}</div><div>{bankAccount||"Account number"}</div>{swift&&<div>SWIFT: {swift}</div>}</div>
+     <div className={s.paperFinancials}><div className={s.paperSubtotal}><span>Subtotal</span><span>{currency} {amount(String(sum),currency)}</span></div>{Number(discount)>0&&<div className={s.paperSubtotal}><span>Discount</span><span>− {currency} {amount(discount,currency)}</span></div>}{Number(extraCharge)>0&&<div className={s.paperSubtotal}><span>Additional charges</span><span>{currency} {amount(extraCharge,currency)}</span></div>}{Number(tax)>0&&<div className={s.paperSubtotal}><span>Tax / other charges</span><span>{currency} {amount(tax,currency)}</span></div>}<div className={s.total}><span>TOTAL AMOUNT DUE</span><span>{currency} {amount(String(estimated),currency)}</span></div></div>
+     <div className={s.paperBank}><div className={s.paperTableTitle}>BANK TRANSFER INSTRUCTIONS</div><div className={s.paperBankGrid}><div className={s.paperCaption}>BENEFICIARY</div><div>{beneficiary||"—"}</div><div className={s.paperCaption}>BANK</div><div>{bank||"—"}</div><div className={s.paperCaption}>ACCOUNT NUMBER</div><div>{bankAccount||"—"}</div>{swift&&<><div className={s.paperCaption}>SWIFT / BIC</div><div>{swift}</div></>}</div></div>
+     {notes&&<div className={s.paperNotes}><div className={s.paperTableTitle}>PAYMENT TERMS & NOTES</div><div>{notes}</div></div>}
      <div className={s.paperFooter}>Commercial payment request only. This document is not a Vietnamese VAT e-invoice.</div>
     </div></div>
    </div><p className={s.helper}>Đây là bản xem trước theo dữ liệu đang nhập, không phải Invoice đã lưu. Khi sửa khoản thu, cần lưu lại bằng số Invoice mới; PDF chỉ phản ánh bản đã phát hành và khóa dữ liệu.</p></aside>

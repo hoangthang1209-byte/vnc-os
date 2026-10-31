@@ -1,4 +1,4 @@
-CREATE TABLE "CustomPaymentInvoice" (
+CREATE TABLE IF NOT EXISTS "CustomPaymentInvoice" (
  "id" TEXT NOT NULL,
  "invoiceNo" TEXT NOT NULL,
  "status" TEXT NOT NULL DEFAULT 'DRAFT',
@@ -23,6 +23,6 @@ CREATE TABLE "CustomPaymentInvoice" (
  "updatedAt" TIMESTAMP(3) NOT NULL,
  CONSTRAINT "CustomPaymentInvoice_pkey" PRIMARY KEY ("id")
 );
-CREATE UNIQUE INDEX "CustomPaymentInvoice_invoiceNo_key" ON "CustomPaymentInvoice"("invoiceNo");
-CREATE INDEX "CustomPaymentInvoice_status_createdAt_idx" ON "CustomPaymentInvoice"("status","createdAt");
-CREATE INDEX "CustomPaymentInvoice_recipientName_idx" ON "CustomPaymentInvoice"("recipientName");
+CREATE UNIQUE INDEX IF NOT EXISTS "CustomPaymentInvoice_invoiceNo_key" ON "CustomPaymentInvoice"("invoiceNo");
+CREATE INDEX IF NOT EXISTS "CustomPaymentInvoice_status_createdAt_idx" ON "CustomPaymentInvoice"("status","createdAt");
+CREATE INDEX IF NOT EXISTS "CustomPaymentInvoice_recipientName_idx" ON "CustomPaymentInvoice"("recipientName");

@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
     if(dueDate && dueDate < issueDate) throw new Error("Due date precedes issue date");
     const year=issueDate.getUTCFullYear();
     const invoice=await prisma.$transaction(async tx=>{
-      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`vnc-custom-invoice-${year}`}))`;
+      await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${`vnc-custom-invoice-${year}`}))`;
       const prefix=`CI-${year}-`;
       const existing=await tx.customPaymentInvoice.findMany({where:{invoiceNo:{startsWith:prefix}},select:{invoiceNo:true}});
       const next=existing.reduce((max,row)=>{

@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useAdminPermissions } from "@/components/admin/AdminPermissionsContext";
 import s from "./CustomInvoiceManager.module.css";
 import InvoiceCustomerPicker, { customerInvoiceFields, type InvoiceCrmCustomer } from "./InvoiceCustomerPicker";
@@ -128,7 +129,7 @@ export default function CustomInvoiceManager(){
         if(account?.currency)setCurrency(account.currency);
         setPdfId("");setIssued(false);
        }}/>
-      <p className={s.helper}>Pháp nhân và tài khoản ngân hàng được quản lý tập trung tại <a href="/admin/settings/vnc-company">Cấu hình chung — Công ty VNC</a>.</p>
+      <p className={s.helper}>Pháp nhân và tài khoản ngân hàng được quản lý tập trung tại <Link href="/admin/settings/vnc-company">Cấu hình chung — Công ty VNC</Link>.</p>
       <div className={s.fields}>
       {field("Đơn vị phát hành *",issuerName,v=>{setIssuerName(v);setLegalEntityId("");setBankAccountId("");},"Tên pháp nhân VNC")}
       {field("Khách hàng *",recipientName,v=>{setRecipientName(v);setCustomerId("");},"Tên công ty / cá nhân")}

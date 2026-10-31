@@ -1,3 +1,4 @@
+import { resolveInvoiceOrderPreparer } from "@/features/documents/invoice-preparer";
 "use client";
 import { useEffect, useState } from "react";
 import s from "./CustomInvoiceManager.module.css";
@@ -38,7 +39,7 @@ export default function InvoiceOrderPicker({selectedId,onSelect,disabled}:Props)
   <input className={s.input} id="invoice-order-search" type="search" value={query} disabled={disabled}
    placeholder="Tìm theo mã đơn hàng, PO hoặc tên khách hàng..."
    onChange={e=>{setQuery(e.target.value);setResults([]);setError("");if(selectedId){setSelected(null);onSelect(null);}}}/>
-  {selectedId&&selected&&<p className={s.customerSelected}>✓ Đã liên kết {selected.orderNo} · PO: {selected.customerPoNo||"—"} · {selected.currency} · Sales/Account: {selected.salesEmployee?.fullName||selected.salesRepresentative?.fullName||selected.salesName||"Chưa phân công"}</p>}
+  {selectedId&&selected&&<p className={s.customerSelected}>✓ Đã liên kết {selected.orderNo} · PO: {selected.customerPoNo||"—"} · {selected.currency} · Sales/Account: {resolveInvoiceOrderPreparer(selected).name||"Chưa phân công"}</p>}
   {loading&&<p className={s.customerHint}>Đang tìm đơn hàng...</p>}
   {query.trim().length>=2&&!loading&&results.length>0&&<div className={s.customerResults} role="listbox" aria-label="Danh sách đơn hàng">
    {results.map(o=><button type="button" className={s.customerResult} key={o.id} onClick={()=>{

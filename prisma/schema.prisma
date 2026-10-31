@@ -523,6 +523,7 @@ model Contact {
   @@index([customerId])
   @@index([legalEntityId])
   @@index([bankAccountId])
+  @@index([orderId])
 }
 
 model CRMActivity {
@@ -4418,6 +4419,7 @@ model Order {
   deliveryProofs               OrderDeliveryProof[]
   actualCostClose              OrderActualCostClose?
   actualCostEntries            OrderActualCostEntry[]
+  customPaymentInvoices        CustomPaymentInvoice[]
 
   @@index([batchId])
   @@index([customerPoNo])
@@ -6610,6 +6612,8 @@ model CustomPaymentInvoice {
   recipientName String
   customerId    String?
   customer      Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  orderId       String?
+  order         Order? @relation(fields: [orderId], references: [id], onDelete: SetNull)
   legalEntityId String?
   legalEntity   VncLegalEntity? @relation(fields: [legalEntityId], references: [id], onDelete: SetNull)
   bankAccountId String?

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { calculateCustomInvoice, formatMinor, lineAmountMinor, toMinor } from "./custom-invoice-calculation";
+import { calculateCustomInvoice, formatMinor, lineAmountMinor, toMinor, isValidInvoiceNumericInput } from "./custom-invoice-calculation";
 
 test("calculates sample fee invoice in USD exactly", () => {
   const result = calculateCustomInvoice({ currency: "USD", lines: [
@@ -25,4 +25,9 @@ test("rejects invalid lines and discounts", () => {
   assert.throws(()=>calculateCustomInvoice({currency:"USD",lines:[{description:"Fee",quantity:"1",unit:"set",unitPrice:"1"}],discount:"2"}));
   assert.throws(()=>lineAmountMinor("0","10","USD"));
   assert.throws(()=>toMinor("Infinity","USD"));
+});
+
+test("draft inputs accept normal numeric values and reject malformed numbers", () => {
+  for (const value of ["0","1","20","20.50","0.25"," 20.50 "]) assert.equal(isValidInvoiceNumericInput(value),true,value);
+  for (const value of ["020","1,200","-1","abc","","1e3"]) assert.equal(isValidInvoiceNumericInput(value),false,value);
 });

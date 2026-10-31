@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { can } from "@/features/auth/admin-permissions";
 import { getAdminSessionFromRequest } from "@/lib/admin-auth/get-admin-session";
-import { calculateCustomInvoice, formatMinor, type InvoiceCurrency, type InvoiceLine } from "@/features/documents/custom-invoice-calculation";
+import { calculateCustomInvoice, formatMinor, nextCustomInvoiceNumber, type InvoiceCurrency, type InvoiceLine } from "@/features/documents/custom-invoice-calculation";
 
 function authorize(request: NextRequest, permission: string) {
   const session=getAdminSessionFromRequest(request);
@@ -77,12 +77,7 @@ export async function POST(request: NextRequest) {
       await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${`vnc-custom-invoice-${year}`}))`;
       const prefix=`CI-${year}-`;
       const existing=await tx.customPaymentInvoice.findMany({where:{invoiceNo:{startsWith:prefix}},select:{invoiceNo:true}});
-      const next=existing.reduce((max,row)=>{
-        const suffix=row.invoiceNo.slice(prefix.length);
-        return /^[0-9]+$/.test(suffix)?Math.max(max,Number(suffix)):max;
-      },0)+1;
-      if(!Number.isSafeInteger(next))throw new Error('Invoice sequence exhausted');
-      const invoiceNo=prefix+String(next).padStart(4,'0');
+      const invoiceNo=nextCustomInvoiceNumber(year,existing.map(row=>row.invoiceNo));
       return tx.customPaymentInvoice.create({data:{
       invoiceNo,
       createdByUserId:creatorSession.userId,

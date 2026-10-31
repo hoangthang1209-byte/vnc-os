@@ -18,6 +18,7 @@ const FINANCIAL_ADMIN_ROUTE_PREFIXES = [
   "/admin/pricing",
   "/admin/finance",
   "/admin/crm/revenue-categories",
+  "/admin/documents/invoices",
 ] as const;
 
 const FINANCIAL_ORDER_CREATE_PREFIXES = ["/admin/orders/new"] as const;
@@ -72,6 +73,7 @@ const PRODUCTION_ADMIN_ROUTE_PREFIXES = [
 export function getRequiredPermissionForAdminRoute(pathname: string): string | null {
   if (pathname.startsWith("/admin/settings/users")) return "users.manage";
   if (pathname.startsWith("/admin/settings/roles")) return "roles_permissions.manage";
+  if (pathname.startsWith("/admin/documents/invoices")) return "orders.view_financials";
   if (pathname.startsWith("/admin/quotes")) return "quotes.view";
   if (pathname.startsWith("/admin/pricing")) return "pricing.manage";
   if (pathname.startsWith("/admin/crm/revenue-categories")) return "revenue_categories.manage";

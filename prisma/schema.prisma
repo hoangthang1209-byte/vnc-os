@@ -469,6 +469,7 @@ model Customer {
   dealerRfqs               DealerRFQ[]
   salesOpportunities       SalesOpportunity[]
   patterns                 Pattern[]
+  customPaymentInvoices    CustomPaymentInvoice[]
 
   @@index([code])
   @@index([name])
@@ -6605,6 +6606,8 @@ model CustomPaymentInvoice {
   status        String   @default("DRAFT")
   currency      String   @default("USD")
   recipientName String
+  customerId    String?
+  customer      Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
   recipientEmail String?
   recipientAddress String? @db.Text
   issuerName    String
@@ -6625,4 +6628,5 @@ model CustomPaymentInvoice {
 
   @@index([status, createdAt])
   @@index([recipientName])
+  @@index([customerId])
 }

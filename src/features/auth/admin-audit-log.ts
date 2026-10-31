@@ -13,7 +13,11 @@ type AdminAuditEvent = {
     | "forbidden_route"
     | "forbidden_api"
     | "forbidden_data"
-    | "custom_invoice_issued";
+    | "custom_invoice_issued"
+    | "vnc_legal_entity_created"
+    | "vnc_legal_entity_updated"
+    | "vnc_bank_account_created"
+    | "vnc_bank_account_updated";
   userId?: string | null;
   actorUserId?: string | null;
   employeeId?: string | null;

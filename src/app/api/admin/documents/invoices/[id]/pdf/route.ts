@@ -26,6 +26,7 @@ export async function GET(request:NextRequest, context:{params:Promise<{id:strin
       issueDate,dueDate:date(snapshot.dueDate),currency:String(snapshot.currency),total:String(snapshot.total),
       lines:snapshot.lines,adjustments:snapshot.adjustments,bankDetails:snapshot.bankDetails,
       notes:typeof snapshot.notes==="string"?snapshot.notes:null,
+      createdByDisplayName:typeof snapshot.createdByDisplayName==="string"?snapshot.createdByDisplayName:null,
     });
     return new NextResponse(new Uint8Array(bytes),{headers:{
       "Content-Type":"application/pdf",

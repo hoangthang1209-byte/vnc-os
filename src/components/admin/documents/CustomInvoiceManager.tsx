@@ -2,19 +2,28 @@
 import { useEffect, useState } from "react";
 import { useAdminPermissions } from "@/components/admin/AdminPermissionsContext";
 import s from "./CustomInvoiceManager.module.css";
+import InvoiceCustomerPicker, { customerInvoiceFields, type InvoiceCrmCustomer } from "./InvoiceCustomerPicker";
+import InvoiceIssuerPicker, { type IssuerSelection } from "./InvoiceIssuerPicker";
+import InvoiceOrderPicker, { type InvoiceOrderOption } from "./InvoiceOrderPicker";
 import { VNC_LOGO_PNG_DATA_URI } from "@/features/documents/vnc-invoice-brand";
 import { isValidInvoiceNumericInput } from "@/features/documents/custom-invoice-calculation";
 type Line={description:string;quantity:string;unit:string;unitPrice:string};
-type SavedInvoice={id:string;invoiceNo:string;status:string;recipientName:string;currency:string;total:string};
+type SavedInvoice={id:string;invoiceNo:string;status:string;recipientName:string;currency:string;total:string;createdAt:string;createdByDisplayName:string;createdByMode:string};
 const blank=():Line=>({description:"",quantity:"1",unit:"pcs",unitPrice:"0"});
 const amount=(n:string,currency:string)=>new Intl.NumberFormat("en-US",{minimumFractionDigits:currency==="VND"?0:2,maximumFractionDigits:currency==="VND"?0:2}).format(Number(n)||0);
 export default function CustomInvoiceManager(){
  const {permissions}=useAdminPermissions();
  const [invoiceNo,setInvoiceNo]=useState("");
  const [recipientName,setRecipientName]=useState("");
+ const [customerId,setCustomerId]=useState("");
+ const [orderId,setOrderId]=useState("");
+ const [recipientEmail,setRecipientEmail]=useState("");
  const [recipientAddress,setRecipientAddress]=useState("");
  const [issuerName,setIssuerName]=useState("");
  const [issuerAddress,setIssuerAddress]=useState("");
+ const [issuerTaxId,setIssuerTaxId]=useState("");
+ const [legalEntityId,setLegalEntityId]=useState("");
+ const [bankAccountId,setBankAccountId]=useState("");
  const [currency,setCurrency]=useState("USD");
  const [issueDate,setIssueDate]=useState(new Date().toISOString().slice(0,10));
  const [dueDate,setDueDate]=useState("");
@@ -22,6 +31,9 @@ export default function CustomInvoiceManager(){
  const [beneficiary,setBeneficiary]=useState("");
  const [bank,setBank]=useState("");
  const [bankAccount,setBankAccount]=useState("");
+ const [accountAddress,setAccountAddress]=useState("");
+ const [bankAddress,setBankAddress]=useState("");
+ const [branch,setBranch]=useState("");
  const [swift,setSwift]=useState("");
  const [notes,setNotes]=useState("");
  const [discount,setDiscount]=useState("0");
@@ -53,7 +65,7 @@ export default function CustomInvoiceManager(){
   if(swift.trim()&&!/^[A-Za-z]{6}[A-Za-z0-9]{2}([A-Za-z0-9]{3})?$/.test(swift.trim())){setMessage("SWIFT/BIC gồm 8 hoặc 11 ký tự, khác với số tài khoản. Nếu không có hãy để trống.");return;}
   setBusy(true);setMessage("Đang lưu bản nháp...");
   try{
-   const r=await fetch("/api/admin/documents/invoices",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({invoiceNo,recipientName,recipientAddress,issuerName,issuerAddress,currency,issueDate,dueDate,lines,beneficiary,bank,bankAccount,swift,notes,discount,extraCharge,tax})});
+   const r=await fetch("/api/admin/documents/invoices",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({invoiceNo,customerId:customerId||null,orderId:orderId||null,legalEntityId:legalEntityId||null,bankAccountId:bankAccountId||null,recipientName,recipientAddress,recipientEmail,issuerName,issuerAddress,issuerTaxId,currency,issueDate,dueDate,lines,beneficiary,bank,bankAccount,accountAddress,bankAddress,branch,swift,notes,discount,extraCharge,tax})});
    const data=await r.json();if(!r.ok)throw new Error(data.error||"Không thể lưu bản nháp");
    setPdfId(data.id);setIssued(false);setMessage("Đã lưu bản nháp "+data.invoiceNo+".");await refresh();
   }catch(error){setMessage(error instanceof Error?error.message:"Lưu không thành công");}
@@ -85,13 +97,44 @@ export default function CustomInvoiceManager(){
       <div className={s.field}><label>Loại tiền</label><select className={s.select} value={currency} onChange={e=>{setCurrency(e.target.value);setPdfId("");}}><option>USD</option><option>VND</option><option>EUR</option></select></div>
       {field("Hạn thanh toán",dueDate,setDueDate,"","date")}
      </div></div>
-     <div className={s.section}><p className={s.sectionTitle}>02 / Bên phát hành và khách hàng</p><div className={s.fields}>
-      {field("Đơn vị phát hành *",issuerName,setIssuerName,"Tên pháp nhân VNC")}
-      {field("Khách hàng *",recipientName,setRecipientName,"Tên công ty / cá nhân")}
+     <div className={s.section}><p className={s.sectionTitle}>02 / Liên kết đơn hàng (tuỳ chọn)</p>
+      <InvoiceOrderPicker selectedId={orderId} disabled={busy} onSelect={(order:InvoiceOrderOption|null)=>{
+       setOrderId(order?.id||"");
+       if(order){
+        setCurrency(order.currency);
+        const c=order.customer;
+        setCustomerId(order.customerId||c?.id||"");
+        setRecipientName(order.customerLegalNameSnapshot||order.customerCompanyName||c?.legalName||order.customerNameSnapshot||c?.name||"");
+        setRecipientAddress(order.customerAddress||c?.address||"");
+        setRecipientEmail(order.customerEmailSnapshot||c?.email||"");
+        setMessage("Đã liên kết đơn hàng "+order.orderNo+". Kiểm tra số tiền trước khi lưu; Invoice không tự lấy tổng đơn hàng.");
+       }else setMessage("Đã bỏ liên kết đơn hàng.");
+       setPdfId("");setIssued(false);
+      }}/>
+     </div>
+     <div className={s.section}><p className={s.sectionTitle}>03 / Bên phát hành và khách hàng</p>
+      <InvoiceCustomerPicker selectedId={customerId} disabled={busy} onClear={()=>setCustomerId("")} onSelect={(customer:InvoiceCrmCustomer)=>{
+       const fields=customerInvoiceFields(customer);
+       setCustomerId(customer.id);setRecipientName(fields.recipientName);setRecipientAddress(fields.recipientAddress);setRecipientEmail(fields.recipientEmail);
+       setPdfId("");setIssued(false);setMessage("");
+      }}/>
+      <InvoiceIssuerPicker selectedEntityId={legalEntityId} selectedBankId={bankAccountId}
+       canManage={permissions.canIssueCustomInvoice} disabled={busy}
+       onSelect={({entity,account}:IssuerSelection)=>{
+        setLegalEntityId(entity.id);setIssuerName(entity.legalName);setIssuerAddress(entity.address||"");setIssuerTaxId(entity.taxCode||"");
+        setBankAccountId(account?.id||"");setBeneficiary(account?.accountName||"");setBank(account?.bankName||"");
+        setBankAccount(account?.accountNo||"");setAccountAddress(account?.accountAddress||"");
+        setBankAddress(account?.bankAddress||"");setBranch(account?.branch||"");setSwift(account?.swift||"");
+        if(account?.currency)setCurrency(account.currency);
+        setPdfId("");setIssued(false);
+       }}/>
+      <div className={s.fields}>
+      {field("Đơn vị phát hành *",issuerName,v=>{setIssuerName(v);setLegalEntityId("");setBankAccountId("");},"Tên pháp nhân VNC")}
+      {field("Khách hàng *",recipientName,v=>{setRecipientName(v);setCustomerId("");},"Tên công ty / cá nhân")}
       {field("Địa chỉ bên phát hành",issuerAddress,setIssuerAddress,"Địa chỉ pháp lý")}
       {field("Địa chỉ khách hàng",recipientAddress,setRecipientAddress,"Địa chỉ nhận Invoice")}
      </div></div>
-     <div className={s.section}><p className={s.sectionTitle}>03 / Chi tiết khoản thu</p>
+     <div className={s.section}><p className={s.sectionTitle}>04 / Chi tiết khoản thu</p>
       {lines.map((l,i)=><div className={s.item} key={i}><div className={s.itemTop}><span className={s.itemIndex}>Khoản thu {String(i+1).padStart(2,"0")}</span><button type="button" className={s.ghost} disabled={lines.length===1} onClick={()=>{setLines(rows=>rows.filter((_,j)=>j!==i));setPdfId("");}}>Xóa khoản thu</button></div>
        <div className={s.fields3}>
         <div className={s.field+" "+s.full}><label>Nội dung khoản thu</label><input className={s.input} value={l.description} onChange={e=>setLine(i,"description",e.target.value)} placeholder="Ví dụ: Sample development fee"/></div>
@@ -102,11 +145,14 @@ export default function CustomInvoiceManager(){
       <div className={s.fields3} style={{marginTop:14}}>{field("Giảm trừ",discount,setDiscount,"0")}{field("Phụ phí",extraCharge,setExtraCharge,"0")}{field("Thuế / phí khác",tax,setTax,"0")}</div>
       <p className={s.helper}>Tổng tiền bên phải chỉ là ước tính trên giao diện. Số tiền chính thức được tính và kiểm tra lại trên máy chủ khi lưu.</p>
      </div>
-     <div className={s.section}><p className={s.sectionTitle}>04 / Thông tin thanh toán</p><div className={s.fields}>
+     <div className={s.section}><p className={s.sectionTitle}>05 / Thông tin thanh toán</p><div className={s.fields}>
       {field("Tên người thụ hưởng",beneficiary,setBeneficiary,"Tên trên tài khoản ngân hàng")}
       {field("Ngân hàng",bank,setBank,"Tên ngân hàng")}
       {field("Số tài khoản",bankAccount,setBankAccount,"Tài khoản đã xác minh")}
       {field("SWIFT (nếu có)",swift,setSwift,"")}
+      {field("Account Address",accountAddress,setAccountAddress,"Địa chỉ chủ tài khoản")}
+      {field("Bank Address",bankAddress,setBankAddress,"Địa chỉ ngân hàng")}
+      {field("Branch",branch,setBranch,"Chi nhánh ngân hàng")}
       <div className={s.field+" "+s.full}><label>Ghi chú / điều khoản</label><textarea className={s.textarea} value={notes} onChange={e=>{setNotes(e.target.value);setPdfId("");}} placeholder="Điều khoản thanh toán, nội dung chuyển khoản..."/></div>
      </div></div>
     </div>
@@ -143,14 +189,14 @@ export default function CustomInvoiceManager(){
       {lines.map((l,i)=><tr key={i}><td>{l.description||"—"}</td><td className={s.right}>{l.quantity}</td><td>{l.unit}</td><td className={s.right}>{amount(l.unitPrice,currency)}</td><td className={s.right}>{amount(String((Number(l.quantity)||0)*(Number(l.unitPrice)||0)),currency)}</td></tr>)}
      </tbody></table>
      <div className={s.paperFinancials}><div className={s.paperSubtotal}><span>Subtotal</span><span>{currency} {amount(String(sum),currency)}</span></div>{Number(discount)>0&&<div className={s.paperSubtotal}><span>Discount</span><span>− {currency} {amount(discount,currency)}</span></div>}{Number(extraCharge)>0&&<div className={s.paperSubtotal}><span>Additional charges</span><span>{currency} {amount(extraCharge,currency)}</span></div>}{Number(tax)>0&&<div className={s.paperSubtotal}><span>Tax / other charges</span><span>{currency} {amount(tax,currency)}</span></div>}<div className={s.total}><span>TOTAL AMOUNT DUE</span><span>{currency} {amount(String(estimated),currency)}</span></div></div>
-     <div className={s.paperBank}><div className={s.paperTableTitle}>BANK TRANSFER INSTRUCTIONS</div><div className={s.paperBankGrid}><div className={s.paperCaption}>BENEFICIARY</div><div>{beneficiary||"—"}</div><div className={s.paperCaption}>BANK</div><div>{bank||"—"}</div><div className={s.paperCaption}>ACCOUNT NUMBER</div><div>{bankAccount||"—"}</div>{swift&&<><div className={s.paperCaption}>SWIFT / BIC</div><div>{swift}</div></>}</div></div>
+     <div className={s.paperBank}><div className={s.paperTableTitle}>BANK TRANSFER INSTRUCTIONS</div><div className={s.paperBankGrid}><div className={s.paperCaption}>BENEFICIARY</div><div>{beneficiary||"—"}</div><div className={s.paperCaption}>BANK</div><div>{bank||"—"}</div><div className={s.paperCaption}>ACCOUNT NUMBER</div><div>{bankAccount||"—"}</div>{accountAddress&&<><div className={s.paperCaption}>ACCOUNT ADDRESS</div><div>{accountAddress}</div></>}{bankAddress&&<><div className={s.paperCaption}>BANK ADDRESS</div><div>{bankAddress}</div></>}{branch&&<><div className={s.paperCaption}>BRANCH</div><div>{branch}</div></>}{swift&&<><div className={s.paperCaption}>SWIFT / BIC</div><div>{swift}</div></>}</div></div>
      {notes&&<div className={s.paperNotes}><div className={s.paperTableTitle}>PAYMENT TERMS & NOTES</div><div>{notes}</div></div>}
      <div className={s.paperFooter}>Commercial payment request only. This document is not a Vietnamese VAT e-invoice.</div>
     </div></div>
    </div><p className={s.helper}>Đây là bản xem trước theo dữ liệu đang nhập, không phải Invoice đã lưu. Khi sửa khoản thu, cần lưu lại bằng số Invoice mới; PDF chỉ phản ánh bản đã phát hành và khóa dữ liệu.</p></aside>
   </div>
   <section className={s.panel+" "+s.listPanel}><div className={s.panelHead}><h2>Invoice đã lưu</h2><button type="button" className={s.secondary} onClick={()=>void refresh()}>Làm mới danh sách</button></div>
-   {invoices.length===0?<p className={s.empty}>Chưa có Invoice nào được tải. Tạo bản nháp để bắt đầu.</p>:invoices.map(inv=><div className={s.listRow} key={inv.id}><div><div className={s.listMain}>{inv.invoiceNo} · {inv.recipientName}</div><div className={s.listSub}>{inv.currency} {inv.total}</div></div><div className={s.listActions}><span className={inv.status==="ISSUED"?s.state+" "+s.stateIssued:s.state}>{inv.status==="ISSUED"?"Đã phát hành":"Bản nháp"}</span>{inv.status==="DRAFT"&&permissions.canIssueCustomInvoice&&<button type="button" className={s.link} onClick={()=>void issue(inv.id)}>Phát hành</button>}{inv.status==="ISSUED"&&<a className={s.link} href={"/api/admin/documents/invoices/"+encodeURIComponent(inv.id)+"/pdf"}>Tải PDF</a>}</div></div>)}
+   {invoices.length===0?<p className={s.empty}>Chưa có Invoice nào được tải. Tạo bản nháp để bắt đầu.</p>:invoices.map(inv=><div className={s.listRow} key={inv.id}><div><div className={s.listMain}>{inv.invoiceNo} · {inv.recipientName}</div><div className={s.listSub}>{inv.currency} {inv.total} · Tạo bởi: {inv.createdByDisplayName} · {new Date(inv.createdAt).toLocaleString("vi-VN")}</div></div><div className={s.listActions}><span className={inv.status==="ISSUED"?s.state+" "+s.stateIssued:s.state}>{inv.status==="ISSUED"?"Đã phát hành":"Bản nháp"}</span>{inv.status==="DRAFT"&&permissions.canIssueCustomInvoice&&<button type="button" className={s.link} onClick={()=>void issue(inv.id)}>Phát hành</button>}{inv.status==="ISSUED"&&<a className={s.link} href={"/api/admin/documents/invoices/"+encodeURIComponent(inv.id)+"/pdf"}>Tải PDF</a>}</div></div>)}
   </section>
  </main>;
 }

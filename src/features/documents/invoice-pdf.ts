@@ -2,12 +2,13 @@ import PDFDocument from "pdfkit";
 import { resolve as resolvePath } from "node:path";
 import { calculateCustomInvoice, formatMinor, type InvoiceCurrency, type InvoiceLine } from "./custom-invoice-calculation";
 import { vncLogoPngBuffer } from "./vnc-invoice-brand";
+import { loadInvoiceInterFont } from "./inter-font";
 
 type InvoicePdfInput = {
   invoiceNo: string; recipientName: string; recipientAddress?: string | null;
   issuerName: string; issuerAddress?: string | null; currency: string; total: string;
   issueDate: Date; dueDate?: Date | null; lines: unknown; adjustments?: unknown;
-  bankDetails?: unknown; notes?: string | null;
+  bankDetails?: unknown; notes?: string | null; createdByDisplayName?: string | null;
 };
 const L=48, R=547, W=R-L, BOTTOM=747, INK="#222c39", NAVY="#273647", GREY="#77818f", LIGHT="#e9edf1";
 function object(v:unknown):Record<string,unknown>{return v&&typeof v==="object"&&!Array.isArray(v)?v as Record<string,unknown>:{};}
@@ -16,16 +17,19 @@ function items(v:unknown):InvoiceLine[]{
  if(!Array.isArray(v))throw new Error("Invoice has no line items");
  return v.map(raw=>{const r=object(raw);return {description:str(r.description),quantity:str(r.quantity),unit:str(r.unit),unitPrice:str(r.unitPrice)};});
 }
-export function renderInvoicePdf(invoice:InvoicePdfInput):Promise<Buffer>{
+export async function renderInvoicePdf(invoice:InvoicePdfInput):Promise<Buffer>{
  const currency=invoice.currency as InvoiceCurrency,adjustments=object(invoice.adjustments);
  const totals=calculateCustomInvoice({currency,lines:items(invoice.lines),discount:str(adjustments.discount)||"0",extraCharge:str(adjustments.extraCharge)||"0",tax:str(adjustments.tax)||"0"});
  if(formatMinor(totals.totalMinor,currency)!==invoice.total)throw new Error("Saved invoice total does not match line items");
  const bank=object(invoice.bankDetails);
+ const inter=await loadInvoiceInterFont();
  return new Promise((resolve,reject)=>{
   const pdf=new PDFDocument({size:"A4",margin:L,bufferPages:true});
   // Retain the proven Unicode font for PDF; the document uses the same enterprise sizing as the web preview.
-  pdf.registerFont("Body",resolvePath(process.cwd(),"node_modules/dejavu-fonts-ttf/ttf/DejaVuSans.ttf"));
-  pdf.registerFont("Heading",resolvePath(process.cwd(),"node_modules/dejavu-fonts-ttf/ttf/DejaVuSans-Bold.ttf"));
+  // Use the exact Inter font loaded by the A4 browser preview.
+  // Unicode-capable DejaVu remains a safe fallback when external font retrieval fails.
+  pdf.registerFont("Body",inter??resolvePath(process.cwd(),"node_modules/dejavu-fonts-ttf/ttf/DejaVuSans.ttf"));
+  pdf.registerFont("Heading",inter??resolvePath(process.cwd(),"node_modules/dejavu-fonts-ttf/ttf/DejaVuSans-Bold.ttf"));
   const chunks:Buffer[]=[];
   pdf.on("data",(b:Buffer)=>chunks.push(b));pdf.on("error",reject);pdf.on("end",()=>resolve(Buffer.concat(chunks)));
   let y=L;
@@ -115,7 +119,10 @@ export function renderInvoicePdf(invoice:InvoicePdfInput):Promise<Buffer>{
   ensure(125);
   write("BANK TRANSFER INSTRUCTIONS",L,y,360,true,8.5,NAVY);y+=15;rule(y);y+=11;
   const banking:[string,string][]=[
-   ["BENEFICIARY",str(bank.beneficiary)],["BANK",str(bank.bank)],["ACCOUNT NUMBER",str(bank.account)],["SWIFT / BIC",str(bank.swift)]
+   ["ACCOUNT NUMBER",str(bank.account)],["CURRENCY",str(bank.currency)||currency],
+   ["ACCOUNT NAME",str(bank.beneficiary)],["ACCOUNT ADDRESS",str(bank.accountAddress)],
+   ["BANK NAME",str(bank.bank)],["BANK ADDRESS",str(bank.bankAddress)],
+   ["BRANCH",str(bank.branch)],["SWIFT / BIC",str(bank.swift)]
   ];
   for(const [label,value] of banking){
    if(!value)continue;
@@ -129,6 +136,13 @@ export function renderInvoicePdf(invoice:InvoicePdfInput):Promise<Buffer>{
    y+=8;ensure(65);rule(y);y+=11;
    block("PAYMENT TERMS & NOTES",W,8.5,true,NAVY,8);
    block(invoice.notes.slice(0,1700),W,7.8,false,INK,10);
+  }
+  // Creator is an internal audit field; display only the verified stored snapshot.
+  if(invoice.createdByDisplayName && invoice.createdByDisplayName!=="Legacy / not recorded"){
+   y+=8;ensure(28);
+   write("PREPARED BY",L,y,145,true,6.8,GREY);
+   write(invoice.createdByDisplayName.slice(0,160),L+167,y,332,false,7.8,INK);
+   y+=24;
   }
   const pageRange=pdf.bufferedPageRange();
   for(let p=0;p<pageRange.count;p++){

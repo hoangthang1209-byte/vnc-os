@@ -27,6 +27,13 @@ function strictDate(value: unknown): Date {
 export async function POST(request: NextRequest) {
   const refused=authorize(request,"quotes.create");if(refused)return refused;
   try {
+    const creatorSession=getAdminSessionFromRequest(request);
+    // Creator attribution always comes from the verified session; ignore client-supplied author fields.
+    const employee=creatorSession.employeeId
+      ? await prisma.employee.findUnique({where:{id:creatorSession.employeeId},select:{fullName:true}})
+      : null;
+    const creatorName=employee?.fullName?.trim()||creatorSession.username?.trim()
+      ||(creatorSession.mode==="owner"?"VNC Owner":creatorSession.employeeId?"Employee "+creatorSession.employeeId:"Authenticated Admin");
     const data:unknown=await request.json();
     if (!data || typeof data!=="object" || Array.isArray(data)) throw new Error("Invalid invoice");
     const body=data as Record<string,unknown>;
@@ -40,19 +47,58 @@ export async function POST(request: NextRequest) {
     });
     const adjustments={discount:optional(body.discount,32)||"0",extraCharge:optional(body.extraCharge,32)||"0",tax:optional(body.tax,32)||"0"};
     const totals=calculateCustomInvoice({currency,lines,...adjustments});
+    const customerId=body.customerId==null||body.customerId===""?null:required(body.customerId,100);
+    if(customerId){
+      const customer=await prisma.customer.findUnique({where:{id:customerId},select:{id:true}});
+      if(!customer)return NextResponse.json({error:"Khách hàng liên kết không tồn tại trong CRM."},{status:400});
+    }
+    const orderId=body.orderId==null||body.orderId===""?null:required(body.orderId,100);
+    if(orderId){
+      if(!can(getAdminSessionFromRequest(request),"orders.view"))return NextResponse.json({error:"Bạn chưa có quyền liên kết đơn hàng."},{status:403});
+      const order=await prisma.order.findUnique({where:{id:orderId},select:{id:true,customerId:true}});
+      if(!order)return NextResponse.json({error:"Đơn hàng được chọn không tồn tại."},{status:400});
+      if(customerId&&order.customerId&&customerId!==order.customerId)
+        return NextResponse.json({error:"Khách hàng Invoice không trùng với khách hàng trên đơn hàng đã liên kết."},{status:400});
+    }
+    const legalEntityId=body.legalEntityId==null||body.legalEntityId===""?null:required(body.legalEntityId,100);
+    const bankAccountId=body.bankAccountId==null||body.bankAccountId===""?null:required(body.bankAccountId,100);
+    const entity=legalEntityId?await prisma.vncLegalEntity.findUnique({where:{id:legalEntityId}}):null;
+    if(legalEntityId&&(!entity||!entity.isActive))return NextResponse.json({error:"Pháp nhân đã chọn không tồn tại hoặc không còn hoạt động."},{status:400});
+    const account=bankAccountId?await prisma.vncBankAccount.findUnique({where:{id:bankAccountId}}):null;
+    if(bankAccountId&&(!account||!account.isActive||account.legalEntityId!==legalEntityId))
+      return NextResponse.json({error:"Tài khoản ngân hàng không thuộc pháp nhân đã chọn hoặc đã ngừng hoạt động."},{status:400});
+    if(account?.currency&&account.currency!==currency)
+      return NextResponse.json({error:"Loại tiền Invoice phải trùng loại tiền của tài khoản nhận thanh toán."},{status:400});
     const issueDate=strictDate(body.issueDate);
     const dueDate=body.dueDate ? strictDate(body.dueDate):null;
     if(dueDate && dueDate < issueDate) throw new Error("Due date precedes issue date");
     const invoice=await prisma.customPaymentInvoice.create({data:{
       invoiceNo:required(body.invoiceNo,80),
+      createdByUserId:creatorSession.userId,
+      createdByEmployeeId:creatorSession.employeeId,
+      createdByDisplayName:creatorName.slice(0,250),
+      createdByMode:creatorSession.mode,
+      customerId,
+      orderId,
+      legalEntityId,
+      bankAccountId,
       currency,
       recipientName:required(body.recipientName,250),
       recipientEmail:optional(body.recipientEmail,250),
       recipientAddress:optional(body.recipientAddress,1000),
-      issuerName:required(body.issuerName,250),
-      issuerAddress:optional(body.issuerAddress,1000),
-      issuerTaxId:optional(body.issuerTaxId,80),
-      bankDetails:{bank:optional(body.bank,200),account:optional(body.bankAccount,100),beneficiary:optional(body.beneficiary,200),swift:optional(body.swift,80)},
+      issuerName:entity?.legalName??required(body.issuerName,250),
+      issuerAddress:entity?.address??optional(body.issuerAddress,1000),
+      issuerTaxId:entity?.taxCode??optional(body.issuerTaxId,80),
+      bankDetails:{
+        bank:account?.bankName??optional(body.bank,200),
+        account:account?.accountNo??optional(body.bankAccount,100),
+        beneficiary:account?.accountName??optional(body.beneficiary,200),
+        swift:account?.swift??optional(body.swift,80),
+        accountAddress:account?.accountAddress??optional(body.accountAddress,1500),
+        bankAddress:account?.bankAddress??optional(body.bankAddress,1500),
+        branch:account?.branch??optional(body.branch,200),
+        currency:account?.currency??currency,
+      },
       lines,
       adjustments,
       subtotal:formatMinor(totals.subtotalMinor,currency),
@@ -77,7 +123,7 @@ export async function POST(request: NextRequest) {
 export async function GET(request:NextRequest) {
   const refused=authorize(request,"orders.view_financials");if(refused)return refused;
   try {
-    const invoices=await prisma.customPaymentInvoice.findMany({take:100,orderBy:{createdAt:"desc"},select:{id:true,invoiceNo:true,status:true,recipientName:true,currency:true,total:true,createdAt:true}});
+    const invoices=await prisma.customPaymentInvoice.findMany({take:100,orderBy:{createdAt:"desc"},select:{id:true,invoiceNo:true,status:true,recipientName:true,currency:true,total:true,createdAt:true,createdByDisplayName:true,createdByMode:true,orderId:true,customerId:true}});
     return NextResponse.json({invoices});
   }catch(error) {
     console.error("[custom invoice list]",error);

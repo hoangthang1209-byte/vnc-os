@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap");
+@font-face{font-family:"VNC Invoice Inter";src:url("/api/admin/documents/invoices/font") format("truetype");font-style:normal;font-weight:100 900;font-display:swap;}
 .workspace{padding:16px 20px 40px;max-width:1500px;margin:0 auto;color:#172033}
 .toolbar{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap}
 .eyebrow{font-size:11px;text-transform:uppercase;letter-spacing:.14em;color:#7b8798;font-weight:750;margin:0 0 5px}
@@ -141,3 +141,25 @@
   .paperMetaCell strong { font-size: 8px; }
   .paperFinancials { width: 73%; }
 }
+
+/* CRM association controls — aligned with the existing compact Invoice form. */
+.customerPicker { position:relative; padding:12px; margin:0 0 15px; border:1px solid #e4e8ed; border-radius:9px; background:#fbfcfd; }
+.customerPickerTop { display:flex; justify-content:space-between; gap:10px; align-items:center; margin-bottom:9px; }
+.customerPickerTop label { font-size:12px;font-weight:700;color:#344357; }
+.customerTextButton { border:0;background:none;color:#24517d;font-size:12px;font-weight:700;cursor:pointer; }
+.customerTextButton:disabled {opacity:.5;cursor:not-allowed}
+.customerSelected { margin:8px 0 0;font-size:11px;color:#18744b; }
+.customerHint {margin:7px 0;font-size:11px;color:#718096; }
+.customerError {color:#ad3535;font-size:12px;margin:9px 0 0; }
+.customerResults {max-height:210px;overflow-y:auto;border:1px solid #dce2e9;border-radius:7px;background:#fff;margin-top:5px;box-shadow:0 9px 20px rgba(22,36,52,.09);}
+.customerResult {display:flex;flex-direction:column;width:100%;gap:4px;text-align:left;padding:10px;border:0;background:#fff;cursor:pointer;}
+.customerResult + .customerResult {border-top:1px solid #edf0f3;}
+.customerResult:hover {background:#f4f7fa;}
+.customerResult strong {font-size:12px;}
+.customerResult small {font-size:11px;color:#738093;white-space:normal;}
+.customerCreate {margin-top:12px;padding:12px;border-radius:8px;border:1px solid #e0e6ec;background:#fff;}
+.customerCreate>strong {font-size:13px;}
+.customerCreate .fields {margin:12px 0;}
+
+/* PDF and Preview resolve the same Inter variable TTF, not separate font providers. */
+.paper{font-family:"VNC Invoice Inter","Inter",ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;}

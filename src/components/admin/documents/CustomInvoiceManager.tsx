@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { useAdminPermissions } from "@/components/admin/AdminPermissionsContext";
 import s from "./CustomInvoiceManager.module.css";
+import { isValidInvoiceNumericInput } from "@/features/documents/custom-invoice-calculation";
 type Line={description:string;quantity:string;unit:string;unitPrice:string};
 type SavedInvoice={id:string;invoiceNo:string;status:string;recipientName:string;currency:string;total:string};
 const blank=():Line=>({description:"",quantity:"1",unit:"pcs",unitPrice:"0"});
@@ -46,7 +47,7 @@ export default function CustomInvoiceManager(){
   const blankLine=lines.findIndex(line=>!line.description.trim());
   if(blankLine>=0){setMessage("Khoản thu "+(blankLine+1)+" chưa có nội dung. Hãy nhập mô tả hoặc xóa khoản thu này.");return;}
   const numeric=[...lines.flatMap(line=>[line.quantity,line.unitPrice]),discount,extraCharge,tax];
-  const wrong=numeric.find(value=>!/^(?:0|[1-9]\d*)(?:\.\d+)?$/.test(value.trim()));
+  const wrong=numeric.find(value=>!isValidInvoiceNumericInput(value));
   if(wrong!==undefined){setMessage("Giá trị số '"+wrong+"' không hợp lệ. Ví dụ 20 thay vì 020; không dùng dấu phẩy.");return;}
   if(swift.trim()&&!/^[A-Za-z]{6}[A-Za-z0-9]{2}([A-Za-z0-9]{3})?$/.test(swift.trim())){setMessage("SWIFT/BIC gồm 8 hoặc 11 ký tự, khác với số tài khoản. Nếu không có hãy để trống.");return;}
   setBusy(true);setMessage("Đang lưu bản nháp...");

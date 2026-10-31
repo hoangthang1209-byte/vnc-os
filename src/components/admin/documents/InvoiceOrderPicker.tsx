@@ -1,4 +1,5 @@
 "use client";
+import { resolveInvoiceOrderPreparer } from "@/features/documents/invoice-preparer";
 import { useEffect, useState } from "react";
 import s from "./CustomInvoiceManager.module.css";
 
@@ -6,6 +7,7 @@ export type InvoiceOrderOption={
  id:string;orderNo:string;customerPoNo:string|null;customerId:string|null;currency:string;
  customerCompanyName:string|null;customerNameSnapshot:string|null;customerLegalNameSnapshot:string|null;
  customerAddress:string|null;customerEmailSnapshot:string|null;
+ salesName:string|null;salesEmployeeId:string|null;salesEmployee:{fullName:string}|null;salesRepresentative:{fullName:string;employeeId:string|null}|null;
  customer:{id:string;name:string;legalName:string|null;email:string|null;address:string|null}|null;
 };
 type Props={selectedId:string;onSelect:(order:InvoiceOrderOption|null)=>void;disabled?:boolean};
@@ -37,7 +39,7 @@ export default function InvoiceOrderPicker({selectedId,onSelect,disabled}:Props)
   <input className={s.input} id="invoice-order-search" type="search" value={query} disabled={disabled}
    placeholder="Tìm theo mã đơn hàng, PO hoặc tên khách hàng..."
    onChange={e=>{setQuery(e.target.value);setResults([]);setError("");if(selectedId){setSelected(null);onSelect(null);}}}/>
-  {selectedId&&selected&&<p className={s.customerSelected}>✓ Đã liên kết {selected.orderNo} · PO: {selected.customerPoNo||"—"} · {selected.currency}</p>}
+  {selectedId&&selected&&<p className={s.customerSelected}>✓ Đã liên kết {selected.orderNo} · PO: {selected.customerPoNo||"—"} · {selected.currency} · Sales/Account: {resolveInvoiceOrderPreparer(selected).name||"Chưa phân công"}</p>}
   {loading&&<p className={s.customerHint}>Đang tìm đơn hàng...</p>}
   {query.trim().length>=2&&!loading&&results.length>0&&<div className={s.customerResults} role="listbox" aria-label="Danh sách đơn hàng">
    {results.map(o=><button type="button" className={s.customerResult} key={o.id} onClick={()=>{

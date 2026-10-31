@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { resolveInvoiceOrderPreparer } from "./invoice-preparer";
 import { calculateCustomInvoice, formatMinor, lineAmountMinor, toMinor, isValidInvoiceNumericInput } from "./custom-invoice-calculation";
 
 test("calculates sample fee invoice in USD exactly", () => {
@@ -30,4 +31,12 @@ test("rejects invalid lines and discounts", () => {
 test("draft inputs accept normal numeric values and reject malformed numbers", () => {
   for (const value of ["0","1","20","20.50","0.25"," 20.50 "]) assert.equal(isValidInvoiceNumericInput(value),true,value);
   for (const value of ["020","1,200","-1","abc","","1e3"]) assert.equal(isValidInvoiceNumericInput(value),false,value);
+});
+
+test("Sales/Account on linked Order determines Prepared By; never audit creator",()=>{
+  assert.deepEqual(resolveInvoiceOrderPreparer(null),{name:null,employeeId:null});
+  assert.deepEqual(resolveInvoiceOrderPreparer({salesName:"Legacy Sales"}),{name:"Legacy Sales",employeeId:null});
+  assert.deepEqual(resolveInvoiceOrderPreparer({salesName:"Legacy Sales",salesRepresentative:{fullName:"Account Rep",employeeId:"rep-1"}}),{name:"Account Rep",employeeId:"rep-1"});
+  assert.deepEqual(resolveInvoiceOrderPreparer({salesName:"Legacy Sales",salesRepresentative:{fullName:"Account Rep",employeeId:"rep-1"},salesEmployee:{fullName:"Assigned Sales"},salesEmployeeId:"emp-1"}),{name:"Assigned Sales",employeeId:"emp-1"});
+  assert.deepEqual(resolveInvoiceOrderPreparer({salesEmployee:{fullName:"  "}}),{name:null,employeeId:null});
 });

@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { useAdminPermissions } from "@/components/admin/AdminPermissionsContext";
 import s from "./CustomInvoiceManager.module.css";
+import { isValidInvoiceNumericInput } from "@/features/documents/custom-invoice-calculation";
 type Line={description:string;quantity:string;unit:string;unitPrice:string};
 type SavedInvoice={id:string;invoiceNo:string;status:string;recipientName:string;currency:string;total:string};
 const blank=():Line=>({description:"",quantity:"1",unit:"pcs",unitPrice:"0"});
@@ -42,6 +43,13 @@ export default function CustomInvoiceManager(){
   return ()=>{mounted=false};
  },[]);
  async function save(){
+  if(!invoiceNo.trim()||!issuerName.trim()||!recipientName.trim()){setMessage("Vui lòng nhập số Invoice, tên bên phát hành và tên khách hàng.");return;}
+  const blankLine=lines.findIndex(line=>!line.description.trim());
+  if(blankLine>=0){setMessage("Khoản thu "+(blankLine+1)+" chưa có nội dung. Hãy nhập mô tả hoặc xóa khoản thu này.");return;}
+  const numeric=[...lines.flatMap(line=>[line.quantity,line.unitPrice]),discount,extraCharge,tax];
+  const wrong=numeric.find(value=>!isValidInvoiceNumericInput(value));
+  if(wrong!==undefined){setMessage("Giá trị số '"+wrong+"' không hợp lệ. Ví dụ 20 thay vì 020; không dùng dấu phẩy.");return;}
+  if(swift.trim()&&!/^[A-Za-z]{6}[A-Za-z0-9]{2}([A-Za-z0-9]{3})?$/.test(swift.trim())){setMessage("SWIFT/BIC gồm 8 hoặc 11 ký tự, khác với số tài khoản. Nếu không có hãy để trống.");return;}
   setBusy(true);setMessage("Đang lưu bản nháp...");
   try{
    const r=await fetch("/api/admin/documents/invoices",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({invoiceNo,recipientName,recipientAddress,issuerName,issuerAddress,currency,issueDate,dueDate,lines,beneficiary,bank,bankAccount,swift,notes,discount,extraCharge,tax})});
@@ -120,7 +128,7 @@ export default function CustomInvoiceManager(){
      <div style={{marginTop:24,lineHeight:1.7}}><span className={s.paperCaption}>PAYMENT DETAILS</span><div>{beneficiary||"Beneficiary"} · {bank||"Bank"}</div><div>{bankAccount||"Account number"}</div>{swift&&<div>SWIFT: {swift}</div>}</div>
      <div className={s.paperFooter}>Commercial payment request only. This document is not a Vietnamese VAT e-invoice.</div>
     </div></div>
-   </div><p className={s.helper}>Bản xem trước để kiểm tra nội dung. PDF cuối cùng được tạo trên máy chủ sau khi phát hành.</p></aside>
+   </div><p className={s.helper}>Đây là bản xem trước theo dữ liệu đang nhập, không phải Invoice đã lưu. Khi sửa khoản thu, cần lưu lại bằng số Invoice mới; PDF chỉ phản ánh bản đã phát hành và khóa dữ liệu.</p></aside>
   </div>
   <section className={s.panel+" "+s.listPanel}><div className={s.panelHead}><h2>Invoice đã lưu</h2><button type="button" className={s.secondary} onClick={()=>void refresh()}>Làm mới danh sách</button></div>
    {invoices.length===0?<p className={s.empty}>Chưa có Invoice nào được tải. Tạo bản nháp để bắt đầu.</p>:invoices.map(inv=><div className={s.listRow} key={inv.id}><div><div className={s.listMain}>{inv.invoiceNo} · {inv.recipientName}</div><div className={s.listSub}>{inv.currency} {inv.total}</div></div><div className={s.listActions}><span className={inv.status==="ISSUED"?s.state+" "+s.stateIssued:s.state}>{inv.status==="ISSUED"?"Đã phát hành":"Bản nháp"}</span>{inv.status==="DRAFT"&&permissions.canIssueCustomInvoice&&<button type="button" className={s.link} onClick={()=>void issue(inv.id)}>Phát hành</button>}{inv.status==="ISSUED"&&<a className={s.link} href={"/api/admin/documents/invoices/"+encodeURIComponent(inv.id)+"/pdf"}>Tải PDF</a>}</div></div>)}

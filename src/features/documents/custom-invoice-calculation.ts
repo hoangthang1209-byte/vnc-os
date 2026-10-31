@@ -14,6 +14,10 @@ export type InvoiceCalculation = {
   taxMinor: bigint;
   totalMinor: bigint;
 };
+/** Match the server's accepted unsigned decimal syntax before attempting a draft save. */
+export function isValidInvoiceNumericInput(value: string): boolean {
+  return /^(?:0|[1-9]\d*)(?:\.\d+)?$/.test(value.trim());
+}
 const scale = (currency: InvoiceCurrency) => currency === "VND" ? 0 : 2;
 function decimalParts(value: string): { negative: boolean; digits: bigint; fractionalDigits: number } {
   const raw = value.trim();

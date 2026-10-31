@@ -63,10 +63,15 @@ export async function POST(request: NextRequest) {
     }});
     return NextResponse.json({id:invoice.id,invoiceNo:invoice.invoiceNo,total:invoice.total},{status:201});
   } catch(error) {
-    if (typeof error==="object" && error && "code" in error && error.code==="P2002") return NextResponse.json({error:"Invoice number already exists"},{status:409});
+    if (typeof error==="object" && error && "code" in error && error.code==="P2002") return NextResponse.json({error:"Số Invoice đã tồn tại. Hãy mở bản nháp cũ hoặc nhập số Invoice khác."},{status:409});
     if (typeof error==="object" && error && "code" in error && error.code==="P2021") return NextResponse.json({error:"Database migration required"},{status:503});
+    if(error instanceof Error && /Invalid decimal amount/.test(error.message))return NextResponse.json({error:"Số tiền không hợp lệ. Chỉ dùng số như 20 hoặc 20.50; không nhập 020, dấu phẩy hay chữ."},{status:400});
+    if(error instanceof Error && /Description required|Missing or invalid required field/.test(error.message))return NextResponse.json({error:"Thiếu nội dung khoản thu hoặc trường bắt buộc. Kiểm tra các khoản thu trống và thông tin công ty/khách hàng."},{status:400});
+    if(error instanceof Error && /Discount exceeds subtotal/.test(error.message))return NextResponse.json({error:"Giảm trừ không được vượt quá tổng tiền hàng."},{status:400});
+    if(error instanceof Error && /Quantity and unit price/.test(error.message))return NextResponse.json({error:"Số lượng phải lớn hơn 0 và đơn giá không được âm."},{status:400});
+    if(error instanceof Error && /Invalid date|Due date precedes/.test(error.message))return NextResponse.json({error:"Ngày phát hành/hạn thanh toán không hợp lệ."},{status:400});
     console.error("[custom invoice create]",error);
-    return NextResponse.json({error:"Unable to save invoice. Check fields and database availability."},{status:400});
+    return NextResponse.json({error:"Không thể lưu Invoice. Kiểm tra dữ liệu hoặc liên hệ quản trị hệ thống.",code:"INVOICE_SAVE_FAILED"},{status:500});
   }
 }
 export async function GET(request:NextRequest) {

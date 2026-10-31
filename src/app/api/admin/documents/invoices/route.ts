@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { can } from "@/features/auth/admin-permissions";
 import { getAdminSessionFromRequest } from "@/lib/admin-auth/get-admin-session";
-import { calculateCustomInvoice, formatMinor, type InvoiceCurrency, type InvoiceLine } from "@/features/documents/custom-invoice-calculation";
+import { calculateCustomInvoice, formatMinor, nextCustomInvoiceNumber, type InvoiceCurrency, type InvoiceLine } from "@/features/documents/custom-invoice-calculation";
 
 function authorize(request: NextRequest, permission: string) {
   const session=getAdminSessionFromRequest(request);
@@ -72,8 +72,14 @@ export async function POST(request: NextRequest) {
     const issueDate=strictDate(body.issueDate);
     const dueDate=body.dueDate ? strictDate(body.dueDate):null;
     if(dueDate && dueDate < issueDate) throw new Error("Due date precedes issue date");
-    const invoice=await prisma.customPaymentInvoice.create({data:{
-      invoiceNo:required(body.invoiceNo,80),
+    const year=issueDate.getUTCFullYear();
+    const invoice=await prisma.$transaction(async tx=>{
+      await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${`vnc-custom-invoice-${year}`}))`;
+      const prefix=`CI-${year}-`;
+      const existing=await tx.customPaymentInvoice.findMany({where:{invoiceNo:{startsWith:prefix}},select:{invoiceNo:true}});
+      const invoiceNo=nextCustomInvoiceNumber(year,existing.map(row=>row.invoiceNo));
+      return tx.customPaymentInvoice.create({data:{
+      invoiceNo,
       createdByUserId:creatorSession.userId,
       createdByEmployeeId:creatorSession.employeeId,
       createdByDisplayName:creatorName.slice(0,250),
@@ -107,9 +113,10 @@ export async function POST(request: NextRequest) {
       dueDate,
       notes:optional(body.notes,2000)
     }});
+    },{maxWait:5000,timeout:15000});
     return NextResponse.json({id:invoice.id,invoiceNo:invoice.invoiceNo,total:invoice.total},{status:201});
   } catch(error) {
-    if (typeof error==="object" && error && "code" in error && error.code==="P2002") return NextResponse.json({error:"Số Invoice đã tồn tại. Hãy mở bản nháp cũ hoặc nhập số Invoice khác."},{status:409});
+    if (typeof error==="object" && error && "code" in error && error.code==="P2002") return NextResponse.json({error:"Xung đột số Invoice tự động. Vui lòng thử lưu lại."},{status:409});
     if (typeof error==="object" && error && "code" in error && error.code==="P2021") return NextResponse.json({error:"Database migration required"},{status:503});
     if(error instanceof Error && /Invalid decimal amount/.test(error.message))return NextResponse.json({error:"Số tiền không hợp lệ. Chỉ dùng số như 20 hoặc 20.50; không nhập 020, dấu phẩy hay chữ."},{status:400});
     if(error instanceof Error && /Description required|Missing or invalid required field/.test(error.message))return NextResponse.json({error:"Thiếu nội dung khoản thu hoặc trường bắt buộc. Kiểm tra các khoản thu trống và thông tin công ty/khách hàng."},{status:400});

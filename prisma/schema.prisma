@@ -4302,6 +4302,10 @@ model OrderProject {
   batches     OrderBatch[]
 
   @@index([customerId])
+  @@index([orderId])
+  @@index([legalEntityId])
+  @@index([bankAccountId])
+  @@index([createdByUserId])
 }
 
 model OrderBatch {
@@ -6633,6 +6637,10 @@ model CustomPaymentInvoice {
   notes         String? @db.Text
   issuedSnapshot Json?
   issuedAt      DateTime?
+  createdByUserId     String?
+  createdByEmployeeId String?
+  createdByDisplayName String
+  createdByMode       String
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 

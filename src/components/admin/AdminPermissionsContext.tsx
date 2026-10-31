@@ -11,6 +11,8 @@ import {
 
 export type AdminPermissionFlags = {
   canViewFinancials: boolean;
+  canCreateCustomInvoice: boolean;
+  canIssueCustomInvoice: boolean;
   canAccessQuotes: boolean;
   canAccessPricing: boolean;
   canManageUsers: boolean;
@@ -45,6 +47,8 @@ type AdminPermissionsContextValue = {
 
 const defaultFlags: AdminPermissionFlags = {
   canViewFinancials: true,
+  canCreateCustomInvoice: true,
+  canIssueCustomInvoice: true,
   canAccessQuotes: true,
   canAccessPricing: true,
   canManageUsers: true,
@@ -105,7 +109,9 @@ export function AdminPermissionsProvider({ children }: { children: ReactNode }) 
         setEmployeeId(data.employeeId ?? null);
         setRoleCode(data.roleCode ?? null);
         setPermissions({
-          canViewFinancials: data.flags?.canViewFinancials ?? true,
+          canViewFinancials: data.flags?.canViewFinancials ?? false,
+          canCreateCustomInvoice: data.flags?.canCreateCustomInvoice ?? false,
+          canIssueCustomInvoice: data.flags?.canIssueCustomInvoice ?? false,
           canAccessQuotes: data.flags?.canAccessQuotes ?? true,
           canAccessPricing: data.flags?.canAccessPricing ?? true,
           canManageUsers: data.flags?.canManageUsers ?? false,

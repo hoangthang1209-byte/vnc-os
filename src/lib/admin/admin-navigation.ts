@@ -261,6 +261,12 @@ export const adminNavigationSections: AdminNavigationSection[] = [
         requiredPermissions: ["canManageRoles"],
       },
       {
+        label: "Cấu hình công ty VNC",
+        href: "/admin/settings/vnc-company",
+        status: "active",
+        requiredPermissions: ["canViewFinancials"],
+      },
+      {
         label: "Thông tin công ty",
         href: "/admin/settings/company",
         status: "active",

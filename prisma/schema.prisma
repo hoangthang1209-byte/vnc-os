@@ -521,9 +521,6 @@ model Contact {
   productionApprovals   OrderItemProductionApproval[]
 
   @@index([customerId])
-  @@index([legalEntityId])
-  @@index([bankAccountId])
-  @@index([orderId])
 }
 
 model CRMActivity {
@@ -4302,10 +4299,6 @@ model OrderProject {
   batches     OrderBatch[]
 
   @@index([customerId])
-  @@index([orderId])
-  @@index([legalEntityId])
-  @@index([bankAccountId])
-  @@index([createdByUserId])
 }
 
 model OrderBatch {

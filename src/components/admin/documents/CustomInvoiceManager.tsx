@@ -1,3 +1,4 @@
+import { resolveInvoiceOrderPreparer } from "@/features/documents/invoice-preparer";
 "use client";
 import { useEffect, useState } from "react";
 import { useAdminPermissions } from "@/components/admin/AdminPermissionsContext";
@@ -101,7 +102,7 @@ export default function CustomInvoiceManager(){
      <div className={s.section}><p className={s.sectionTitle}>02 / Liên kết đơn hàng (tuỳ chọn)</p>
       <InvoiceOrderPicker selectedId={orderId} disabled={busy} onSelect={(order:InvoiceOrderOption|null)=>{
        setOrderId(order?.id||"");
-       setPreparedByName(order?.salesEmployee?.fullName||order?.salesRepresentative?.fullName||order?.salesName||"");
+       setPreparedByName(resolveInvoiceOrderPreparer(order).name||"");
        if(order){
         setCurrency(order.currency);
         const c=order.customer;

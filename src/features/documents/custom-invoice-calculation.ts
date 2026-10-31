@@ -72,3 +72,16 @@ export function formatMinor(amount: bigint, currency: InvoiceCurrency): string {
   const digits = (amount < BigInt(0) ? -amount : amount).toString().padStart(s + 1, "0");
   return sign + (s ? digits.slice(0, -s) + "." + digits.slice(-s) : digits);
 }
+
+/** Deterministic sequence parser. The caller must serialize allocations in a DB transaction. */
+export function nextCustomInvoiceNumber(year:number,invoiceNumbers:readonly string[]):string {
+  if(!Number.isInteger(year)||year<2000||year>9999)throw new Error("Invalid invoice year");
+  const prefix=`CI-${year}-`;
+  const last=invoiceNumbers.reduce((max,value)=>{
+    if(!value.startsWith(prefix))return max;
+    const suffix=value.slice(prefix.length);
+    return /^[0-9]{4}$/.test(suffix)?Math.max(max,Number(suffix)):max;
+  },0);
+  if(last>=9999)throw new Error("Invoice sequence exhausted for year");
+  return prefix+String(last+1).padStart(4,"0");
+}

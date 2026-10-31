@@ -52,7 +52,9 @@ export default function PatternMeasurementAnnotationEditor({
     }
   }, [endpoint]);
 
-  useEffect(() => { void load(); }, [load]);
+  useEffect(() => {
+    void Promise.resolve().then(() => load());
+  }, [load]);
 
   const onCanvasClick = (event: PointerEvent<SVGSVGElement>) => {
     if (readOnly || mode !== "draw" || dragging.current || !selectedMeasurementId || !annotations.imageFileId) return;

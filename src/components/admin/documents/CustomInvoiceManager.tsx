@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { useAdminPermissions } from "@/components/admin/AdminPermissionsContext";
 import s from "./CustomInvoiceManager.module.css";
+import InvoiceCustomerPicker, { customerInvoiceFields, type InvoiceCrmCustomer } from "./InvoiceCustomerPicker";
 import { VNC_LOGO_PNG_DATA_URI } from "@/features/documents/vnc-invoice-brand";
 import { isValidInvoiceNumericInput } from "@/features/documents/custom-invoice-calculation";
 type Line={description:string;quantity:string;unit:string;unitPrice:string};
@@ -12,6 +13,8 @@ export default function CustomInvoiceManager(){
  const {permissions}=useAdminPermissions();
  const [invoiceNo,setInvoiceNo]=useState("");
  const [recipientName,setRecipientName]=useState("");
+ const [customerId,setCustomerId]=useState("");
+ const [recipientEmail,setRecipientEmail]=useState("");
  const [recipientAddress,setRecipientAddress]=useState("");
  const [issuerName,setIssuerName]=useState("");
  const [issuerAddress,setIssuerAddress]=useState("");
@@ -53,7 +56,7 @@ export default function CustomInvoiceManager(){
   if(swift.trim()&&!/^[A-Za-z]{6}[A-Za-z0-9]{2}([A-Za-z0-9]{3})?$/.test(swift.trim())){setMessage("SWIFT/BIC gồm 8 hoặc 11 ký tự, khác với số tài khoản. Nếu không có hãy để trống.");return;}
   setBusy(true);setMessage("Đang lưu bản nháp...");
   try{
-   const r=await fetch("/api/admin/documents/invoices",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({invoiceNo,recipientName,recipientAddress,issuerName,issuerAddress,currency,issueDate,dueDate,lines,beneficiary,bank,bankAccount,swift,notes,discount,extraCharge,tax})});
+   const r=await fetch("/api/admin/documents/invoices",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({invoiceNo,customerId:customerId||null,recipientName,recipientAddress,recipientEmail,issuerName,issuerAddress,currency,issueDate,dueDate,lines,beneficiary,bank,bankAccount,swift,notes,discount,extraCharge,tax})});
    const data=await r.json();if(!r.ok)throw new Error(data.error||"Không thể lưu bản nháp");
    setPdfId(data.id);setIssued(false);setMessage("Đã lưu bản nháp "+data.invoiceNo+".");await refresh();
   }catch(error){setMessage(error instanceof Error?error.message:"Lưu không thành công");}
@@ -85,9 +88,15 @@ export default function CustomInvoiceManager(){
       <div className={s.field}><label>Loại tiền</label><select className={s.select} value={currency} onChange={e=>{setCurrency(e.target.value);setPdfId("");}}><option>USD</option><option>VND</option><option>EUR</option></select></div>
       {field("Hạn thanh toán",dueDate,setDueDate,"","date")}
      </div></div>
-     <div className={s.section}><p className={s.sectionTitle}>02 / Bên phát hành và khách hàng</p><div className={s.fields}>
+     <div className={s.section}><p className={s.sectionTitle}>02 / Bên phát hành và khách hàng</p>
+      <InvoiceCustomerPicker selectedId={customerId} disabled={busy} onSelect={(customer:InvoiceCrmCustomer)=>{
+       const fields=customerInvoiceFields(customer);
+       setCustomerId(customer.id);setRecipientName(fields.recipientName);setRecipientAddress(fields.recipientAddress);setRecipientEmail(fields.recipientEmail);
+       setPdfId("");setIssued(false);setMessage("");
+      }}/>
+      <div className={s.fields}>
       {field("Đơn vị phát hành *",issuerName,setIssuerName,"Tên pháp nhân VNC")}
-      {field("Khách hàng *",recipientName,setRecipientName,"Tên công ty / cá nhân")}
+      {field("Khách hàng *",recipientName,v=>{setRecipientName(v);setCustomerId("");},"Tên công ty / cá nhân")}
       {field("Địa chỉ bên phát hành",issuerAddress,setIssuerAddress,"Địa chỉ pháp lý")}
       {field("Địa chỉ khách hàng",recipientAddress,setRecipientAddress,"Địa chỉ nhận Invoice")}
      </div></div>

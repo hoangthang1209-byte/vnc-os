@@ -6679,3 +6679,12 @@ model VncBankAccount {
   invoices CustomPaymentInvoice[]
   @@index([legalEntityId, isActive])
 }
+
+
+/** Internal VNC OS company branding; independent of public ATTD BrandingSettings. */
+model VncOsCompanyBranding {
+  id         String   @id @default("default")
+  logoUrl    String?
+  faviconUrl String?
+  updatedAt  DateTime @updatedAt
+}

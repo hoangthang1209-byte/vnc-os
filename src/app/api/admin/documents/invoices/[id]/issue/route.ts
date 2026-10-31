@@ -29,7 +29,9 @@ export async function POST(request:NextRequest,context:{params:Promise<{id:strin
       if(bank.swift && (typeof bank.swift!=="string" || !/^[A-Za-z]{6}[A-Za-z0-9]{2}([A-Za-z0-9]{3})?$/.test(bank.swift.trim()))) {
         return {error:"SWIFT/BIC phải gồm 8 hoặc 11 ký tự đúng cấu trúc. Không nhập số tài khoản vào ô SWIFT."};
       }
+      const companyBranding=await tx.vncOsCompanyBranding.findUnique({where:{id:"default"},select:{logoUrl:true}});
       const snapshot={
+        companyLogoUrl:companyBranding?.logoUrl??null,
         invoiceNo:invoice.invoiceNo,
         customerId:invoice.customerId,
         orderId:invoice.orderId,
@@ -57,6 +59,7 @@ export async function POST(request:NextRequest,context:{params:Promise<{id:strin
     logAdminAuditEvent({action:"custom_invoice_issued",userId:session.userId,employeeId:session.employeeId,route:request.nextUrl.pathname,detail:{id:result.id,invoiceNo:result.invoiceNo}});
     return NextResponse.json(result);
   }catch(error) {
+    if(typeof error==="object"&&error&&"code" in error&&error.code==="P2021")return NextResponse.json({error:"Cấu hình công ty VNC chưa được migrate. Vui lòng liên hệ quản trị hệ thống."},{status:503});
     console.error("[custom invoice issue]",error);
     return NextResponse.json({error:"Unable to issue invoice"},{status:500});
   }

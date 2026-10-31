@@ -21,6 +21,8 @@ export async function GET() {
     permissions: permissionMap,
     flags: {
       canViewFinancials: canViewOrderFinancials(session),
+      canCreateCustomInvoice: can(session, "orders.view_financials") && can(session, "quotes.create"),
+      canIssueCustomInvoice: can(session, "orders.view_financials") && can(session, "payments.manage"),
       canAccessQuotes: can(session, "quotes.view"),
       canAccessPricing: can(session, "pricing.manage"),
       canManageUsers: canManageUsers(session),

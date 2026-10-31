@@ -81,7 +81,7 @@ export default function CustomInvoiceManager(){
   }catch(error){setMessage(error instanceof Error?error.message:"Phát hành không thành công");}
   finally{setBusy(false);}
  }
- const field=(label:string,value:string,change:(v:string)=>void,placeholder="",type="text")=><div className={s.field}><label>{label}</label><input className={s.input} type={type} value={value} placeholder={placeholder} onChange={e=>{change(e.target.value);setPdfId("");setIssued(false);}}/></div>;
+ const field=(label:string,value:string,change:(v:string)=>void,placeholder="",type="text")=><div className={s.field}><label>{label}</label><input className={s.input} type={type} value={value} readOnly={["Đơn vị phát hành *","Địa chỉ bên phát hành","Tên người thụ hưởng","Ngân hàng","Số tài khoản","SWIFT (nếu có)","Account Address","Bank Address","Branch"].includes(label)} placeholder={placeholder} onChange={e=>{change(e.target.value);setPdfId("");setIssued(false);}}/></div>;
  return <main className={s.workspace}>
   <div className={s.toolbar}>
    <div><p className={s.eyebrow}>DOCUMENT CENTER / TÀI CHÍNH</p><h1 className={s.heading}>Tạo yêu cầu thanh toán</h1><p className={s.muted}>Commercial Invoice · Phí làm mẫu, phát triển sản phẩm và các khoản thu khác</p></div>
@@ -119,7 +119,7 @@ export default function CustomInvoiceManager(){
        setPdfId("");setIssued(false);setMessage("");
       }}/>
       <InvoiceIssuerPicker selectedEntityId={legalEntityId} selectedBankId={bankAccountId}
-       canManage={permissions.canIssueCustomInvoice} disabled={busy}
+       canManage={false} disabled={busy}
        onSelect={({entity,account}:IssuerSelection)=>{
         setLegalEntityId(entity.id);setIssuerName(entity.legalName);setIssuerAddress(entity.address||"");setIssuerTaxId(entity.taxCode||"");
         setBankAccountId(account?.id||"");setBeneficiary(account?.accountName||"");setBank(account?.bankName||"");
@@ -128,6 +128,7 @@ export default function CustomInvoiceManager(){
         if(account?.currency)setCurrency(account.currency);
         setPdfId("");setIssued(false);
        }}/>
+      <p className={s.helper}>Pháp nhân và tài khoản ngân hàng được quản lý tập trung tại <a href="/admin/settings/vnc-company">Cấu hình chung — Công ty VNC</a>.</p>
       <div className={s.fields}>
       {field("Đơn vị phát hành *",issuerName,v=>{setIssuerName(v);setLegalEntityId("");setBankAccountId("");},"Tên pháp nhân VNC")}
       {field("Khách hàng *",recipientName,v=>{setRecipientName(v);setCustomerId("");},"Tên công ty / cá nhân")}

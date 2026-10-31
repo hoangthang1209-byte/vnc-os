@@ -29,7 +29,9 @@ export async function POST(request:NextRequest,context:{params:Promise<{id:strin
       if(bank.swift && (typeof bank.swift!=="string" || !/^[A-Za-z]{6}[A-Za-z0-9]{2}([A-Za-z0-9]{3})?$/.test(bank.swift.trim()))) {
         return {error:"SWIFT/BIC phải gồm 8 hoặc 11 ký tự đúng cấu trúc. Không nhập số tài khoản vào ô SWIFT."};
       }
+      const companyBranding=await tx.vncOsCompanyBranding.findUnique({where:{id:"default"},select:{logoUrl:true}});
       const snapshot={
+        companyLogoUrl:companyBranding?.logoUrl??null,
         invoiceNo:invoice.invoiceNo,
         customerId:invoice.customerId,
         orderId:invoice.orderId,

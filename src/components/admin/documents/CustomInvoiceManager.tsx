@@ -125,6 +125,7 @@ export default function CustomInvoiceManager(){
         setBankAccountId(account?.id||"");setBeneficiary(account?.accountName||"");setBank(account?.bankName||"");
         setBankAccount(account?.accountNo||"");setAccountAddress(account?.accountAddress||"");
         setBankAddress(account?.bankAddress||"");setBranch(account?.branch||"");setSwift(account?.swift||"");
+        if(account?.currency)setCurrency(account.currency);
         setPdfId("");setIssued(false);
        }}/>
       <div className={s.fields}>

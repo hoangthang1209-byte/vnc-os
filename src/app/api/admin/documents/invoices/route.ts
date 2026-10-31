@@ -40,11 +40,17 @@ export async function POST(request: NextRequest) {
     });
     const adjustments={discount:optional(body.discount,32)||"0",extraCharge:optional(body.extraCharge,32)||"0",tax:optional(body.tax,32)||"0"};
     const totals=calculateCustomInvoice({currency,lines,...adjustments});
+    const customerId=body.customerId==null||body.customerId===""?null:required(body.customerId,100);
+    if(customerId){
+      const customer=await prisma.customer.findUnique({where:{id:customerId},select:{id:true}});
+      if(!customer)return NextResponse.json({error:"Khách hàng liên kết không tồn tại trong CRM."},{status:400});
+    }
     const issueDate=strictDate(body.issueDate);
     const dueDate=body.dueDate ? strictDate(body.dueDate):null;
     if(dueDate && dueDate < issueDate) throw new Error("Due date precedes issue date");
     const invoice=await prisma.customPaymentInvoice.create({data:{
       invoiceNo:required(body.invoiceNo,80),
+      customerId,
       currency,
       recipientName:required(body.recipientName,250),
       recipientEmail:optional(body.recipientEmail,250),

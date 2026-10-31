@@ -1,5 +1,5 @@
-import { resolveInvoiceOrderPreparer } from "@/features/documents/invoice-preparer";
 "use client";
+import { resolveInvoiceOrderPreparer } from "@/features/documents/invoice-preparer";
 import { useEffect, useState } from "react";
 import s from "./CustomInvoiceManager.module.css";
 

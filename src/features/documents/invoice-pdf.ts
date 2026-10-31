@@ -32,7 +32,7 @@ export function renderInvoicePdf(invoice:InvoicePdfInput):Promise<Buffer>{
   function font(bold=false,size=9,color=INK){pdf.font(bold?"Heading":"Body").fontSize(size).fillColor(color);}
   function height(value:string,width:number,bold=false,size=9){font(bold,size);return pdf.heightOfString(value,{width});}
   function write(value:string,x:number,top:number,width:number,bold=false,size=9,color=INK,align:"left"|"right"="left"){
-   font(bold,size,color);pdf.text(value,x,top,{width,align,breakLine:false});
+   font(bold,size,color);pdf.text(value,x,top,{width,align});
   }
   function rule(top:number,color=LIGHT){pdf.strokeColor(color).lineWidth(.7).moveTo(L,top).lineTo(R,top).stroke();}
   function ensure(space:number){if(y+space>BOTTOM){pdf.addPage();y=L+8;}}

@@ -27,6 +27,10 @@ function strictDate(value: unknown): Date {
 export async function POST(request: NextRequest) {
   const refused=authorize(request,"quotes.create");if(refused)return refused;
   try {
+    const creatorSession=getAdminSessionFromRequest(request);
+    // Creator attribution always comes from the verified session; ignore client-supplied author fields.
+    const creatorName=creatorSession.username?.trim()
+      ||(creatorSession.mode==="owner"?"VNC Owner":creatorSession.employeeId?"Employee "+creatorSession.employeeId:"Authenticated Admin");
     const data:unknown=await request.json();
     if (!data || typeof data!=="object" || Array.isArray(data)) throw new Error("Invalid invoice");
     const body=data as Record<string,unknown>;
@@ -67,6 +71,10 @@ export async function POST(request: NextRequest) {
     if(dueDate && dueDate < issueDate) throw new Error("Due date precedes issue date");
     const invoice=await prisma.customPaymentInvoice.create({data:{
       invoiceNo:required(body.invoiceNo,80),
+      createdByUserId:creatorSession.userId,
+      createdByEmployeeId:creatorSession.employeeId,
+      createdByDisplayName:creatorName.slice(0,250),
+      createdByMode:creatorSession.mode,
       customerId,
       orderId,
       legalEntityId,
@@ -112,7 +120,7 @@ export async function POST(request: NextRequest) {
 export async function GET(request:NextRequest) {
   const refused=authorize(request,"orders.view_financials");if(refused)return refused;
   try {
-    const invoices=await prisma.customPaymentInvoice.findMany({take:100,orderBy:{createdAt:"desc"},select:{id:true,invoiceNo:true,status:true,recipientName:true,currency:true,total:true,createdAt:true}});
+    const invoices=await prisma.customPaymentInvoice.findMany({take:100,orderBy:{createdAt:"desc"},select:{id:true,invoiceNo:true,status:true,recipientName:true,currency:true,total:true,createdAt:true,createdByDisplayName:true,createdByMode:true,orderId:true,customerId:true}});
     return NextResponse.json({invoices});
   }catch(error) {
     console.error("[custom invoice list]",error);

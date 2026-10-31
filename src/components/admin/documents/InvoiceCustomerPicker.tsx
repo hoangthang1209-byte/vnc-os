@@ -7,7 +7,7 @@ export type InvoiceCrmCustomer={
  address?:string|null;addressLine1?:string|null;addressLine2?:string|null;
  email?:string|null;taxCode?:string|null;
 };
-type Props={onSelect:(customer:InvoiceCrmCustomer)=>void;selectedId:string;disabled?:boolean};
+type Props={onSelect:(customer:InvoiceCrmCustomer)=>void;onClear:()=>void;selectedId:string;disabled?:boolean};
 function displayName(customer:InvoiceCrmCustomer){return customer.legalName?.trim()||customer.name;}
 function displayAddress(customer:InvoiceCrmCustomer){
  return customer.address?.trim()||[customer.addressLine1,customer.addressLine2].filter(Boolean).join(", ");
@@ -15,7 +15,7 @@ function displayAddress(customer:InvoiceCrmCustomer){
 export function customerInvoiceFields(customer:InvoiceCrmCustomer){
  return {recipientName:displayName(customer),recipientAddress:displayAddress(customer)||"",recipientEmail:customer.email||""};
 }
-export default function InvoiceCustomerPicker({onSelect,selectedId,disabled}:Props){
+export default function InvoiceCustomerPicker({onSelect,onClear,selectedId,disabled}:Props){
  const [query,setQuery]=useState("");
  const [results,setResults]=useState<InvoiceCrmCustomer[]>([]);
  const [loading,setLoading]=useState(false);
@@ -26,7 +26,7 @@ export default function InvoiceCustomerPicker({onSelect,selectedId,disabled}:Pro
  const [email,setEmail]=useState("");
  const [saving,setSaving]=useState(false);
  useEffect(()=>{
-  if(query.trim().length<2){return;}
+  if(query.trim().length<2||selectedId){return;}
   const controller=new AbortController();
   const timer=setTimeout(async()=>{
    setLoading(true);
@@ -41,7 +41,7 @@ export default function InvoiceCustomerPicker({onSelect,selectedId,disabled}:Pro
    }finally{if(!controller.signal.aborted)setLoading(false);}
   },250);
   return ()=>{clearTimeout(timer);controller.abort();};
- },[query]);
+ },[query,selectedId]);
  async function create(){
   if(!name.trim()){setError("Vui lòng nhập tên khách hàng.");return;}
   setSaving(true);setError("");
@@ -62,7 +62,7 @@ export default function InvoiceCustomerPicker({onSelect,selectedId,disabled}:Pro
   </div>
   <input id="invoice-customer-search" className={s.input} type="search" value={query}
    placeholder="Tìm theo tên, mã khách hàng hoặc email..." disabled={disabled}
-   onChange={event=>{setQuery(event.target.value);setResults([]);setError("");}}/>
+   onChange={event=>{onClear();setQuery(event.target.value);setResults([]);setError("");}}/>
   {selectedId&&<p className={s.customerSelected}>✓ Đã liên kết CRM · Khách hàng được lưu cùng Invoice</p>}
   {loading&&<p className={s.customerHint}>Đang tìm trong CRM...</p>}
   {!loading&&query.trim().length>=2&&results.length>0&&<div className={s.customerResults} role="listbox" aria-label="Khách hàng CRM">

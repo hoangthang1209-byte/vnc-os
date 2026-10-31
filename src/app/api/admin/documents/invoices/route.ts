@@ -53,10 +53,14 @@ export async function POST(request: NextRequest) {
       if(!customer)return NextResponse.json({error:"Khách hàng liên kết không tồn tại trong CRM."},{status:400});
     }
     const orderId=body.orderId==null||body.orderId===""?null:required(body.orderId,100);
+    let preparedByName:string|null=null;
+    let preparedByEmployeeId:string|null=null;
     if(orderId){
       if(!can(getAdminSessionFromRequest(request),"orders.view"))return NextResponse.json({error:"Bạn chưa có quyền liên kết đơn hàng."},{status:403});
-      const order=await prisma.order.findUnique({where:{id:orderId},select:{id:true,customerId:true}});
+      const order=await prisma.order.findUnique({where:{id:orderId},select:{id:true,customerId:true,salesName:true,salesEmployeeId:true,salesEmployee:{select:{fullName:true}},salesRepresentative:{select:{fullName:true,employeeId:true}}}});
       if(!order)return NextResponse.json({error:"Đơn hàng được chọn không tồn tại."},{status:400});
+      preparedByName=order.salesEmployee?.fullName?.trim()||order.salesRepresentative?.fullName?.trim()||order.salesName?.trim()||null;
+      preparedByEmployeeId=order.salesEmployeeId||order.salesRepresentative?.employeeId||null;
       if(customerId&&order.customerId&&customerId!==order.customerId)
         return NextResponse.json({error:"Khách hàng Invoice không trùng với khách hàng trên đơn hàng đã liên kết."},{status:400});
     }
@@ -78,6 +82,7 @@ export async function POST(request: NextRequest) {
       createdByEmployeeId:creatorSession.employeeId,
       createdByDisplayName:creatorName.slice(0,250),
       createdByMode:creatorSession.mode,
+      preparedByName,preparedByEmployeeId,
       customerId,
       orderId,
       legalEntityId,
@@ -123,7 +128,7 @@ export async function POST(request: NextRequest) {
 export async function GET(request:NextRequest) {
   const refused=authorize(request,"orders.view_financials");if(refused)return refused;
   try {
-    const invoices=await prisma.customPaymentInvoice.findMany({take:100,orderBy:{createdAt:"desc"},select:{id:true,invoiceNo:true,status:true,recipientName:true,currency:true,total:true,createdAt:true,createdByDisplayName:true,createdByMode:true,orderId:true,customerId:true}});
+    const invoices=await prisma.customPaymentInvoice.findMany({take:100,orderBy:{createdAt:"desc"},select:{id:true,invoiceNo:true,status:true,recipientName:true,currency:true,total:true,createdAt:true,createdByDisplayName:true,createdByMode:true,preparedByName:true,orderId:true,customerId:true}});
     return NextResponse.json({invoices});
   }catch(error) {
     console.error("[custom invoice list]",error);

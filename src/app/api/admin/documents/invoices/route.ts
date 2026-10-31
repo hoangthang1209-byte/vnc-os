@@ -29,7 +29,10 @@ export async function POST(request: NextRequest) {
   try {
     const creatorSession=getAdminSessionFromRequest(request);
     // Creator attribution always comes from the verified session; ignore client-supplied author fields.
-    const creatorName=creatorSession.username?.trim()
+    const employee=creatorSession.employeeId
+      ? await prisma.employee.findUnique({where:{id:creatorSession.employeeId},select:{fullName:true}})
+      : null;
+    const creatorName=employee?.fullName?.trim()||creatorSession.username?.trim()
       ||(creatorSession.mode==="owner"?"VNC Owner":creatorSession.employeeId?"Employee "+creatorSession.employeeId:"Authenticated Admin");
     const data:unknown=await request.json();
     if (!data || typeof data!=="object" || Array.isArray(data)) throw new Error("Invalid invoice");

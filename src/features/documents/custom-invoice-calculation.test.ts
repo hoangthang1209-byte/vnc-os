@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { calculateCustomInvoice, formatMinor, lineAmountMinor, toMinor, isValidInvoiceNumericInput } from "./custom-invoice-calculation";
+import { calculateCustomInvoice, formatMinor, lineAmountMinor, toMinor, isValidInvoiceNumericInput, nextCustomInvoiceNumber } from "./custom-invoice-calculation";
 
 test("calculates sample fee invoice in USD exactly", () => {
   const result = calculateCustomInvoice({ currency: "USD", lines: [
@@ -30,4 +30,11 @@ test("rejects invalid lines and discounts", () => {
 test("draft inputs accept normal numeric values and reject malformed numbers", () => {
   for (const value of ["0","1","20","20.50","0.25"," 20.50 "]) assert.equal(isValidInvoiceNumericInput(value),true,value);
   for (const value of ["020","1,200","-1","abc","","1e3"]) assert.equal(isValidInvoiceNumericInput(value),false,value);
+});
+
+test("automated invoice number is yearly, non-reusable and capped",()=>{
+  assert.equal(nextCustomInvoiceNumber(2026,[]),"CI-2026-0001");
+  assert.equal(nextCustomInvoiceNumber(2026,["CI-2026-0001","CI-2026-0008","CI-2025-0999","CI-2026-TEST"]),"CI-2026-0009");
+  assert.equal(nextCustomInvoiceNumber(2027,["CI-2026-9999"]),"CI-2027-0001");
+  assert.throws(()=>nextCustomInvoiceNumber(2026,["CI-2026-9999"]),/exhausted/);
 });

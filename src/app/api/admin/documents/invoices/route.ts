@@ -1,3 +1,4 @@
+import { resolveInvoiceOrderPreparer } from "@/features/documents/invoice-preparer";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { can } from "@/features/auth/admin-permissions";
@@ -59,8 +60,9 @@ export async function POST(request: NextRequest) {
       if(!can(getAdminSessionFromRequest(request),"orders.view"))return NextResponse.json({error:"Bạn chưa có quyền liên kết đơn hàng."},{status:403});
       const order=await prisma.order.findUnique({where:{id:orderId},select:{id:true,customerId:true,salesName:true,salesEmployeeId:true,salesEmployee:{select:{fullName:true}},salesRepresentative:{select:{fullName:true,employeeId:true}}}});
       if(!order)return NextResponse.json({error:"Đơn hàng được chọn không tồn tại."},{status:400});
-      preparedByName=order.salesEmployee?.fullName?.trim()||order.salesRepresentative?.fullName?.trim()||order.salesName?.trim()||null;
-      preparedByEmployeeId=order.salesEmployeeId||order.salesRepresentative?.employeeId||null;
+      const responsible=resolveInvoiceOrderPreparer(order);
+      preparedByName=responsible.name;
+      preparedByEmployeeId=responsible.employeeId;
       if(customerId&&order.customerId&&customerId!==order.customerId)
         return NextResponse.json({error:"Khách hàng Invoice không trùng với khách hàng trên đơn hàng đã liên kết."},{status:400});
     }

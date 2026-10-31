@@ -37,5 +37,13 @@ ALTER TABLE "CustomPaymentInvoice" ADD COLUMN IF NOT EXISTS "legalEntityId" TEXT
 ALTER TABLE "CustomPaymentInvoice" ADD COLUMN IF NOT EXISTS "bankAccountId" TEXT;
 CREATE INDEX IF NOT EXISTS "CustomPaymentInvoice_legalEntityId_idx" ON "CustomPaymentInvoice"("legalEntityId");
 CREATE INDEX IF NOT EXISTS "CustomPaymentInvoice_bankAccountId_idx" ON "CustomPaymentInvoice"("bankAccountId");
-ALTER TABLE "CustomPaymentInvoice" ADD CONSTRAINT "CustomPaymentInvoice_legalEntityId_fkey" FOREIGN KEY ("legalEntityId") REFERENCES "VncLegalEntity"("id") ON DELETE SET NULL ON UPDATE CASCADE;
-ALTER TABLE "CustomPaymentInvoice" ADD CONSTRAINT "CustomPaymentInvoice_bankAccountId_fkey" FOREIGN KEY ("bankAccountId") REFERENCES "VncBankAccount"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+DO $migration$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname='CustomPaymentInvoice_legalEntityId_fkey') THEN
+    ALTER TABLE "CustomPaymentInvoice" ADD CONSTRAINT "CustomPaymentInvoice_legalEntityId_fkey" FOREIGN KEY ("legalEntityId") REFERENCES "VncLegalEntity"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+  END IF;
+END $migration$;
+DO $migration$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname='CustomPaymentInvoice_bankAccountId_fkey') THEN
+    ALTER TABLE "CustomPaymentInvoice" ADD CONSTRAINT "CustomPaymentInvoice_bankAccountId_fkey" FOREIGN KEY ("bankAccountId") REFERENCES "VncBankAccount"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+  END IF;
+END $migration$;

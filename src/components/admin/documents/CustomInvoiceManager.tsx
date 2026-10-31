@@ -89,7 +89,7 @@ export default function CustomInvoiceManager(){
       {field("Hạn thanh toán",dueDate,setDueDate,"","date")}
      </div></div>
      <div className={s.section}><p className={s.sectionTitle}>02 / Bên phát hành và khách hàng</p>
-      <InvoiceCustomerPicker selectedId={customerId} disabled={busy} onSelect={(customer:InvoiceCrmCustomer)=>{
+      <InvoiceCustomerPicker selectedId={customerId} disabled={busy} onClear={()=>setCustomerId("")} onSelect={(customer:InvoiceCrmCustomer)=>{
        const fields=customerInvoiceFields(customer);
        setCustomerId(customer.id);setRecipientName(fields.recipientName);setRecipientAddress(fields.recipientAddress);setRecipientEmail(fields.recipientEmail);
        setPdfId("");setIssued(false);setMessage("");

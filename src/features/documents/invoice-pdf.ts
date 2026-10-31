@@ -119,7 +119,10 @@ export async function renderInvoicePdf(invoice:InvoicePdfInput):Promise<Buffer>{
   ensure(125);
   write("BANK TRANSFER INSTRUCTIONS",L,y,360,true,8.5,NAVY);y+=15;rule(y);y+=11;
   const banking:[string,string][]=[
-   ["BENEFICIARY",str(bank.beneficiary)],["BANK",str(bank.bank)],["ACCOUNT NUMBER",str(bank.account)],["SWIFT / BIC",str(bank.swift)]
+   ["ACCOUNT NUMBER",str(bank.account)],["CURRENCY",str(bank.currency)||currency],
+   ["ACCOUNT NAME",str(bank.beneficiary)],["ACCOUNT ADDRESS",str(bank.accountAddress)],
+   ["BANK NAME",str(bank.bank)],["BANK ADDRESS",str(bank.bankAddress)],
+   ["BRANCH",str(bank.branch)],["SWIFT / BIC",str(bank.swift)]
   ];
   for(const [label,value] of banking){
    if(!value)continue;

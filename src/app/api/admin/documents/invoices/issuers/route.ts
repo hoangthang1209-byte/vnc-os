@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAdminSessionFromRequest } from "@/lib/admin-auth/get-admin-session";
 import { can } from "@/features/auth/admin-permissions";
+import { logAdminAuditEvent } from "@/features/auth/admin-audit-log";
 const str=(x:unknown,max=500)=>typeof x==="string"?x.trim().slice(0,max):"";
 const forbidden=(request:NextRequest,write=false)=>{
  const session=getAdminSessionFromRequest(request);
@@ -11,6 +12,10 @@ const forbidden=(request:NextRequest,write=false)=>{
 };
 function parse(request:NextRequest){return request.json() as Promise<Record<string,unknown>>;}
 const response=(data:unknown,status=200)=>NextResponse.json(data,{status,headers:{"Cache-Control":"private, no-store"}});
+function audit(request:NextRequest,action:"vnc_legal_entity_created"|"vnc_legal_entity_updated"|"vnc_bank_account_created"|"vnc_bank_account_updated",id:string){
+ const session=getAdminSessionFromRequest(request);
+ logAdminAuditEvent({action,userId:session.userId,employeeId:session.employeeId,route:request.nextUrl.pathname,detail:{id}});
+}
 export async function GET(request:NextRequest){
  const no=forbidden(request);if(no)return no;
  const legalEntities=await prisma.vncLegalEntity.findMany({
@@ -32,6 +37,7 @@ export async function POST(request:NextRequest){
     email:str(data.email,250)||null,phone:str(data.phone,100)||null,
     isActive:true,isDefault:false,
    }});
+   audit(request,"vnc_legal_entity_created",entity.id);
    return response({entity},201);
   }
   if(data.kind==="bank"){
@@ -47,6 +53,7 @@ export async function POST(request:NextRequest){
     bankAddress:str(data.bankAddress,1500)||null,branch:str(data.branch,200)||null,
     swift:swift||null,currency:str(data.currency,3).toUpperCase()||null,isActive:true,isDefault:false
    }});
+   audit(request,"vnc_bank_account_created",account.id);
    return response({account},201);
   }
   return response({error:"Loại dữ liệu không hợp lệ."},400);
@@ -63,7 +70,7 @@ export async function PATCH(request:NextRequest){
     legalName:str(data.legalName,250)||undefined,address:str(data.address,1500)||null,
     taxCode:str(data.taxCode,100)||null,email:str(data.email,250)||null,
     phone:str(data.phone,100)||null,isActive:data.isActive!==false,
-   }});return response({entity});
+   }});audit(request,"vnc_legal_entity_updated",entity.id);return response({entity});
   }
   if(data.kind==="bank"){
    const bankName=str(data.bankName,250),accountName=str(data.accountName,350),accountNo=str(data.accountNo,100);
@@ -74,7 +81,7 @@ export async function PATCH(request:NextRequest){
     bankName,accountName,accountNo,accountAddress:str(data.accountAddress,1500)||null,
     bankAddress:str(data.bankAddress,1500)||null,branch:str(data.branch,200)||null,
     currency:str(data.currency,3).toUpperCase()||null,swift:swift||null,isActive:data.isActive!==false,
-   }});return response({account});
+   }});audit(request,"vnc_bank_account_updated",account.id);return response({account});
   }
   return response({error:"Loại dữ liệu không hợp lệ."},400);
  }catch{return response({error:"Không thể cập nhật bản ghi."},500);}

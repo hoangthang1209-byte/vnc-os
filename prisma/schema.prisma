@@ -521,6 +521,8 @@ model Contact {
   productionApprovals   OrderItemProductionApproval[]
 
   @@index([customerId])
+  @@index([legalEntityId])
+  @@index([bankAccountId])
 }
 
 model CRMActivity {
@@ -6608,6 +6610,10 @@ model CustomPaymentInvoice {
   recipientName String
   customerId    String?
   customer      Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  legalEntityId String?
+  legalEntity   VncLegalEntity? @relation(fields: [legalEntityId], references: [id], onDelete: SetNull)
+  bankAccountId String?
+  bankAccount   VncBankAccount? @relation(fields: [bankAccountId], references: [id], onDelete: SetNull)
   recipientEmail String?
   recipientAddress String? @db.Text
   issuerName    String
@@ -6629,4 +6635,40 @@ model CustomPaymentInvoice {
   @@index([status, createdAt])
   @@index([recipientName])
   @@index([customerId])
+}
+
+/** VNC Document Center issuer master data. Never overwrite issued invoice snapshots. */
+model VncLegalEntity {
+  id        String   @id @default(cuid())
+  code      String   @unique
+  legalName String
+  address   String?  @db.Text
+  taxCode   String?
+  email     String?
+  phone     String?
+  isActive  Boolean  @default(true)
+  isDefault Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  bankAccounts VncBankAccount[]
+  invoices CustomPaymentInvoice[]
+  @@index([isActive, isDefault])
+}
+
+model VncBankAccount {
+  id          String   @id @default(cuid())
+  legalEntityId String
+  legalEntity VncLegalEntity @relation(fields: [legalEntityId], references: [id], onDelete: Restrict)
+  accountName String
+  bankName    String
+  accountNo   String
+  swift       String?
+  currency    String?
+  branch      String?
+  isActive    Boolean @default(true)
+  isDefault   Boolean @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  invoices CustomPaymentInvoice[]
+  @@index([legalEntityId, isActive])
 }

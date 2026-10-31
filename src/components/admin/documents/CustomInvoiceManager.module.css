@@ -1,3 +1,4 @@
+@import url("https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap");
 .workspace{padding:16px 20px 40px;max-width:1500px;margin:0 auto;color:#172033}
 .toolbar{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap}
 .eyebrow{font-size:11px;text-transform:uppercase;letter-spacing:.14em;color:#7b8798;font-weight:750;margin:0 0 5px}

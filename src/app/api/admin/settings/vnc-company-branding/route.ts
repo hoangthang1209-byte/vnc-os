@@ -11,7 +11,7 @@ function access(request: NextRequest, write = false) {
   }
   return null;
 }
-function mediaUrl(value: unknown): string | null {
+function mediaUrl(value: unknown, pdfLogo=false): string | null {
   if(value===null || value==="") return null;
   if(typeof value!=="string" || value.length>2000) throw new Error("Invalid image URL");
   const url=value.trim();
@@ -23,6 +23,9 @@ function mediaUrl(value: unknown): string | null {
   }
   if(!/\.(png|jpe?g|webp|ico|svg)(?:$|\?)/i.test(parsed.pathname+parsed.search)) {
     throw new Error("Expected image file URL");
+  }
+  if(pdfLogo && !/\.(png|jpe?g)(?:$|\?)/i.test(parsed.pathname+parsed.search)) {
+    throw new Error("Logo chứng từ cần file PNG/JPEG để xuất PDF.");
   }
   return url;
 }
@@ -38,7 +41,7 @@ export async function PATCH(request:NextRequest) {
   const denied=access(request,true);if(denied)return denied;
   try {
     const body=await request.json() as Record<string,unknown>;
-    const logoUrl=mediaUrl(body.logoUrl),faviconUrl=mediaUrl(body.faviconUrl);
+    const logoUrl=mediaUrl(body.logoUrl,true),faviconUrl=mediaUrl(body.faviconUrl);
     const result=await prisma.vncOsCompanyBranding.upsert({
       where:{id:"default"},
       create:{id:"default",logoUrl,faviconUrl},

@@ -32,6 +32,13 @@ export async function POST(request:NextRequest,context:{params:Promise<{id:strin
       const snapshot={
         invoiceNo:invoice.invoiceNo,
         customerId:invoice.customerId,
+        orderId:invoice.orderId,
+        legalEntityId:invoice.legalEntityId,
+        bankAccountId:invoice.bankAccountId,
+        createdByUserId:invoice.createdByUserId,
+        createdByEmployeeId:invoice.createdByEmployeeId,
+        createdByDisplayName:invoice.createdByDisplayName,
+        createdByMode:invoice.createdByMode,
         recipientName:invoice.recipientName,recipientEmail:invoice.recipientEmail,
         recipientAddress:invoice.recipientAddress,
         issuerName:invoice.issuerName,issuerAddress:invoice.issuerAddress,

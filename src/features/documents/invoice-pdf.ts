@@ -123,11 +123,12 @@ export async function renderInvoicePdf(invoice:InvoicePdfInput):Promise<Buffer>{
    write(formatMinor(item.amountMinor,currency),columns[4],y+5,R-columns[4]-9,true,7.6,INK,"right");
    y+=rowHeight;rule(y); 
   });
-  y+=7;ensure(80);
+  y+=7;
   const sums:Array<[string,string,boolean]>=[["Subtotal",formatMinor(totals.subtotalMinor,currency),false]];
   if(totals.discountMinor)sums.push(["Discount","-"+formatMinor(totals.discountMinor,currency),false]);
   if(totals.extraChargeMinor)sums.push(["Additional charges",formatMinor(totals.extraChargeMinor,currency),false]);
   if(totals.taxMinor)sums.push(["Tax / other charges",formatMinor(totals.taxMinor,currency),false]);
+  ensure(sums.length*16+43);
   const sx=L+260,sw=W-260;
   for(const [label,val] of sums){
     write(label,sx,y,sw*.55,false,7.9,GREY);

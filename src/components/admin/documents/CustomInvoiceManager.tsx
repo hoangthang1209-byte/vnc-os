@@ -35,7 +35,6 @@ export default function CustomInvoiceManager(){
  const [recipientCcEmails,setRecipientCcEmails]=useState("");
  const [sendAfterIssue,setSendAfterIssue]=useState(false);
  const [emailServiceReady,setEmailServiceReady]=useState(false);
- const [emailDelivery,setEmailDelivery]=useState<{id:string;state:"sent"|"failed";recipient?:string}|null>(null);
  const [deliveryDetails,setDeliveryDetails]=useState<{id:string;value:DeliveryDetails}|null>(null);
  const [deliveryLoading,setDeliveryLoading]=useState<string|null>(null);
  const [recipientAddress,setRecipientAddress]=useState("");
@@ -129,11 +128,9 @@ export default function CustomInvoiceManager(){
    const r=await fetch("/api/admin/documents/invoices/"+encodeURIComponent(id)+"/send-email",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({forceResend})});
    const result=await r.json();
    if(!r.ok)throw new Error(result.error||"Không thể gửi email.");
-   setEmailDelivery({id,state:"sent",recipient:result.recipient});
    await refresh();
    return {ok:true,recipient:result.recipient,warning:result.deliveryRecorded===false?(result.warning||"Email đã được dịch vụ tiếp nhận nhưng chưa thể ghi trạng thái trong hệ thống."):undefined};
   }catch(error){
-   setEmailDelivery({id,state:"failed"});
    return {ok:false,error:error instanceof Error?error.message:"Gửi email thất bại."};
   }
  }
@@ -160,7 +157,7 @@ export default function CustomInvoiceManager(){
   if(!window.confirm("Gửi Commercial Invoice PDF đã phát hành tới email khách hàng đã lưu?"))return;
   setBusy(true);setMessage("Đang gửi email cho khách...");
   const delivered=await sendEmail(id,true);
-  setMessage(delivered.ok?(delivered.warning||"Đã gửi email đến "+delivered.recipient+"."):"CHƯA gửi email: "+delivered.error);
+  setMessage(delivered.ok?(delivered.warning||"Đã gửi email đến "+delivered.recipient+"."):"Lần gửi lại không thành công: "+delivered.error+" (trạng thái giao nhận trước đó được giữ nguyên)");
   setBusy(false);
  }
  const field=(label:string,value:string,change:(v:string)=>void,placeholder="",type="text")=><div className={s.field}><label>{label}</label><input className={s.input} type={type} value={value} readOnly={["Đơn vị phát hành *","Địa chỉ bên phát hành","Tên người thụ hưởng","Ngân hàng","Số tài khoản","SWIFT (nếu có)","Account Address","Bank Address","Branch"].includes(label)} placeholder={placeholder} onChange={e=>{change(e.target.value);setPdfId("");setIssued(false);}}/></div>;

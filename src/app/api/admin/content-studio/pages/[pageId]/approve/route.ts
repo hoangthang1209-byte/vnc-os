@@ -28,7 +28,7 @@ export async function POST(request: NextRequest, context: { params: Promise<{ pa
       const latest = await tx.studioPageRevision.findFirst({ where: { pageId }, orderBy: { version: "desc" }, select: { id: true } });
       if (latest?.id !== body.revisionId) return { status: 409, message: "Only latest revision can be approved" };
       const revision = await tx.studioPageRevision.findFirst({
-        where: { id: body.revisionId, pageId },
+        where: { id: body.revisionId as string, pageId },
         select: { id: true, status: true, authorId: true, content: true },
       });
       if (!revision?.authorId) return { status: 409, message: "Revision author missing; resave a new draft with attribution" };

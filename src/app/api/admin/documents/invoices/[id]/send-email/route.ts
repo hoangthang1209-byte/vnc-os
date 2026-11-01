@@ -17,7 +17,7 @@ export async function POST(request:NextRequest,context:{params:Promise<{id:strin
  const apiKey=process.env.RESEND_API_KEY;
  // The sender address is fixed by VNC policy; domain verification is required at provider.
  const from="Vietnam Clothing <support@vietnamclothing.vn>";
- if(!apiKey){
+ if(!apiKey||process.env.VNC_INVOICE_FROM_EMAIL?.trim().toLowerCase()!=="support@vietnamclothing.vn"){
   return NextResponse.json({error:"Chưa cấu hình dịch vụ gửi email Invoice và địa chỉ người gửi đã xác minh."},{status:503});
  }
  const {id}=await context.params;

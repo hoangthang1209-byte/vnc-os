@@ -271,7 +271,19 @@ export default function CustomInvoiceManager(){
       {lines.map((l,i)=><tr key={i}><td>{l.description||"—"}</td><td className={s.right}>{l.quantity}</td><td>{l.unit}</td><td className={s.right}>{amount(l.unitPrice,currency)}</td><td className={s.right}>{amount(String((Number(l.quantity)||0)*(Number(l.unitPrice)||0)),currency)}</td></tr>)}
      </tbody></table>
      <div className={s.paperFinancials}><div className={s.paperSubtotal}><span>Subtotal</span><span>{currency} {amount(String(sum),currency)}</span></div>{Number(discount)>0&&<div className={s.paperSubtotal}><span>Discount</span><span>− {currency} {amount(discount,currency)}</span></div>}{Number(extraCharge)>0&&<div className={s.paperSubtotal}><span>Additional charges</span><span>{currency} {amount(extraCharge,currency)}</span></div>}{Number(tax)>0&&<div className={s.paperSubtotal}><span>Tax / other charges</span><span>{currency} {amount(tax,currency)}</span></div>}<div className={s.total}><span>TOTAL AMOUNT DUE</span><span>{currency} {amount(String(estimated),currency)}</span></div></div>
-     <div className={s.paperBank}><div className={s.paperTableTitle}>BANK TRANSFER INSTRUCTIONS</div><div className={s.paperBankGrid}><div className={s.paperCaption}>BENEFICIARY</div><div>{beneficiary||"—"}</div><div className={s.paperCaption}>BANK</div><div>{bank||"—"}</div><div className={s.paperCaption}>ACCOUNT NUMBER</div><div>{bankAccount||"—"}</div>{accountAddress&&<><div className={s.paperCaption}>ACCOUNT ADDRESS</div><div>{accountAddress}</div></>}{bankAddress&&<><div className={s.paperCaption}>BANK ADDRESS</div><div>{bankAddress}</div></>}{branch&&<><div className={s.paperCaption}>BRANCH</div><div>{branch}</div></>}{swift&&<><div className={s.paperCaption}>SWIFT / BIC</div><div>{swift}</div></>}</div></div>
+     <div className={s.paperBank}>
+      <div className={s.paperTableTitle}>BANK TRANSFER DETAILS</div>
+      <div className={s.paperBankGrid}>
+       {([
+         ["ACCOUNT NAME",beneficiary],["BANK NAME",bank],
+         ["ACCOUNT NUMBER",bankAccount],["CURRENCY",currency],
+         ["SWIFT / BIC",swift],["BRANCH",branch],
+         ["ACCOUNT ADDRESS",accountAddress],["BANK ADDRESS",bankAddress]
+       ] as [string,string][]).filter(([,value])=>Boolean(value)).map(([label,value])=>
+        <div className={s.paperBankCell} key={label}><div className={s.paperCaption}>{label}</div><div>{value}</div></div>
+       )}
+      </div>
+     </div>
      {notes&&<div className={s.paperNotes}><div className={s.paperTableTitle}>PAYMENT TERMS & NOTES</div><div>{notes}</div></div>}
      {preparedByName&&<div className={s.paperSignature}><span className={s.paperCaption}>PREPARED BY / NGƯỜI LẬP</span><div className={s.paperSignatureSpace} aria-label="Khoảng trống ký tay"/><strong>{preparedByName}</strong></div>}
      <div className={s.paperFooter}>Commercial payment request only. This document is not a Vietnamese VAT e-invoice.</div>

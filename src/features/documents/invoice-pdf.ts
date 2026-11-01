@@ -8,7 +8,7 @@ type InvoicePdfInput = {
   invoiceNo: string; recipientName: string; recipientAddress?: string | null;
   issuerName: string; issuerAddress?: string | null; currency: string; total: string;
   issueDate: Date; dueDate?: Date | null; lines: unknown; adjustments?: unknown;
-  bankDetails?: unknown; notes?: string | null; createdByDisplayName?: string | null;
+  bankDetails?: unknown; notes?: string | null; createdByDisplayName?: string | null; preparedByName?: string | null;
   companyLogoUrl?: string | null;
 };
 async function companyLogoBuffer(source: string | null | undefined): Promise<Buffer> {
@@ -158,11 +158,15 @@ export async function renderInvoicePdf(invoice:InvoicePdfInput):Promise<Buffer>{
    block("PAYMENT TERMS & NOTES",W,8.5,true,NAVY,8);
    block(invoice.notes.slice(0,1700),W,7.8,false,INK,10);
   }
-  // Creator is an internal audit field; display only the verified stored snapshot.
-  if(invoice.createdByDisplayName && invoice.createdByDisplayName!=="Legacy / not recorded"){
+  // New invoices show verified Sales/Account; legacy immutable snapshots retain
+  // their original creator attribution with an explicit CREATED BY label.
+  const historicalCreator=!invoice.preparedByName && invoice.createdByDisplayName &&
+    invoice.createdByDisplayName!=="Legacy / not recorded" ? invoice.createdByDisplayName : null;
+  const attribution=invoice.preparedByName||historicalCreator;
+  if(attribution){
    y+=8;ensure(28);
-   write("PREPARED BY",L,y,145,true,6.8,GREY);
-   write(invoice.createdByDisplayName.slice(0,160),L+167,y,332,false,7.8,INK);
+   write(invoice.preparedByName?"PREPARED BY":"CREATED BY",L,y,145,true,6.8,GREY);
+   write(attribution.slice(0,160),L+167,y,332,false,7.8,INK);
    y+=24;
   }
   const pageRange=pdf.bufferedPageRange();

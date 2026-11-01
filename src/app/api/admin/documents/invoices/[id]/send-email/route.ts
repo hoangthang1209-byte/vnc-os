@@ -73,7 +73,8 @@ export async function POST(request:NextRequest,context:{params:Promise<{id:strin
   if(!result.ok){
    console.error("[custom invoice email] email provider rejected request",{invoiceId:id,status:result.status});
    try{
-    await prisma.customPaymentInvoice.updateMany({where:{id,status:"ISSUED"},data:{
+    await prisma.customPaymentInvoice.updateMany({where:{id,status:"ISSUED",emailedAt:null},data:{
+     // Do not overwrite a previous delivered message when a later resend fails.
      emailDeliveryStatus:"FAILED",emailDeliveryUpdatedAt:new Date()
     }});
    }catch{console.error("[custom invoice email] could not record provider rejection",{invoiceId:id});}

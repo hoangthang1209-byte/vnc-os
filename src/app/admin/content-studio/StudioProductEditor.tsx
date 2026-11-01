@@ -5,18 +5,19 @@ import { VNC_PRODUCT_IDEAS_V1 } from "@/features/content-studio/product-backlog-
 
 type ProductFields = {
   slug:string; category:string; categoryId:string; title:string; summary:string; description:string;
-  titleVi:string; summaryVi:string; descriptionVi:string; imageUrl:string; imageAlt:string;
+  titleVi:string; summaryVi:string; descriptionVi:string; imageMediaAssetId:string; imageUrl:string; imageAlt:string;
   publicApproved:boolean; mediaRightsApproved:boolean;
 };
 type Revision = {id:string;version:number;status:string;authorId:string|null;approvedById:string|null;content:{blocks?:Array<{type:string;data:Record<string,unknown>}>}};
 type Page = {id:string;slug:string;title:string;publishedRevisionId:string|null};
-const init:ProductFields={slug:"",category:"apparel",categoryId:"APP-01",title:"",summary:"",description:"",titleVi:"",summaryVi:"",descriptionVi:"",imageUrl:"",imageAlt:"",publicApproved:false,mediaRightsApproved:false};
+const init:ProductFields={slug:"",category:"apparel",categoryId:"APP-01",title:"",summary:"",description:"",titleVi:"",summaryVi:"",descriptionVi:"",imageMediaAssetId:"",imageUrl:"",imageAlt:"",publicApproved:false,mediaRightsApproved:false};
 const categories=["entertainment","promotional","corporate","sourcing","apparel"];
 const path="/api/admin/content-studio/pages";
 const style:React.CSSProperties={width:"100%",padding:10,border:"1px solid #becbc0",borderRadius:7,marginTop:5};
 export default function StudioProductEditor(){
  const [value,setValue]=useState<ProductFields>(init);
  const [pages,setPages]=useState<Page[]>([]);
+ const [approvedAssets,setApprovedAssets]=useState<Array<{id:string;title:string;url:string;alt:string}>>([]);
  const [pageId,setPageId]=useState<string|null>(null);
  const [revision,setRevision]=useState<Revision|null>(null);
  const [publishedId,setPublishedId]=useState<string|null>(null);
@@ -27,7 +28,7 @@ export default function StudioProductEditor(){
   const data=await res.json();if(!res.ok)throw Error(data.message||"Cannot load catalog");
   setPages((data.pages||[]).filter((p:Page)=>p.slug.startsWith("/products/")));
  };
- useEffect(()=>{void refresh().catch(e=>setError(String(e)));},[]);
+ useEffect(()=>{void refresh().catch(e=>setError(String(e)));void fetch("/api/admin/content-studio/media",{cache:"no-store"}).then(r=>r.ok?r.json():{assets:[]}).then(d=>setApprovedAssets(d.assets||[])).catch(()=>setApprovedAssets([]));},[]);
  const load=async(p:Page)=>{
   setBusy(true);setError("");
   try{
@@ -39,7 +40,7 @@ export default function StudioProductEditor(){
    const vi=(d.vi||{}) as Record<string,unknown>;
    const media=Array.isArray(d.media)?d.media[0] as Record<string,unknown>:{};
    const str=(x:unknown)=>typeof x==="string"?x:"";
-   setValue({slug:str(d.slug),category:str(d.category)||"apparel",categoryId:str(d.categoryId)||"APP-01",title:str(d.title),summary:str(d.summary),description:str(d.description),titleVi:str(vi.title),summaryVi:str(vi.summary),descriptionVi:str(vi.description),imageUrl:str(media.url),imageAlt:str(media.alt),publicApproved:d.publicApproved===true,mediaRightsApproved:d.mediaRightsApproved===true});
+   setValue({slug:str(d.slug),category:str(d.category)||"apparel",categoryId:str(d.categoryId)||"APP-01",title:str(d.title),summary:str(d.summary),description:str(d.description),titleVi:str(vi.title),summaryVi:str(vi.summary),descriptionVi:str(vi.description),imageMediaAssetId:str(media.mediaAssetId),imageUrl:str(media.url),imageAlt:str(media.alt),publicApproved:d.publicApproved===true,mediaRightsApproved:d.mediaRightsApproved===true});
    setPageId(p.id);setRevision(rev);setPublishedId(data.page.publishedRevisionId);
   }catch(e){setError(e instanceof Error?e.message:"Cannot load product");}finally{setBusy(false);}
  };
@@ -54,7 +55,7 @@ export default function StudioProductEditor(){
  const productData=()=>({slug:value.slug,category:value.category,categoryId:value.categoryId,title:value.title,summary:value.summary,description:value.description,
    vi:{title:value.titleVi,summary:value.summaryVi,description:value.descriptionVi},
    publicApproved:value.publicApproved,mediaRightsApproved:value.mediaRightsApproved,
-   media:[{url:value.imageUrl,alt:value.imageAlt,approved:value.mediaRightsApproved,visibility:"PUBLIC",usageRightsApproved:value.mediaRightsApproved}]});
+   media:[{mediaAssetId:value.imageMediaAssetId,url:value.imageUrl,alt:value.imageAlt,approved:value.mediaRightsApproved,visibility:"PUBLIC",usageRightsApproved:value.mediaRightsApproved}]});
  const save=async()=>{
   setBusy(true);setError("");setNotice("");
   try{
@@ -97,8 +98,14 @@ export default function StudioProductEditor(){
       <label style={{fontSize:13,fontWeight:600}}>VNC Product Category V1<select style={style} value={value.categoryId} onChange={e=>update("categoryId",e.target.value)}>{VNC_PARENT_CATEGORIES.map(parent=><optgroup key={parent.id} label={parent.nameEn+" / "+parent.nameVi}>{VNC_CATEGORIES_V1.filter(x=>x.parentId===parent.id).map(child=><option key={child.id} value={child.id}>{child.nameEn} / {child.nameVi}</option>)}</optgroup>)}</select></label></div>
   </div>
   <h3>Media Library reference</h3>
+  <label style={{display:"block",fontSize:13,fontWeight:600}}>Verified Media Library asset
+    <select style={style} value={value.imageMediaAssetId} onChange={e=>{const a=approvedAssets.find(x=>x.id===e.target.value);setValue(old=>({...old,imageMediaAssetId:a?.id||"",imageUrl:a?.url||"",imageAlt:a?.alt||""}));}}>
+      <option value="">No verified media asset selected</option>{approvedAssets.map(a=><option key={a.id} value={a.id}>{a.title}</option>)}
+    </select>
+  </label>
+  {approvedAssets.length===0?<p role="status" style={{fontSize:12,color:"#925c25"}}>No Media Library images have verified public-use rights yet; this blocks product approval and publish.</p>:null}
   <p style={{fontSize:12}}>Use only verified HTTPS media URLs from your approved media collection. Direct Media Library picker is not integrated yet.</p>
-  {field("imageUrl","Approved media HTTPS URL")}{field("imageAlt","Image alt text")}
+  <p style={{fontSize:12}}>Asset URL: {value.imageUrl||"None"}</p>{field("imageAlt","Image alt text")}
   <label style={{display:"block",marginTop:10}}><input type="checkbox" checked={value.mediaRightsApproved} onChange={e=>update("mediaRightsApproved",e.target.checked)}/> Media source and publication rights verified</label>
   <label style={{display:"block",marginTop:8}}><input type="checkbox" checked={value.publicApproved} onChange={e=>update("publicApproved",e.target.checked)}/> Product facts and public listing approved for review</label>
   <button disabled={busy} onClick={()=>void save()} style={{padding:"12px 18px",marginTop:20,borderRadius:8,background:"#123e32",color:"white"}}>{pageId?"Save new DRAFT revision":"Create DRAFT product"}</button>

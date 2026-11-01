@@ -208,3 +208,16 @@
  .paperBankCell{grid-template-columns:1fr;gap:2px}
  .paperSignatureSpace{height:22px}
 }
+
+/* Document V5.4 — Resend delivery status and recipient timeline. */
+.deliveryEntry{border-bottom:1px solid #e8edf4}
+.deliveryEntry .listRow{border-bottom:0}
+.deliveryStatus{margin-top:6px;font-size:12px;color:#456580;font-weight:600}
+.deliveryPanel{margin:0 12px 15px;padding:15px 18px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:9px;font-size:12px;color:#33445b}
+.deliveryPanelTitle{font-size:13px;font-weight:750;color:#172b46}
+.deliveryPanel p{margin:8px 0}
+.deliveryRecipientList{display:grid;gap:6px;margin:12px 0}
+.deliveryRecipient{display:flex;flex-wrap:wrap;justify-content:space-between;gap:9px;padding:9px 11px;background:#fff;border:1px solid #e9edf3;border-radius:6px}
+.deliveryRecipient strong{font-size:12px;overflow-wrap:anywhere}
+.deliveryRecipient span{color:#435d76;font-weight:600}
+.deliveryEvents{display:grid;gap:7px;color:#65748a;overflow-wrap:anywhere}

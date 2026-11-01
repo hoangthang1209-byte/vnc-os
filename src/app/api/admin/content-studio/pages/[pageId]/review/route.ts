@@ -22,7 +22,7 @@ export async function POST(request: NextRequest, context: { params: Promise<{ pa
       const latest = await tx.studioPageRevision.findFirst({ where: { pageId }, orderBy: { version: "desc" }, select: { id: true } });
       if (latest?.id !== body.revisionId) return { status: 409, message: "Only latest revision can be submitted" };
       const changed = await tx.studioPageRevision.updateMany({
-        where: { id: body.revisionId, pageId, status: "DRAFT" },
+        where: { id: body.revisionId as string, pageId, status: "DRAFT" },
         data: { status: "IN_REVIEW" },
       });
       return changed.count === 1 ? { status: 200, revisionId: body.revisionId, state: "IN_REVIEW" } :

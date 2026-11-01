@@ -317,14 +317,14 @@ export default function CustomInvoiceManager(){
       <div>
        <div className={s.listMain}>{inv.invoiceNo} · {inv.recipientName}</div>
        <div className={s.listSub}>{inv.currency} {inv.total} · Sales/Account: {inv.preparedByName||"Chưa xác định"} · Tạo bởi: {inv.createdByDisplayName} · {new Date(inv.createdAt).toLocaleString("vi-VN")}</div>
-       {inv.emailedAt&&<div className={s.deliveryStatus}>{deliveryStatusText(inv.emailDeliveryStatus||"SENT")} · {new Date(inv.emailDeliveryUpdatedAt||inv.emailedAt).toLocaleString("vi-VN")}</div>}
+       {(inv.emailedAt||inv.emailDeliveryStatus)&&<div className={s.deliveryStatus}>{deliveryStatusText(inv.emailDeliveryStatus||"SENT")} · {inv.emailDeliveryUpdatedAt||inv.emailedAt?new Date(inv.emailDeliveryUpdatedAt||inv.emailedAt||"").toLocaleString("vi-VN"):""}</div>}
       </div>
       <div className={s.listActions}>
        <span className={inv.status==="ISSUED"?s.state+" "+s.stateIssued:s.state}>{inv.status==="ISSUED"?"Đã phát hành":"Bản nháp"}</span>
        {inv.status==="DRAFT"&&permissions.canIssueCustomInvoice&&<button type="button" className={s.link} onClick={()=>void issue(inv.id,false)}>Phát hành</button>}
        {inv.status==="ISSUED"&&<a className={s.link} href={"/api/admin/documents/invoices/"+encodeURIComponent(inv.id)+"/pdf"}>Tải PDF</a>}
        {inv.status==="ISSUED"&&permissions.canIssueCustomInvoice&&<button type="button" className={s.link} disabled={busy||!emailServiceReady} onClick={()=>void retryEmail(inv.id)}>{inv.emailedAt?"Gửi lại email":"Gửi email"}</button>}
-       {inv.emailedAt&&<button type="button" className={s.link} disabled={deliveryLoading===inv.id} onClick={()=>void loadDelivery(inv.id)}>{deliveryLoading===inv.id?"Đang tải...":deliveryDetails?.id===inv.id?"Ẩn lịch sử":"Chi tiết giao nhận"}</button>}
+       {(inv.emailedAt||inv.emailDeliveryStatus)&&<button type="button" className={s.link} disabled={deliveryLoading===inv.id} onClick={()=>void loadDelivery(inv.id)}>{deliveryLoading===inv.id?"Đang tải...":deliveryDetails?.id===inv.id?"Ẩn lịch sử":"Chi tiết giao nhận"}</button>}
       </div>
      </div>
      {deliveryDetails?.id===inv.id&&<div className={s.deliveryPanel}>

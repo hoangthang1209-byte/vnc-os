@@ -66,13 +66,19 @@ export async function POST(request:NextRequest,context:{params:Promise<{id:strin
    return NextResponse.json({error:"Dịch vụ gửi email từ chối yêu cầu. Kiểm tra cấu hình và thử lại.",providerStatus:result.status},{status:502});
   }
   const response=await result.json() as {id?:string};
-  await prisma.customPaymentInvoice.update({where:{id},data:{
-   emailedAt:new Date(),emailedTo:email,emailProviderId:response.id??null,
-   emailSendCount:{increment:1}
-  }});
+  let deliveryRecorded=true;
+  try{
+   await prisma.customPaymentInvoice.update({where:{id},data:{
+    emailedAt:new Date(),emailedTo:email,emailProviderId:response.id??null,
+    emailSendCount:{increment:1}
+   }});
+  }catch{
+   deliveryRecorded=false;
+   console.error("[custom invoice email] provider accepted but delivery record could not be saved",{invoiceId:id});
+  }
   logAdminAuditEvent({action:"custom_invoice_email_sent",userId:session.userId,employeeId:session.employeeId,route:request.nextUrl.pathname,
    detail:{invoiceId:id,invoiceNo:invoice.invoiceNo,recipient:email,providerMessageId:response.id??null}});
-  return NextResponse.json({sent:true,recipient:email,messageId:response.id??null},{headers:{"Cache-Control":"private, no-store"}});
+  return NextResponse.json({sent:true,deliveryRecorded,recipient:email,messageId:response.id??null,warning:deliveryRecorded?null:"Email accepted by provider but delivery status could not be recorded."},{status:deliveryRecorded?200:202,headers:{"Cache-Control":"private, no-store"}});
  }catch(error){
   console.error("[custom invoice email] failed",error);
   return NextResponse.json({error:"Không thể gửi Invoice. Chứng từ đã phát hành vẫn được giữ nguyên."},{status:500});

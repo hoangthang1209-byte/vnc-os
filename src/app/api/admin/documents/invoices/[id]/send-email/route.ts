@@ -34,7 +34,8 @@ export async function POST(request:NextRequest,context:{params:Promise<{id:strin
   catch(error){return NextResponse.json({error:error instanceof Error?error.message:"Email khách hàng không hợp lệ."},{status:422});}
   const {to,cc}=recipients;
   const recipientsKey=[...to.map(x=>"to:"+x),...cc.map(x=>"cc:"+x)].sort().join("|");
-  if(invoice.emailedAt && invoice.emailedTo===recipientsKey&&!forceResend){
+  const recipientsLabel=to.join(", ")+(cc.length?" | CC: "+cc.join(", "):"");
+  if(invoice.emailedAt && invoice.emailedTo===recipientsLabel&&!forceResend){
    return NextResponse.json({sent:true,alreadySent:true,recipients:{to,cc},emailedAt:invoice.emailedAt.toISOString()});
   }
   const issued=(value:unknown)=>typeof value==="string"?new Date(value):null;
@@ -73,7 +74,7 @@ export async function POST(request:NextRequest,context:{params:Promise<{id:strin
   let deliveryRecorded=true;
   try{
    await prisma.customPaymentInvoice.update({where:{id},data:{
-    emailedAt:new Date(),emailedTo:recipientsKey,emailProviderId:response.id??null,
+    emailedAt:new Date(),emailedTo:recipientsLabel,emailProviderId:response.id??null,
     emailSendCount:{increment:1}
    }});
   }catch{

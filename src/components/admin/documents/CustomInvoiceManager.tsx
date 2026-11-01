@@ -24,7 +24,8 @@ export default function CustomInvoiceManager(){
  const [assignedFromOrder,setAssignedFromOrder]=useState(false);
  const [staff,setStaff]=useState<Array<{id:string;fullName:string;jobTitle:string|null}>>([]);
  const [recipientEmail,setRecipientEmail]=useState("");
- const [sendAfterIssue,setSendAfterIssue]=useState(true);
+ const [sendAfterIssue,setSendAfterIssue]=useState(false);
+ const [emailServiceReady,setEmailServiceReady]=useState(false);
  const [emailDelivery,setEmailDelivery]=useState<{id:string;state:"sent"|"failed";recipient?:string}|null>(null);
  const [recipientAddress,setRecipientAddress]=useState("");
  const [issuerName,setIssuerName]=useState("");
@@ -58,6 +59,14 @@ export default function CustomInvoiceManager(){
  async function refresh(){
   try{const r=await fetch("/api/admin/documents/invoices",{cache:"no-store"});if(r.ok){const data=await r.json();setInvoices(data.invoices??[]);}}catch{}
  }
+ useEffect(()=>{
+  let active=true;
+  fetch("/api/admin/documents/invoices/email-status",{cache:"no-store"})
+   .then(r=>r.ok?r.json():null)
+   .then(data=>{if(active&&data?.configured){setEmailServiceReady(true);setSendAfterIssue(true);}})
+   .catch(()=>{});
+  return ()=>{active=false};
+ },[]);
  useEffect(()=>{
   let mounted=true;
   fetch("/api/admin/documents/invoices/sales-accounts",{cache:"no-store"})
@@ -220,10 +229,10 @@ export default function CustomInvoiceManager(){
     </div>
     <div className={s.actions}>
      <button className={s.primary} type="button" disabled={busy||!permissions.canCreateCustomInvoice} onClick={()=>void save()}>{busy?"Đang xử lý...":"Lưu bản nháp"}</button>
-     {pdfId&&!issued&&permissions.canIssueCustomInvoice&&<label className={s.invoiceEmailToggle}><input type="checkbox" checked={sendAfterIssue} onChange={e=>setSendAfterIssue(e.target.checked)} disabled={busy}/> Gửi PDF cho khách ngay sau phát hành</label>}
+     {pdfId&&!issued&&permissions.canIssueCustomInvoice&&<label className={s.invoiceEmailToggle}><input type="checkbox" checked={sendAfterIssue} onChange={e=>setSendAfterIssue(e.target.checked)} disabled={busy||!emailServiceReady}/> Gửi PDF cho khách ngay sau phát hành{!emailServiceReady?" (chưa cấu hình email)":""}</label>}
      {pdfId&&!issued&&permissions.canIssueCustomInvoice&&<button className={s.secondary} type="button" disabled={busy} onClick={()=>void issue(pdfId)}>{sendAfterIssue?"Phát hành & gửi email":"Phát hành Invoice"}</button>}
      {pdfId&&issued&&<a className={s.secondary} href={"/api/admin/documents/invoices/"+encodeURIComponent(pdfId)+"/pdf"}>Tải PDF</a>}
-     {pdfId&&issued&&permissions.canIssueCustomInvoice&&<button className={s.secondary} type="button" disabled={busy} onClick={()=>void retryEmail(pdfId)}>Gửi email Invoice</button>}
+     {pdfId&&issued&&permissions.canIssueCustomInvoice&&<button className={s.secondary} type="button" disabled={busy||!emailServiceReady} onClick={()=>void retryEmail(pdfId)}>Gửi email Invoice</button>}
     </div>
     <p role="status" className={s.status}>{message}</p>
    </section>
@@ -261,7 +270,7 @@ export default function CustomInvoiceManager(){
    </div><p className={s.helper}>Đây là bản xem trước theo dữ liệu đang nhập, không phải Invoice đã lưu. Khi sửa khoản thu, cần lưu lại bằng số Invoice mới; PDF chỉ phản ánh bản đã phát hành và khóa dữ liệu.</p></aside>
   </div>
   <section className={s.panel+" "+s.listPanel}><div className={s.panelHead}><h2>Invoice đã lưu</h2><button type="button" className={s.secondary} onClick={()=>void refresh()}>Làm mới danh sách</button></div>
-   {invoices.length===0?<p className={s.empty}>Chưa có Invoice nào được tải. Tạo bản nháp để bắt đầu.</p>:invoices.map(inv=><div className={s.listRow} key={inv.id}><div><div className={s.listMain}>{inv.invoiceNo} · {inv.recipientName}</div><div className={s.listSub}>{inv.currency} {inv.total} · Sales/Account: {inv.preparedByName||"Chưa xác định"} · Tạo bởi: {inv.createdByDisplayName} · {new Date(inv.createdAt).toLocaleString("vi-VN")}</div></div><div className={s.listActions}><span className={inv.status==="ISSUED"?s.state+" "+s.stateIssued:s.state}>{inv.status==="ISSUED"?"Đã phát hành":"Bản nháp"}</span>{inv.status==="DRAFT"&&permissions.canIssueCustomInvoice&&<button type="button" className={s.link} onClick={()=>void issue(inv.id,false)}>Phát hành</button>}{inv.status==="ISSUED"&&<a className={s.link} href={"/api/admin/documents/invoices/"+encodeURIComponent(inv.id)+"/pdf"}>Tải PDF</a>}{inv.status==="ISSUED"&&permissions.canIssueCustomInvoice&&<button type="button" className={s.link} disabled={busy} onClick={()=>void retryEmail(inv.id)}>{emailDelivery?.id===inv.id&&emailDelivery.state==="sent"||inv.emailedAt?"Gửi lại email":"Gửi email"}</button>}{inv.emailedAt&&<span className={s.stateIssued+" "+s.state}>Đã gửi email · {inv.emailedTo}</span>}</div></div>)}
+   {invoices.length===0?<p className={s.empty}>Chưa có Invoice nào được tải. Tạo bản nháp để bắt đầu.</p>:invoices.map(inv=><div className={s.listRow} key={inv.id}><div><div className={s.listMain}>{inv.invoiceNo} · {inv.recipientName}</div><div className={s.listSub}>{inv.currency} {inv.total} · Sales/Account: {inv.preparedByName||"Chưa xác định"} · Tạo bởi: {inv.createdByDisplayName} · {new Date(inv.createdAt).toLocaleString("vi-VN")}</div></div><div className={s.listActions}><span className={inv.status==="ISSUED"?s.state+" "+s.stateIssued:s.state}>{inv.status==="ISSUED"?"Đã phát hành":"Bản nháp"}</span>{inv.status==="DRAFT"&&permissions.canIssueCustomInvoice&&<button type="button" className={s.link} onClick={()=>void issue(inv.id,false)}>Phát hành</button>}{inv.status==="ISSUED"&&<a className={s.link} href={"/api/admin/documents/invoices/"+encodeURIComponent(inv.id)+"/pdf"}>Tải PDF</a>}{inv.status==="ISSUED"&&permissions.canIssueCustomInvoice&&<button type="button" className={s.link} disabled={busy||!emailServiceReady} onClick={()=>void retryEmail(inv.id)}>{emailDelivery?.id===inv.id&&emailDelivery.state==="sent"||inv.emailedAt?"Gửi lại email":"Gửi email"}</button>}{inv.emailedAt&&<span className={s.stateIssued+" "+s.state}>Đã gửi email · {inv.emailedTo}</span>}</div></div>)}
   </section>
  </main>;
 }

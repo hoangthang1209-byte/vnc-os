@@ -47,7 +47,7 @@ export async function POST(request:NextRequest,context:{params:Promise<{id:strin
   });
   const result=await fetch("https://api.resend.com/emails",{
    method:"POST",signal:AbortSignal.timeout(18000),
-   headers:{"Authorization":`Bearer ${apiKey}`,"Content-Type":"application/json"},
+   headers:{"Authorization":`Bearer ${apiKey}`,"Content-Type":"application/json","Idempotency-Key":`vnc-invoice-${id}-${email}`},
    body:JSON.stringify({
     from,to:[email],subject:emailContent.subject,text:emailContent.text,
     attachments:[{filename:`commercial-invoice-${String(snapshot.invoiceNo).replace(/[^A-Za-z0-9-]/g,"")}.pdf`,content:pdf.toString("base64")}]

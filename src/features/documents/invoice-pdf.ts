@@ -67,7 +67,7 @@ export async function renderInvoicePdf(invoice:InvoicePdfInput):Promise<Buffer>{
   function companyHeader(){
    // Restrained enterprise letterhead — artwork and title remain clearly separated.
    // Wider, taller VNC artwork without crowding the invoice title or line items.
-   pdf.image(logoBuffer,L,35,{fit:[177,50],align:"left",valign:"center"});
+   pdf.image(logoBuffer,L,35,{fit:[177,50],valign:"center"});
    write("COMMERCIAL INVOICE",309,47,238,true,12.8,NAVY,"right");
    write("PAYMENT REQUEST",344,66,203,false,7,GREY,"right");
    pdf.strokeColor(NAVY).lineWidth(1.1).moveTo(L,95).lineTo(R,95).stroke();

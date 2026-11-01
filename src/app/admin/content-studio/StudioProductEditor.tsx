@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { VNC_CATEGORIES_V1, VNC_PARENT_CATEGORIES } from "@/features/content-studio/catalog-taxonomy-v1";
+import { VNC_PRODUCT_IDEAS_V1 } from "@/features/content-studio/product-backlog-v1";
 
 type ProductFields = {
   slug:string; category:string; categoryId:string; title:string; summary:string; description:string;
@@ -42,6 +43,14 @@ export default function StudioProductEditor(){
    setPageId(p.id);setRevision(rev);setPublishedId(data.page.publishedRevisionId);
   }catch(e){setError(e instanceof Error?e.message:"Cannot load product");}finally{setBusy(false);}
  };
+ const loadConcept=(id:string)=>{
+  const idea=VNC_PRODUCT_IDEAS_V1.find(x=>x.id===id);
+  if(!idea)return;
+  if(pageId){setError("Create a new draft before loading another concept");return;}
+  const slug=idea.nameEn.toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
+  setValue({...init,slug,categoryId:idea.categoryId,title:idea.nameEn,titleVi:idea.nameVi});
+  setNotice("Internal concept "+idea.id+" loaded. Specifications, source, images and rights MUST be verified before approval.");
+ };
  const productData=()=>({slug:value.slug,category:value.category,categoryId:value.categoryId,title:value.title,summary:value.summary,description:value.description,
    vi:{title:value.titleVi,summary:value.summaryVi,description:value.descriptionVi},
    publicApproved:value.publicApproved,mediaRightsApproved:value.mediaRightsApproved,
@@ -73,6 +82,9 @@ export default function StudioProductEditor(){
  return <section style={{border:"1px solid #d5dfd8",borderRadius:12,padding:20,marginTop:26,background:"#fff"}}>
   <h2>Product Publishing · VietnamClothing.vn (EN/VN)</h2>
   <p style={{fontSize:13}}>Products are site-scoped Content Studio revisions. Do not attest image rights without verifying the original asset and permission to publish.</p>
+  {!pageId?<label style={{fontSize:13,fontWeight:600,display:"block",marginBottom:12}}>VNC V1 product ideas — unapproved intake
+   <select style={style} defaultValue="" onChange={e=>loadConcept(e.target.value)}><option value="">Choose one of 55 draft concepts</option>{VNC_PRODUCT_IDEAS_V1.map(p=><option key={p.id} value={p.id}>{p.id} · {p.nameVi} · {p.priority}</option>)}</select>
+  </label>:null}
   <label style={{fontSize:13,fontWeight:600}}>Existing products
    <select style={style} value={pageId||""} onChange={e=>{const p=pages.find(x=>x.id===e.target.value);if(p)void load(p);else{setValue(init);setPageId(null);setRevision(null);}}}>
     <option value="">Create a new product</option>{pages.map(p=><option key={p.id} value={p.id}>{p.title} · {p.slug}</option>)}

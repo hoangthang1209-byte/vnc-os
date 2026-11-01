@@ -24,6 +24,7 @@ export async function GET(request:NextRequest){
    select:{id:true,orderNo:true,customerPoNo:true,customerId:true,currency:true,
     customerCompanyName:true,customerNameSnapshot:true,customerLegalNameSnapshot:true,
     customerAddress:true,customerEmailSnapshot:true,
+    salesName:true,salesEmployeeId:true,salesEmployee:{select:{fullName:true}},salesRepresentative:{select:{fullName:true,employeeId:true}},
     customer:{select:{id:true,name:true,legalName:true,email:true,address:true}}},
   });
   return NextResponse.json({orders},{headers:{"Cache-Control":"private, no-store"}});

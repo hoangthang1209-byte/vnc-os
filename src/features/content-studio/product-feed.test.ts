@@ -10,7 +10,7 @@ const valid = {
       title:"Cotton T-shirt",summary:"Made to order",description:"Custom apparel specification",
       vi:{title:"Áo thun cotton",summary:"Sản xuất theo yêu cầu",description:"Thông số may mặc tùy chỉnh"},
       publicApproved:true,mediaRightsApproved:true,
-      media:[{url:"https://cdn.example.com/tee.jpg",alt:"Cotton tee",approved:true,visibility:"PUBLIC",usageRightsApproved:true}],
+      media:[{mediaAssetId:"media-123",url:"https://cdn.example.com/tee.jpg",alt:"Cotton tee",approved:true,visibility:"PUBLIC",usageRightsApproved:true}],
     }
   }]
 };
@@ -24,6 +24,10 @@ test("reject missing or invalid V1 category",()=>{
   const x=copy();delete x.blocks[0].data.categoryId;
   assert.equal(validatedStudioProduct("/products/cotton-tee",x),null);
   x.blocks[0].data.categoryId="NOT-A-CATEGORY";
+  assert.equal(validatedStudioProduct("/products/cotton-tee",x),null);
+});
+test("reject media not linked to Media Library",()=>{
+  const x=copy();delete x.blocks[0].data.media[0].mediaAssetId;
   assert.equal(validatedStudioProduct("/products/cotton-tee",x),null);
 });
 test("reject missing Vietnamese translation",()=>{

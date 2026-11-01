@@ -1,4 +1,5 @@
 import { resolveInvoiceOrderPreparer } from "@/features/documents/invoice-preparer";
+import { parseInvoiceRecipients } from "@/features/documents/invoice-email";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { can } from "@/features/auth/admin-permissions";
@@ -84,6 +85,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({error:"Tài khoản ngân hàng không thuộc pháp nhân đã chọn hoặc đã ngừng hoạt động."},{status:400});
     if(account?.currency&&account.currency!==currency)
       return NextResponse.json({error:"Loại tiền Invoice phải trùng loại tiền của tài khoản nhận thanh toán."},{status:400});
+    // Drafts may omit recipients until they are ready to send; validate every supplied address.
+    const recipientTo=parseInvoiceRecipients(body.recipientEmail,10);
+    const recipientCc=parseInvoiceRecipients(body.recipientCcEmails,10)
+      .filter(email=>!recipientTo.includes(email));
+    if(recipientTo.length+recipientCc.length>20)throw new Error("Quá giới hạn người nhận Invoice.");
     const issueDate=strictDate(body.issueDate);
     const dueDate=body.dueDate ? strictDate(body.dueDate):null;
     if(dueDate && dueDate < issueDate) throw new Error("Due date precedes issue date");
@@ -106,7 +112,8 @@ export async function POST(request: NextRequest) {
       bankAccountId,
       currency,
       recipientName:required(body.recipientName,250),
-      recipientEmail:optional(body.recipientEmail,250),
+      recipientEmail:recipientTo.join(", ")||null,
+      recipientCcEmails:recipientCc.join(", ")||null,
       recipientAddress:optional(body.recipientAddress,1000),
       issuerName:entity?.legalName??required(body.issuerName,250),
       issuerAddress:entity?.address??optional(body.issuerAddress,1000),
@@ -134,6 +141,7 @@ export async function POST(request: NextRequest) {
   } catch(error) {
     if (typeof error==="object" && error && "code" in error && error.code==="P2002") return NextResponse.json({error:"Xung đột số Invoice tự động. Vui lòng thử lưu lại."},{status:409});
     if (typeof error==="object" && error && "code" in error && error.code==="P2021") return NextResponse.json({error:"Database migration required"},{status:503});
+    if(error instanceof Error && /Email không hợp lệ|Danh sách email quá dài|Tối đa |Quá giới hạn người nhận/.test(error.message))return NextResponse.json({error:error.message},{status:400});
     if(error instanceof Error && /Invalid decimal amount/.test(error.message))return NextResponse.json({error:"Số tiền không hợp lệ. Chỉ dùng số như 20 hoặc 20.50; không nhập 020, dấu phẩy hay chữ."},{status:400});
     if(error instanceof Error && /Description required|Missing or invalid required field/.test(error.message))return NextResponse.json({error:"Thiếu nội dung khoản thu hoặc trường bắt buộc. Kiểm tra các khoản thu trống và thông tin công ty/khách hàng."},{status:400});
     if(error instanceof Error && /Discount exceeds subtotal/.test(error.message))return NextResponse.json({error:"Giảm trừ không được vượt quá tổng tiền hàng."},{status:400});

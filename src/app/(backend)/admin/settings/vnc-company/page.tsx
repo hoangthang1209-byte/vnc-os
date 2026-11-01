@@ -1,6 +1,5 @@
 import AdminPageTitle from "@/components/admin/AdminPageTitle";
-import VncOsCompanyBrandingForm from "@/components/admin/settings/VncOsCompanyBrandingForm";
-import VncCompanyMasterData from "@/components/admin/settings/VncCompanyMasterData";
+import VncCompanySettingsWorkspace from "@/components/admin/settings/VncCompanySettingsWorkspace";
 import { prisma } from "@/lib/prisma";
 import { adminPageMetadata } from "@/lib/admin/admin-metadata";
 export const dynamic="force-dynamic";
@@ -15,7 +14,6 @@ export default async function VncCompanySettingsPage() {
  return <>
   <AdminPageTitle title="Cấu hình chung — Công ty VNC"/>
   {!ready&&<p className="admin-message admin-message--error">Chưa có migration VNC OS Branding. Cần chạy Prisma migrate deploy sau khi kiểm tra Production database.</p>}
-  {ready&&<VncOsCompanyBrandingForm initial={initial}/>}
-  <VncCompanyMasterData/>
+  {ready&&<VncCompanySettingsWorkspace initial={initial}/> }
  </>;
 }

@@ -65,12 +65,12 @@ export async function renderInvoicePdf(invoice:InvoicePdfInput):Promise<Buffer>{
    const h=height(value,width,bold,size);ensure(h+space);write(value,L,y,width,bold,size,color);y+=h+space;
   }
   function companyHeader(){
-   pdf.image(logoBuffer,L,44,{fit:[132,42]});
-   write("COMMERCIAL",326,47,221,true,15,NAVY,"right");
-   write("INVOICE",326,67,221,true,15,NAVY,"right");
-   write("PAYMENT REQUEST",343,91,204,false,7,GREY,"right");
-   rule(114,LIGHT);
-   y=132;
+   // Restrained enterprise letterhead — artwork and title remain clearly separated.
+   pdf.image(logoBuffer,L,43,{fit:[134,43]});
+   write("COMMERCIAL INVOICE",309,51,238,true,13.4,NAVY,"right");
+   write("PAYMENT REQUEST",344,76,203,false,7.2,GREY,"right");
+   pdf.strokeColor(NAVY).lineWidth(1.4).moveTo(L,108).lineTo(R,108).stroke();
+   y=127;
   }
   companyHeader();
   // Company identity and document metadata.
@@ -86,7 +86,7 @@ export async function renderInvoicePdf(invoice:InvoicePdfInput):Promise<Buffer>{
   const addrHeight=Math.max(issuerAddress?height(issuerAddress,half,false,7.6):0,customerAddress?height(customerAddress,half,false,7.6):0);
   if(issuerAddress)write(issuerAddress,L,y,half,false,7.6,GREY);
   if(customerAddress)write(customerAddress,right,y,half,false,7.6,GREY);
-  y+=addrHeight+19;
+  y+=addrHeight+17;
   ensure(62);
   pdf.roundedRect(L,y,W,49,3).fill("#f7f8fa");
   const meta=[
@@ -100,7 +100,7 @@ export async function renderInvoicePdf(invoice:InvoicePdfInput):Promise<Buffer>{
     write(label,x,y+9,cell-16,true,6.5,GREY);
     write(val.slice(0,75),x,y+25,cell-16,true,8.7,INK);
   });
-  y+=72;
+  y+=68;
   ensure(62);
   write("INVOICE ITEMS",L,y,200,true,8.5,NAVY);y+=15;
   const columns=[L,L+246,L+296,L+353,L+433,R];
@@ -123,7 +123,7 @@ export async function renderInvoicePdf(invoice:InvoicePdfInput):Promise<Buffer>{
    write(formatMinor(item.amountMinor,currency),columns[4],y+8,R-columns[4]-9,true,7.8,INK,"right");
    y+=rowHeight;rule(y); 
   });
-  y+=14;ensure(116);
+  y+=12;ensure(116);
   const sums:Array<[string,string,boolean]>=[["Subtotal",formatMinor(totals.subtotalMinor,currency),false]];
   if(totals.discountMinor)sums.push(["Discount","-"+formatMinor(totals.discountMinor,currency),false]);
   if(totals.extraChargeMinor)sums.push(["Additional charges",formatMinor(totals.extraChargeMinor,currency),false]);
@@ -136,9 +136,10 @@ export async function renderInvoicePdf(invoice:InvoicePdfInput):Promise<Buffer>{
   y+=4;pdf.roundedRect(sx-8,y,sw+8,40,3).fill(NAVY);
   write("TOTAL AMOUNT DUE",sx,y+11,sw*.5,true,6.6,"#e5eaf0");
   write(currency+" "+invoice.total,sx+sw*.43,y+12,sw*.55,true,10.5,"#ffffff","right");
-  y+=61;
-  ensure(125);
-  write("BANK TRANSFER INSTRUCTIONS",L,y,360,true,8.5,NAVY);y+=15;rule(y);y+=11;
+  y+=54;
+  ensure(170);
+  write("BANK TRANSFER DETAILS",L,y,340,true,9.1,NAVY);y+=18;
+  pdf.strokeColor("#cdd7e1").lineWidth(.9).moveTo(L,y).lineTo(R,y).stroke();y+=13;
   const banking:[string,string][]=[
    ["ACCOUNT NUMBER",str(bank.account)],["CURRENCY",str(bank.currency)||currency],
    ["ACCOUNT NAME",str(bank.beneficiary)],["ACCOUNT ADDRESS",str(bank.accountAddress)],
@@ -147,11 +148,14 @@ export async function renderInvoicePdf(invoice:InvoicePdfInput):Promise<Buffer>{
   ];
   for(const [label,value] of banking){
    if(!value)continue;
-   const lines=height(value,320,false,7.8),rh=Math.max(20,lines+7);
-   ensure(rh);
-   write(label,L,y+2,150,true,6.8,GREY);
-   write(value.slice(0,800),L+167,y,332,false,7.8,INK);
+   const isPrimary=label==="ACCOUNT NUMBER"||label==="ACCOUNT NAME";
+   const lines=height(value,320,isPrimary,7.8),rh=Math.max(18,lines+7);
+   ensure(rh+2);
+   write(label,L,y+2,150,true,6.6,GREY);
+   write(value.slice(0,800),L+167,y,332,isPrimary,7.8,INK);
    y+=rh;
+   pdf.strokeColor("#eef1f5").lineWidth(.45).moveTo(L,y).lineTo(R,y).stroke();
+   y+=3;
   }
   if(invoice.notes){
    y+=8;ensure(65);rule(y);y+=11;
@@ -164,7 +168,7 @@ export async function renderInvoicePdf(invoice:InvoicePdfInput):Promise<Buffer>{
     invoice.createdByDisplayName!=="Legacy / not recorded" ? invoice.createdByDisplayName : null;
   const attribution=invoice.preparedByName||historicalCreator;
   if(attribution){
-   y+=8;ensure(28);
+   y+=14;ensure(32);
    write(invoice.preparedByName?"PREPARED BY":"CREATED BY",L,y,145,true,6.8,GREY);
    write(attribution.slice(0,160),L+167,y,332,false,7.8,INK);
    y+=24;

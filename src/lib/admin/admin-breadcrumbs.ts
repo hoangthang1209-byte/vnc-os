@@ -845,6 +845,14 @@ const breadcrumbRules: AdminBreadcrumbRule[] = [
     },
   },
   {
+    path: "/admin/settings/vnc-company",
+    meta: {
+      breadcrumbs: ["HỆ THỐNG", "Cấu hình chung", "Công ty VNC"],
+      title: "Cấu hình chung — Công ty VNC",
+      description: "Quản lý pháp nhân, ngân hàng, logo công ty và nhận diện VNC OS.",
+    },
+  },
+  {
     path: "/admin/settings/company",
     meta: {
       breadcrumbs: ["CẤU HÌNH", "Thông tin công ty"],

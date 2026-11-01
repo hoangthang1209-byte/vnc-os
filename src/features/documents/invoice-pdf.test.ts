@@ -40,3 +40,28 @@ test("enterprise invoice PDF includes bundled brand image and handles multiple p
  assert.equal(pdf.subarray(0,5).toString(),"%PDF-");
  assert.ok(pdf.length>7000,"branded multipage PDF is unexpectedly small");
 });
+
+test("V5.1 PDF preserves payout and Sales attribution with long banking details", async () => {
+ const pdf=await renderInvoicePdf({
+   invoiceNo:"CI-2099-0007",
+   recipientName:"FRESH PRINTS",
+   recipientAddress:"Pacific, MO - 63069",
+   issuerName:"Vietnam Clothing Manufacturing Co.,Ltd",
+   issuerAddress:"14B Bùi Cẩm Hổ, Phường Tân Phú, TP Hồ Chí Minh, Việt Nam",
+   currency:"USD",total:"468.00",
+   issueDate:new Date("2026-10-30T00:00:00.000Z"),
+   dueDate:new Date("2026-11-02T00:00:00.000Z"),
+   lines:[{description:"Deposit",quantity:"1",unit:"PO",unitPrice:"468"}],
+   bankDetails:{
+     account:"TEST-ONLY-34277567",currency:"USD",beneficiary:"VIETNAM CLOTHING MANUFACTURING CO., LTD",
+     accountAddress:"14B Bui Cam Ho, Tan Phu, Ho Chi Minh City, Vietnam",
+     bank:"ASIA COMMERCIAL JOINT STOCK BANK (ACB)",
+     bankAddress:"442 Nguyen Thi Minh Khai, Ho Chi Minh City, Vietnam",
+     branch:"ACB - PGD HAM TU",swift:"ASCBVNVX"
+   },
+   createdByDisplayName:"System Operator",
+   preparedByName:"Trần Thị Thuỳ Linh",
+ });
+ assert.equal(pdf.subarray(0,5).toString(),"%PDF-");
+ assert.ok(pdf.length>8000);
+});

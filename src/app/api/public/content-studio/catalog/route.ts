@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { validatedStudioProduct } from "@/features/content-studio/product-feed";
+import { verifiedCatalogMedia } from "@/features/content-studio/media-rights-gate";
 
 /**
  * Website-scoped, read-only product catalog feed.
@@ -24,11 +25,11 @@ export async function GET(request: NextRequest) {
       },
       take: 250,
     });
-    const products = pages.flatMap(page => {
+    const productGroups = await Promise.all(pages.map(async page => {
       const revision = page.revisions.find(r => r.id === page.publishedRevisionId);
       if (!revision) return [];
       const d = validatedStudioProduct(page.slug, revision.content);
-      if (!d) return [];
+      if (!d || !(await verifiedCatalogMedia(d.media))) return [];
       return [{
         site: "vietnamclothing.vn", status: "PUBLISHED" as const,
         publicApproved: true, mediaRightsApproved: true,
@@ -36,7 +37,8 @@ export async function GET(request: NextRequest) {
         title: d.title, summary: d.summary, description: d.description,
         vi: d.vi, media: d.media,
       }];
-    });
+    }));
+    const products = productGroups.flat();
     const origin = request.headers.get("origin") || "";
     const previewAllowed = /^https:\/\/vnc-merchandise-preview(?:-[a-z0-9-]+)?\.vercel\.app$/.test(origin);
     const productionAllowed = origin === "https://vietnamclothing.vn" || origin === "https://www.vietnamclothing.vn";

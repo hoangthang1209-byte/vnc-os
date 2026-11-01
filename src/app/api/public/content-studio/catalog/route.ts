@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { validatedStudioProduct } from "@/features/content-studio/product-feed";
 
@@ -6,7 +6,7 @@ import { validatedStudioProduct } from "@/features/content-studio/product-feed";
  * Website-scoped, read-only product catalog feed.
  * Does not expose drafts, private notes, unapproved images, or other sites.
  */
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     const pages = await prisma.studioPage.findMany({
       where: {
@@ -37,10 +37,15 @@ export async function GET() {
         vi: d.vi, media: d.media,
       }];
     });
+    const origin = request.headers.get("origin") || "";
+    const previewAllowed = /^https:\/\/vnc-merchandise-preview(?:-[a-z0-9-]+)?\.vercel\.app$/.test(origin);
+    const productionAllowed = origin === "https://vietnamclothing.vn" || origin === "https://www.vietnamclothing.vn";
+    const headers = new Headers({ "Cache-Control": "public, max-age=0, s-maxage=60", "Vary": "Origin" });
+    if (previewAllowed || productionAllowed) headers.set("Access-Control-Allow-Origin", origin);
     return NextResponse.json({
       site: "vietnamclothing.vn", schemaVersion: 1,
       source: "VNC OS Content Studio approved revisions", products,
-    }, { headers: { "Cache-Control": "public, max-age=0, s-maxage=60" } });
+    }, { headers });
   } catch {
     return NextResponse.json({ message: "Public catalog feed unavailable" }, { status: 503 });
   }

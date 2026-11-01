@@ -32,7 +32,7 @@ export async function GET() {
       return [{
         site: "vietnamclothing.vn", status: "PUBLISHED" as const,
         publicApproved: true, mediaRightsApproved: true,
-        slug: d.slug, category: d.category,
+        slug: d.slug, category: d.category, categoryId: d.categoryId,
         title: d.title, summary: d.summary, description: d.description,
         vi: d.vi, media: d.media,
       }];

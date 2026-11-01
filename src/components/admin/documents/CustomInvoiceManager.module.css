@@ -174,3 +174,7 @@
 .paperSignature{align-self:flex-end;width:43%;text-align:right;margin-top:28px;break-inside:avoid;display:flex;flex-direction:column;gap:6px}
 .paperSignatureSpace{height:38px;border-bottom:1px solid #bfccd9}
 .paperSignature strong{font-size:9px;font-weight:700;color:#263449}
+
+/* V5.2 — explicit invoice e-mail delivery control */
+.invoiceEmailToggle{display:inline-flex;align-items:center;gap:9px;font-size:12px;font-weight:650;color:#40516a;cursor:pointer;line-height:1.4}
+.invoiceEmailToggle input{accent-color:#243b58;width:16px;height:16px}

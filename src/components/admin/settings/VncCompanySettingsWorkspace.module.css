@@ -1,0 +1,15 @@
+.workspace{max-width:1060px;margin:0 auto;padding:4px 0 32px;color:#182338}
+.intro{padding:24px 26px;background:#fff;border:1px solid #e3e8f0;border-radius:14px;margin-bottom:18px}
+.kicker{font-size:10px;font-weight:750;letter-spacing:.13em;color:#65758d}
+.intro h2{font-size:21px;letter-spacing:-.035em;font-weight:750;margin:9px 0 7px}
+.intro p{font-size:13px;line-height:1.65;color:#65748b;margin:0;max-width:720px}
+.tabs{display:flex;gap:5px;padding:5px;border:1px solid #e4e9f0;background:#f3f5f8;border-radius:11px;margin-bottom:18px;max-width:470px}
+.tabs button{appearance:none;border:0;background:transparent;border-radius:8px;padding:11px 15px;font-size:13px;font-weight:650;flex:1;cursor:pointer;color:#5f6d80}
+.tabs button:hover{color:#14233a}
+.tabs button.active{background:#fff;color:#17283f;box-shadow:0 1px 5px #23354a19}
+.tabs button:focus-visible{outline:2px solid #315a86;outline-offset:2px}
+.panel{border:1px solid #e3e8f0;border-radius:14px;background:#fff;padding:24px 26px;box-shadow:0 3px 14px #26344a06}
+.panel[hidden]{display:none}
+.panel :global(.admin-form){border:0;box-shadow:none;margin:0;padding:0;background:transparent}
+.panel :global(h2){font-size:17px;letter-spacing:-.025em}
+@media(max-width:640px){.intro,.panel{padding:17px 14px}.tabs{max-width:none}.tabs button{padding:10px 8px;font-size:12px}}

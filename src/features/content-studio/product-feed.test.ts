@@ -6,7 +6,7 @@ const valid = {
   blocks: [{
     type:"product",
     data:{
-      slug:"cotton-tee",category:"apparel",
+      slug:"cotton-tee",category:"apparel",categoryId:"APP-01",
       title:"Cotton T-shirt",summary:"Made to order",description:"Custom apparel specification",
       vi:{title:"Áo thun cotton",summary:"Sản xuất theo yêu cầu",description:"Thông số may mặc tùy chỉnh"},
       publicApproved:true,mediaRightsApproved:true,
@@ -19,6 +19,12 @@ test("approved product is exported with bilingual content",()=>{
   const p=validatedStudioProduct("/products/cotton-tee",copy());
   assert.equal(p?.slug,"cotton-tee");
   assert.ok(p?.vi);
+});
+test("reject missing or invalid V1 category",()=>{
+  const x=copy();delete x.blocks[0].data.categoryId;
+  assert.equal(validatedStudioProduct("/products/cotton-tee",x),null);
+  x.blocks[0].data.categoryId="NOT-A-CATEGORY";
+  assert.equal(validatedStudioProduct("/products/cotton-tee",x),null);
 });
 test("reject missing Vietnamese translation",()=>{
   const x=copy();delete x.blocks[0].data.vi;

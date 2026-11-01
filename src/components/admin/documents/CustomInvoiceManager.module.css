@@ -169,3 +169,8 @@
 .issuerModal{width:min(100%,760px);max-height:calc(100vh - 40px);overflow:auto;background:#fff;border:1px solid #dfe5ed;border-radius:15px;padding:24px;box-shadow:0 22px 75px rgba(16,30,49,.19)}
 .issuerModal .fields{gap:14px}
 @media(max-width:650px){.issuerModalOverlay{padding:8px;align-items:flex-start}.issuerModal{max-height:calc(100dvh - 16px);padding:16px}}
+
+/* Document V5.2: dedicated right-side wet-signature zone in the A4 preview. */
+.paperSignature{align-self:flex-end;width:43%;text-align:right;margin-top:28px;break-inside:avoid;display:flex;flex-direction:column;gap:6px}
+.paperSignatureSpace{height:38px;border-bottom:1px solid #bfccd9}
+.paperSignature strong{font-size:9px;font-weight:700;color:#263449}

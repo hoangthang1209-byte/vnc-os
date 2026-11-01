@@ -1,8 +1,9 @@
+import { resolveInvoiceOrderPreparer } from "@/features/documents/invoice-preparer";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { can } from "@/features/auth/admin-permissions";
 import { getAdminSessionFromRequest } from "@/lib/admin-auth/get-admin-session";
-import { calculateCustomInvoice, formatMinor, type InvoiceCurrency, type InvoiceLine } from "@/features/documents/custom-invoice-calculation";
+import { calculateCustomInvoice, formatMinor, nextCustomInvoiceNumber, type InvoiceCurrency, type InvoiceLine } from "@/features/documents/custom-invoice-calculation";
 
 function authorize(request: NextRequest, permission: string) {
   const session=getAdminSessionFromRequest(request);
@@ -53,15 +54,29 @@ export async function POST(request: NextRequest) {
       if(!customer)return NextResponse.json({error:"Khách hàng liên kết không tồn tại trong CRM."},{status:400});
     }
     const orderId=body.orderId==null||body.orderId===""?null:required(body.orderId,100);
+    let preparedByName:string|null=null;
+    let preparedByEmployeeId:string|null=null;
     if(orderId){
       if(!can(getAdminSessionFromRequest(request),"orders.view"))return NextResponse.json({error:"Bạn chưa có quyền liên kết đơn hàng."},{status:403});
-      const order=await prisma.order.findUnique({where:{id:orderId},select:{id:true,customerId:true}});
+      const order=await prisma.order.findUnique({where:{id:orderId},select:{id:true,customerId:true,salesName:true,salesEmployeeId:true,salesEmployee:{select:{fullName:true}},salesRepresentative:{select:{fullName:true,employeeId:true}}}});
       if(!order)return NextResponse.json({error:"Đơn hàng được chọn không tồn tại."},{status:400});
+      const responsible=resolveInvoiceOrderPreparer(order);
+      preparedByName=responsible.name;
+      preparedByEmployeeId=responsible.employeeId;
       if(customerId&&order.customerId&&customerId!==order.customerId)
         return NextResponse.json({error:"Khách hàng Invoice không trùng với khách hàng trên đơn hàng đã liên kết."},{status:400});
     }
+    // Allow verified employee selection for standalone invoices when an Order is not yet in VNC OS.
+    const selectedEmployeeId=body.preparedByEmployeeId==null||body.preparedByEmployeeId===""?null:required(body.preparedByEmployeeId,100);
+    if(!preparedByName&&selectedEmployeeId){
+      const staff=await prisma.employee.findUnique({where:{id:selectedEmployeeId},select:{id:true,fullName:true,isActive:true}});
+      if(!staff||!staff.isActive)return NextResponse.json({error:"Sales/Account được chọn không tồn tại hoặc đã ngừng hoạt động."},{status:400});
+      preparedByName=staff.fullName.trim();
+      preparedByEmployeeId=staff.id;
+    }
     const legalEntityId=body.legalEntityId==null||body.legalEntityId===""?null:required(body.legalEntityId,100);
     const bankAccountId=body.bankAccountId==null||body.bankAccountId===""?null:required(body.bankAccountId,100);
+    if(!legalEntityId||!bankAccountId)return NextResponse.json({error:"Vui lòng chọn pháp nhân và tài khoản ngân hàng từ Cấu hình chung VNC OS."},{status:400});
     const entity=legalEntityId?await prisma.vncLegalEntity.findUnique({where:{id:legalEntityId}}):null;
     if(legalEntityId&&(!entity||!entity.isActive))return NextResponse.json({error:"Pháp nhân đã chọn không tồn tại hoặc không còn hoạt động."},{status:400});
     const account=bankAccountId?await prisma.vncBankAccount.findUnique({where:{id:bankAccountId}}):null;
@@ -72,12 +87,19 @@ export async function POST(request: NextRequest) {
     const issueDate=strictDate(body.issueDate);
     const dueDate=body.dueDate ? strictDate(body.dueDate):null;
     if(dueDate && dueDate < issueDate) throw new Error("Due date precedes issue date");
-    const invoice=await prisma.customPaymentInvoice.create({data:{
-      invoiceNo:required(body.invoiceNo,80),
+    const year=issueDate.getUTCFullYear();
+    const invoice=await prisma.$transaction(async tx=>{
+      await tx.$queryRaw<{locked:number}[]>`SELECT 1::integer AS locked FROM pg_advisory_xact_lock(hashtext(${`vnc-custom-invoice-${year}`}))`;
+      const prefix=`CI-${year}-`;
+      const existing=await tx.customPaymentInvoice.findMany({where:{invoiceNo:{startsWith:prefix}},select:{invoiceNo:true}});
+      const invoiceNo=nextCustomInvoiceNumber(year,existing.map(row=>row.invoiceNo));
+      return tx.customPaymentInvoice.create({data:{
+      invoiceNo,
       createdByUserId:creatorSession.userId,
       createdByEmployeeId:creatorSession.employeeId,
       createdByDisplayName:creatorName.slice(0,250),
       createdByMode:creatorSession.mode,
+      preparedByName,preparedByEmployeeId,
       customerId,
       orderId,
       legalEntityId,
@@ -107,9 +129,10 @@ export async function POST(request: NextRequest) {
       dueDate,
       notes:optional(body.notes,2000)
     }});
+    },{maxWait:5000,timeout:15000});
     return NextResponse.json({id:invoice.id,invoiceNo:invoice.invoiceNo,total:invoice.total},{status:201});
   } catch(error) {
-    if (typeof error==="object" && error && "code" in error && error.code==="P2002") return NextResponse.json({error:"Số Invoice đã tồn tại. Hãy mở bản nháp cũ hoặc nhập số Invoice khác."},{status:409});
+    if (typeof error==="object" && error && "code" in error && error.code==="P2002") return NextResponse.json({error:"Xung đột số Invoice tự động. Vui lòng thử lưu lại."},{status:409});
     if (typeof error==="object" && error && "code" in error && error.code==="P2021") return NextResponse.json({error:"Database migration required"},{status:503});
     if(error instanceof Error && /Invalid decimal amount/.test(error.message))return NextResponse.json({error:"Số tiền không hợp lệ. Chỉ dùng số như 20 hoặc 20.50; không nhập 020, dấu phẩy hay chữ."},{status:400});
     if(error instanceof Error && /Description required|Missing or invalid required field/.test(error.message))return NextResponse.json({error:"Thiếu nội dung khoản thu hoặc trường bắt buộc. Kiểm tra các khoản thu trống và thông tin công ty/khách hàng."},{status:400});
@@ -123,7 +146,7 @@ export async function POST(request: NextRequest) {
 export async function GET(request:NextRequest) {
   const refused=authorize(request,"orders.view_financials");if(refused)return refused;
   try {
-    const invoices=await prisma.customPaymentInvoice.findMany({take:100,orderBy:{createdAt:"desc"},select:{id:true,invoiceNo:true,status:true,recipientName:true,currency:true,total:true,createdAt:true,createdByDisplayName:true,createdByMode:true,orderId:true,customerId:true}});
+    const invoices=await prisma.customPaymentInvoice.findMany({take:100,orderBy:{createdAt:"desc"},select:{id:true,invoiceNo:true,status:true,recipientName:true,currency:true,total:true,createdAt:true,createdByDisplayName:true,createdByMode:true,preparedByName:true,orderId:true,customerId:true}});
     return NextResponse.json({invoices});
   }catch(error) {
     console.error("[custom invoice list]",error);

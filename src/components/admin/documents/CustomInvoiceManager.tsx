@@ -1,5 +1,7 @@
 "use client";
+import { resolveInvoiceOrderPreparer } from "@/features/documents/invoice-preparer";
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useAdminPermissions } from "@/components/admin/AdminPermissionsContext";
 import s from "./CustomInvoiceManager.module.css";
 import InvoiceCustomerPicker, { customerInvoiceFields, type InvoiceCrmCustomer } from "./InvoiceCustomerPicker";
@@ -8,7 +10,7 @@ import InvoiceOrderPicker, { type InvoiceOrderOption } from "./InvoiceOrderPicke
 import { VNC_LOGO_PNG_DATA_URI } from "@/features/documents/vnc-invoice-brand";
 import { isValidInvoiceNumericInput } from "@/features/documents/custom-invoice-calculation";
 type Line={description:string;quantity:string;unit:string;unitPrice:string};
-type SavedInvoice={id:string;invoiceNo:string;status:string;recipientName:string;currency:string;total:string;createdAt:string;createdByDisplayName:string;createdByMode:string};
+type SavedInvoice={id:string;invoiceNo:string;status:string;recipientName:string;currency:string;total:string;createdAt:string;createdByDisplayName:string;createdByMode:string;preparedByName:string|null};
 const blank=():Line=>({description:"",quantity:"1",unit:"pcs",unitPrice:"0"});
 const amount=(n:string,currency:string)=>new Intl.NumberFormat("en-US",{minimumFractionDigits:currency==="VND"?0:2,maximumFractionDigits:currency==="VND"?0:2}).format(Number(n)||0);
 export default function CustomInvoiceManager(){
@@ -17,6 +19,10 @@ export default function CustomInvoiceManager(){
  const [recipientName,setRecipientName]=useState("");
  const [customerId,setCustomerId]=useState("");
  const [orderId,setOrderId]=useState("");
+ const [preparedByName,setPreparedByName]=useState("");
+ const [preparedByEmployeeId,setPreparedByEmployeeId]=useState("");
+ const [assignedFromOrder,setAssignedFromOrder]=useState(false);
+ const [staff,setStaff]=useState<Array<{id:string;fullName:string;jobTitle:string|null}>>([]);
  const [recipientEmail,setRecipientEmail]=useState("");
  const [recipientAddress,setRecipientAddress]=useState("");
  const [issuerName,setIssuerName]=useState("");
@@ -52,11 +58,19 @@ export default function CustomInvoiceManager(){
  }
  useEffect(()=>{
   let mounted=true;
+  fetch("/api/admin/documents/invoices/sales-accounts",{cache:"no-store"})
+   .then(r=>r.ok?r.json():null)
+   .then(d=>{if(mounted&&Array.isArray(d?.employees))setStaff(d.employees);})
+   .catch(()=>{});
+  return ()=>{mounted=false;};
+ },[]);
+ useEffect(()=>{
+  let mounted=true;
   fetch("/api/admin/documents/invoices",{cache:"no-store"}).then(r=>r.ok?r.json():null).then(data=>{if(mounted&&data)setInvoices(data.invoices??[]);}).catch(()=>{});
   return ()=>{mounted=false};
  },[]);
  async function save(){
-  if(!invoiceNo.trim()||!issuerName.trim()||!recipientName.trim()){setMessage("Vui lòng nhập số Invoice, tên bên phát hành và tên khách hàng.");return;}
+  if(!issuerName.trim()||!recipientName.trim()){setMessage("Vui lòng nhập tên bên phát hành và tên khách hàng.");return;}
   const blankLine=lines.findIndex(line=>!line.description.trim());
   if(blankLine>=0){setMessage("Khoản thu "+(blankLine+1)+" chưa có nội dung. Hãy nhập mô tả hoặc xóa khoản thu này.");return;}
   const numeric=[...lines.flatMap(line=>[line.quantity,line.unitPrice]),discount,extraCharge,tax];
@@ -65,9 +79,9 @@ export default function CustomInvoiceManager(){
   if(swift.trim()&&!/^[A-Za-z]{6}[A-Za-z0-9]{2}([A-Za-z0-9]{3})?$/.test(swift.trim())){setMessage("SWIFT/BIC gồm 8 hoặc 11 ký tự, khác với số tài khoản. Nếu không có hãy để trống.");return;}
   setBusy(true);setMessage("Đang lưu bản nháp...");
   try{
-   const r=await fetch("/api/admin/documents/invoices",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({invoiceNo,customerId:customerId||null,orderId:orderId||null,legalEntityId:legalEntityId||null,bankAccountId:bankAccountId||null,recipientName,recipientAddress,recipientEmail,issuerName,issuerAddress,issuerTaxId,currency,issueDate,dueDate,lines,beneficiary,bank,bankAccount,accountAddress,bankAddress,branch,swift,notes,discount,extraCharge,tax})});
+   const r=await fetch("/api/admin/documents/invoices",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({preparedByEmployeeId:preparedByEmployeeId||null,customerId:customerId||null,orderId:orderId||null,legalEntityId:legalEntityId||null,bankAccountId:bankAccountId||null,recipientName,recipientAddress,recipientEmail,issuerName,issuerAddress,issuerTaxId,currency,issueDate,dueDate,lines,beneficiary,bank,bankAccount,accountAddress,bankAddress,branch,swift,notes,discount,extraCharge,tax})});
    const data=await r.json();if(!r.ok)throw new Error(data.error||"Không thể lưu bản nháp");
-   setPdfId(data.id);setIssued(false);setMessage("Đã lưu bản nháp "+data.invoiceNo+".");await refresh();
+   setInvoiceNo(data.invoiceNo);setPdfId(data.id);setIssued(false);setMessage("Đã lưu bản nháp "+data.invoiceNo+".");await refresh();
   }catch(error){setMessage(error instanceof Error?error.message:"Lưu không thành công");}
   finally{setBusy(false);}
  }
@@ -81,7 +95,7 @@ export default function CustomInvoiceManager(){
   }catch(error){setMessage(error instanceof Error?error.message:"Phát hành không thành công");}
   finally{setBusy(false);}
  }
- const field=(label:string,value:string,change:(v:string)=>void,placeholder="",type="text")=><div className={s.field}><label>{label}</label><input className={s.input} type={type} value={value} placeholder={placeholder} onChange={e=>{change(e.target.value);setPdfId("");setIssued(false);}}/></div>;
+ const field=(label:string,value:string,change:(v:string)=>void,placeholder="",type="text")=><div className={s.field}><label>{label}</label><input className={s.input} type={type} value={value} readOnly={["Đơn vị phát hành *","Địa chỉ bên phát hành","Tên người thụ hưởng","Ngân hàng","Số tài khoản","SWIFT (nếu có)","Account Address","Bank Address","Branch"].includes(label)} placeholder={placeholder} onChange={e=>{change(e.target.value);setPdfId("");setIssued(false);}}/></div>;
  return <main className={s.workspace}>
   <div className={s.toolbar}>
    <div><p className={s.eyebrow}>DOCUMENT CENTER / TÀI CHÍNH</p><h1 className={s.heading}>Tạo yêu cầu thanh toán</h1><p className={s.muted}>Commercial Invoice · Phí làm mẫu, phát triển sản phẩm và các khoản thu khác</p></div>
@@ -92,7 +106,7 @@ export default function CustomInvoiceManager(){
     <div className={s.panelHead}><h2>Thông tin chứng từ</h2><span className={s.pill}>Không cần liên kết đơn hàng</span></div>
     <div className={s.body}>
      <div className={s.section}><p className={s.sectionTitle}>01 / Thông tin cơ bản</p><div className={s.fields3}>
-      {field("Số Invoice *",invoiceNo,setInvoiceNo,"CI-2026-0001")}
+      <div className={s.field}><label>Số Invoice — tự động</label><input className={s.input} value={invoiceNo||"Hệ thống cấp số khi lưu bản nháp"} readOnly aria-label="Số Invoice do hệ thống tự cấp" /></div>
       {field("Ngày phát hành",issueDate,setIssueDate,"","date")}
       <div className={s.field}><label>Loại tiền</label><select className={s.select} value={currency} onChange={e=>{setCurrency(e.target.value);setPdfId("");}}><option>USD</option><option>VND</option><option>EUR</option></select></div>
       {field("Hạn thanh toán",dueDate,setDueDate,"","date")}
@@ -100,6 +114,10 @@ export default function CustomInvoiceManager(){
      <div className={s.section}><p className={s.sectionTitle}>02 / Liên kết đơn hàng (tuỳ chọn)</p>
       <InvoiceOrderPicker selectedId={orderId} disabled={busy} onSelect={(order:InvoiceOrderOption|null)=>{
        setOrderId(order?.id||"");
+       const account=resolveInvoiceOrderPreparer(order);
+       setPreparedByName(account.name||"");
+       setPreparedByEmployeeId(account.employeeId||"");
+       setAssignedFromOrder(Boolean(account.name));
        if(order){
         setCurrency(order.currency);
         const c=order.customer;
@@ -112,14 +130,25 @@ export default function CustomInvoiceManager(){
        setPdfId("");setIssued(false);
       }}/>
      </div>
-     <div className={s.section}><p className={s.sectionTitle}>03 / Bên phát hành và khách hàng</p>
+     <div className={s.section}><p className={s.sectionTitle}>03 / Bên phát hành và khách hàng</p><div className={s.field}><label>Prepared By / Sales Account phụ trách</label>
+        <input className={s.input} readOnly value={preparedByName||"Chưa chọn Sales/Account phụ trách"} aria-label="Người phụ trách Invoice" />
+        <select className={s.select} aria-label="Chọn nhân viên Sales Account" disabled={busy||assignedFromOrder} value={preparedByEmployeeId} onChange={e=>{
+          const person=staff.find(x=>x.id===e.target.value);
+          setPreparedByEmployeeId(person?.id||"");
+          setPreparedByName(person?.fullName||"");setPdfId("");setIssued(false);
+        }}>
+         <option value="">Chọn nhân viên VNC OS...</option>
+         {staff.map(person=><option value={person.id} key={person.id}>{person.fullName}{person.jobTitle?" · "+person.jobTitle:""}</option>)}
+        </select>
+        <p className={s.helper}>{assignedFromOrder?"Tự lấy từ Sales/Account của đơn hàng đã liên kết.":"Nếu chưa có đơn hàng Fresh Prints trên VNC OS, chọn nhân viên phụ trách tại đây."}</p>
+       </div>
       <InvoiceCustomerPicker selectedId={customerId} disabled={busy} onClear={()=>setCustomerId("")} onSelect={(customer:InvoiceCrmCustomer)=>{
        const fields=customerInvoiceFields(customer);
        setCustomerId(customer.id);setRecipientName(fields.recipientName);setRecipientAddress(fields.recipientAddress);setRecipientEmail(fields.recipientEmail);
        setPdfId("");setIssued(false);setMessage("");
       }}/>
       <InvoiceIssuerPicker selectedEntityId={legalEntityId} selectedBankId={bankAccountId}
-       canManage={permissions.canIssueCustomInvoice} disabled={busy}
+       canManage={false} disabled={busy}
        onSelect={({entity,account}:IssuerSelection)=>{
         setLegalEntityId(entity.id);setIssuerName(entity.legalName);setIssuerAddress(entity.address||"");setIssuerTaxId(entity.taxCode||"");
         setBankAccountId(account?.id||"");setBeneficiary(account?.accountName||"");setBank(account?.bankName||"");
@@ -128,6 +157,7 @@ export default function CustomInvoiceManager(){
         if(account?.currency)setCurrency(account.currency);
         setPdfId("");setIssued(false);
        }}/>
+      <p className={s.helper}>Pháp nhân và tài khoản ngân hàng được quản lý tập trung tại <Link href="/admin/settings/vnc-company">Cấu hình chung — Công ty VNC</Link>.</p>
       <div className={s.fields}>
       {field("Đơn vị phát hành *",issuerName,v=>{setIssuerName(v);setLegalEntityId("");setBankAccountId("");},"Tên pháp nhân VNC")}
       {field("Khách hàng *",recipientName,v=>{setRecipientName(v);setCustomerId("");},"Tên công ty / cá nhân")}
@@ -196,7 +226,7 @@ export default function CustomInvoiceManager(){
    </div><p className={s.helper}>Đây là bản xem trước theo dữ liệu đang nhập, không phải Invoice đã lưu. Khi sửa khoản thu, cần lưu lại bằng số Invoice mới; PDF chỉ phản ánh bản đã phát hành và khóa dữ liệu.</p></aside>
   </div>
   <section className={s.panel+" "+s.listPanel}><div className={s.panelHead}><h2>Invoice đã lưu</h2><button type="button" className={s.secondary} onClick={()=>void refresh()}>Làm mới danh sách</button></div>
-   {invoices.length===0?<p className={s.empty}>Chưa có Invoice nào được tải. Tạo bản nháp để bắt đầu.</p>:invoices.map(inv=><div className={s.listRow} key={inv.id}><div><div className={s.listMain}>{inv.invoiceNo} · {inv.recipientName}</div><div className={s.listSub}>{inv.currency} {inv.total} · Tạo bởi: {inv.createdByDisplayName} · {new Date(inv.createdAt).toLocaleString("vi-VN")}</div></div><div className={s.listActions}><span className={inv.status==="ISSUED"?s.state+" "+s.stateIssued:s.state}>{inv.status==="ISSUED"?"Đã phát hành":"Bản nháp"}</span>{inv.status==="DRAFT"&&permissions.canIssueCustomInvoice&&<button type="button" className={s.link} onClick={()=>void issue(inv.id)}>Phát hành</button>}{inv.status==="ISSUED"&&<a className={s.link} href={"/api/admin/documents/invoices/"+encodeURIComponent(inv.id)+"/pdf"}>Tải PDF</a>}</div></div>)}
+   {invoices.length===0?<p className={s.empty}>Chưa có Invoice nào được tải. Tạo bản nháp để bắt đầu.</p>:invoices.map(inv=><div className={s.listRow} key={inv.id}><div><div className={s.listMain}>{inv.invoiceNo} · {inv.recipientName}</div><div className={s.listSub}>{inv.currency} {inv.total} · Sales/Account: {inv.preparedByName||"Chưa xác định"} · Tạo bởi: {inv.createdByDisplayName} · {new Date(inv.createdAt).toLocaleString("vi-VN")}</div></div><div className={s.listActions}><span className={inv.status==="ISSUED"?s.state+" "+s.stateIssued:s.state}>{inv.status==="ISSUED"?"Đã phát hành":"Bản nháp"}</span>{inv.status==="DRAFT"&&permissions.canIssueCustomInvoice&&<button type="button" className={s.link} onClick={()=>void issue(inv.id)}>Phát hành</button>}{inv.status==="ISSUED"&&<a className={s.link} href={"/api/admin/documents/invoices/"+encodeURIComponent(inv.id)+"/pdf"}>Tải PDF</a>}</div></div>)}
   </section>
  </main>;
 }

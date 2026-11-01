@@ -8,8 +8,28 @@ type InvoicePdfInput = {
   invoiceNo: string; recipientName: string; recipientAddress?: string | null;
   issuerName: string; issuerAddress?: string | null; currency: string; total: string;
   issueDate: Date; dueDate?: Date | null; lines: unknown; adjustments?: unknown;
-  bankDetails?: unknown; notes?: string | null; createdByDisplayName?: string | null;
+  bankDetails?: unknown; notes?: string | null; createdByDisplayName?: string | null; preparedByName?: string | null;
+  companyLogoUrl?: string | null;
 };
+async function companyLogoBuffer(source: string | null | undefined): Promise<Buffer> {
+  const fallback=vncLogoPngBuffer();
+  try {
+    if(!source)return fallback;
+    const url=new URL(source);
+    // Do not fetch arbitrary user-controlled URLs from the PDF server.
+    const trusted=url.protocol==="https:" && (
+      url.hostname.endsWith(".public.blob.vercel-storage.com") ||
+      url.hostname==="res.cloudinary.com"
+    );
+    if(!trusted)return fallback;
+    const response=await fetch(source,{cache:"no-store",signal:AbortSignal.timeout(4000)});
+    const kind=response.headers.get("content-type")||"";
+    const length=Number(response.headers.get("content-length")||0);
+    if(!response.ok || !/^image\/(png|jpeg)(?:;|$)/i.test(kind) || length>3_000_000)return fallback;
+    const bytes=Buffer.from(await response.arrayBuffer());
+    return bytes.length>0 && bytes.length<=3_000_000?bytes:fallback;
+  }catch{return fallback;}
+}
 const L=48, R=547, W=R-L, BOTTOM=747, INK="#222c39", NAVY="#273647", GREY="#77818f", LIGHT="#e9edf1";
 function object(v:unknown):Record<string,unknown>{return v&&typeof v==="object"&&!Array.isArray(v)?v as Record<string,unknown>:{};}
 function str(v:unknown):string{return typeof v==="string"?v:"";}
@@ -23,6 +43,7 @@ export async function renderInvoicePdf(invoice:InvoicePdfInput):Promise<Buffer>{
  if(formatMinor(totals.totalMinor,currency)!==invoice.total)throw new Error("Saved invoice total does not match line items");
  const bank=object(invoice.bankDetails);
  const inter=await loadInvoiceInterFont();
+ const logoBuffer=await companyLogoBuffer(invoice.companyLogoUrl);
  return new Promise((resolve,reject)=>{
   const pdf=new PDFDocument({size:"A4",margin:L,bufferPages:true});
   // Retain the proven Unicode font for PDF; the document uses the same enterprise sizing as the web preview.
@@ -44,7 +65,7 @@ export async function renderInvoicePdf(invoice:InvoicePdfInput):Promise<Buffer>{
    const h=height(value,width,bold,size);ensure(h+space);write(value,L,y,width,bold,size,color);y+=h+space;
   }
   function companyHeader(){
-   pdf.image(vncLogoPngBuffer(),L,44,{fit:[132,42]});
+   pdf.image(logoBuffer,L,44,{fit:[132,42]});
    write("COMMERCIAL",326,47,221,true,15,NAVY,"right");
    write("INVOICE",326,67,221,true,15,NAVY,"right");
    write("PAYMENT REQUEST",343,91,204,false,7,GREY,"right");
@@ -137,11 +158,15 @@ export async function renderInvoicePdf(invoice:InvoicePdfInput):Promise<Buffer>{
    block("PAYMENT TERMS & NOTES",W,8.5,true,NAVY,8);
    block(invoice.notes.slice(0,1700),W,7.8,false,INK,10);
   }
-  // Creator is an internal audit field; display only the verified stored snapshot.
-  if(invoice.createdByDisplayName && invoice.createdByDisplayName!=="Legacy / not recorded"){
+  // New invoices show verified Sales/Account; legacy immutable snapshots retain
+  // their original creator attribution with an explicit CREATED BY label.
+  const historicalCreator=!invoice.preparedByName && invoice.createdByDisplayName &&
+    invoice.createdByDisplayName!=="Legacy / not recorded" ? invoice.createdByDisplayName : null;
+  const attribution=invoice.preparedByName||historicalCreator;
+  if(attribution){
    y+=8;ensure(28);
-   write("PREPARED BY",L,y,145,true,6.8,GREY);
-   write(invoice.createdByDisplayName.slice(0,160),L+167,y,332,false,7.8,INK);
+   write(invoice.preparedByName?"PREPARED BY":"CREATED BY",L,y,145,true,6.8,GREY);
+   write(attribution.slice(0,160),L+167,y,332,false,7.8,INK);
    y+=24;
   }
   const pageRange=pdf.bufferedPageRange();

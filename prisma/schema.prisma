@@ -6634,6 +6634,8 @@ model CustomPaymentInvoice {
   createdByEmployeeId String?
   createdByDisplayName String
   createdByMode       String
+  preparedByEmployeeId String?
+  preparedByName       String?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
@@ -6678,4 +6680,13 @@ model VncBankAccount {
   updatedAt   DateTime @updatedAt
   invoices CustomPaymentInvoice[]
   @@index([legalEntityId, isActive])
+}
+
+
+/** Internal VNC OS company branding; independent of public ATTD BrandingSettings. */
+model VncOsCompanyBranding {
+  id         String   @id @default("default")
+  logoUrl    String?
+  faviconUrl String?
+  updatedAt  DateTime @updatedAt
 }

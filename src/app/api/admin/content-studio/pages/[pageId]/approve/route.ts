@@ -4,6 +4,7 @@ import { getAdminSessionFromCookies } from "@/lib/admin-auth/get-admin-session";
 import { can } from "@/features/auth/admin-permissions";
 import { isContentSiteId } from "@/features/content-studio/content-studio-policy";
 import { validatedStudioProduct } from "@/features/content-studio/product-feed";
+import { verifiedCatalogMedia } from "@/features/content-studio/media-rights-gate";
 
 /**
  * Independent approval gate. CMS editors cannot approve merely because they
@@ -33,7 +34,7 @@ export async function POST(request: NextRequest, context: { params: Promise<{ pa
       });
       if (!revision?.authorId) return { status: 409, message: "Revision author missing; resave a new draft with attribution" };
       if (revision.authorId === actorId) return { status: 403, message: "Authors cannot approve their own revisions" };
-      if (page.slug.startsWith("/products/") && !validatedStudioProduct(page.slug, revision.content)) return { status: 409, message: "Bilingual product content and approved media required" };
+      if (page.slug.startsWith("/products/")) { const product = validatedStudioProduct(page.slug, revision.content); if (!product || !(await verifiedCatalogMedia(product.media))) return { status: 409, message: "Verified Media Library asset, rights evidence, and bilingual content required" }; }
       if (revision.status !== "IN_REVIEW") return { status: 409, message: "Revision must be submitted for review first" };
       const changed = await tx.studioPageRevision.updateMany({
         where: { id: revision.id, pageId, status: "IN_REVIEW", approvedById: null },

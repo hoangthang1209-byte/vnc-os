@@ -39,6 +39,8 @@ export async function POST(request:NextRequest,context:{params:Promise<{id:strin
         createdByEmployeeId:invoice.createdByEmployeeId,
         createdByDisplayName:invoice.createdByDisplayName,
         createdByMode:invoice.createdByMode,
+        preparedByEmployeeId:invoice.preparedByEmployeeId,
+        preparedByName:invoice.preparedByName,
         recipientName:invoice.recipientName,recipientEmail:invoice.recipientEmail,
         recipientAddress:invoice.recipientAddress,
         issuerName:invoice.issuerName,issuerAddress:invoice.issuerAddress,

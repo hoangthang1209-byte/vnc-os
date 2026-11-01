@@ -1,3 +1,4 @@
+import { resolveInvoiceOrderPreparer } from "@/features/documents/invoice-preparer";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { can } from "@/features/auth/admin-permissions";
@@ -53,12 +54,25 @@ export async function POST(request: NextRequest) {
       if(!customer)return NextResponse.json({error:"Khách hàng liên kết không tồn tại trong CRM."},{status:400});
     }
     const orderId=body.orderId==null||body.orderId===""?null:required(body.orderId,100);
+    let preparedByName:string|null=null;
+    let preparedByEmployeeId:string|null=null;
     if(orderId){
       if(!can(getAdminSessionFromRequest(request),"orders.view"))return NextResponse.json({error:"Bạn chưa có quyền liên kết đơn hàng."},{status:403});
-      const order=await prisma.order.findUnique({where:{id:orderId},select:{id:true,customerId:true}});
+      const order=await prisma.order.findUnique({where:{id:orderId},select:{id:true,customerId:true,salesName:true,salesEmployeeId:true,salesEmployee:{select:{fullName:true}},salesRepresentative:{select:{fullName:true,employeeId:true}}}});
       if(!order)return NextResponse.json({error:"Đơn hàng được chọn không tồn tại."},{status:400});
+      const responsible=resolveInvoiceOrderPreparer(order);
+      preparedByName=responsible.name;
+      preparedByEmployeeId=responsible.employeeId;
       if(customerId&&order.customerId&&customerId!==order.customerId)
         return NextResponse.json({error:"Khách hàng Invoice không trùng với khách hàng trên đơn hàng đã liên kết."},{status:400});
+    }
+    // Allow verified employee selection for standalone invoices when an Order is not yet in VNC OS.
+    const selectedEmployeeId=body.preparedByEmployeeId==null||body.preparedByEmployeeId===""?null:required(body.preparedByEmployeeId,100);
+    if(!preparedByName&&selectedEmployeeId){
+      const staff=await prisma.employee.findUnique({where:{id:selectedEmployeeId},select:{id:true,fullName:true,isActive:true}});
+      if(!staff||!staff.isActive)return NextResponse.json({error:"Sales/Account được chọn không tồn tại hoặc đã ngừng hoạt động."},{status:400});
+      preparedByName=staff.fullName.trim();
+      preparedByEmployeeId=staff.id;
     }
     const legalEntityId=body.legalEntityId==null||body.legalEntityId===""?null:required(body.legalEntityId,100);
     const bankAccountId=body.bankAccountId==null||body.bankAccountId===""?null:required(body.bankAccountId,100);
@@ -78,6 +92,7 @@ export async function POST(request: NextRequest) {
       createdByEmployeeId:creatorSession.employeeId,
       createdByDisplayName:creatorName.slice(0,250),
       createdByMode:creatorSession.mode,
+      preparedByName,preparedByEmployeeId,
       customerId,
       orderId,
       legalEntityId,
@@ -123,7 +138,7 @@ export async function POST(request: NextRequest) {
 export async function GET(request:NextRequest) {
   const refused=authorize(request,"orders.view_financials");if(refused)return refused;
   try {
-    const invoices=await prisma.customPaymentInvoice.findMany({take:100,orderBy:{createdAt:"desc"},select:{id:true,invoiceNo:true,status:true,recipientName:true,currency:true,total:true,createdAt:true,createdByDisplayName:true,createdByMode:true,orderId:true,customerId:true}});
+    const invoices=await prisma.customPaymentInvoice.findMany({take:100,orderBy:{createdAt:"desc"},select:{id:true,invoiceNo:true,status:true,recipientName:true,currency:true,total:true,createdAt:true,createdByDisplayName:true,createdByMode:true,preparedByName:true,orderId:true,customerId:true}});
     return NextResponse.json({invoices});
   }catch(error) {
     console.error("[custom invoice list]",error);

@@ -28,3 +28,17 @@ test("rejects malformed and excessive invoice email lists",()=>{
  assert.throws(()=>parseInvoiceRecipients(Array.from({length:11},(_,i)=>"user"+i+"@example.com").join(";")),/Tối đa/);
  assert.throws(()=>invoiceRecipients("to@example.com","manager@example.com\nBcc: bad@example.com"),/Email không hợp lệ/);
 });
+
+
+test("branded Invoice HTML includes escaped customer data, amount and reply address",()=>{
+ const input={invoiceNo:"CI-2026-0005",customerName:"ACME <script>alert(1)</script> & Partners",
+ issuerName:"Vietnam Clothing",currency:"USD",total:"446.00"};
+ const rendered=invoiceEmailContent(input);
+ assert.match(rendered.html,/Vietnam Clothing/);
+ assert.match(rendered.html,/TOTAL AMOUNT DUE/);
+ assert.match(rendered.html,/446\.00/);
+ assert.match(rendered.html,/support@vietnamclothing\.vn/);
+ assert.doesNotMatch(rendered.html,/<script>/);
+ assert.match(rendered.html,/&lt;script&gt;/);
+ assert.match(rendered.text,/USD 446\.00/);
+});

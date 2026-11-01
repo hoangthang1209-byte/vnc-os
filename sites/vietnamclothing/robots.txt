@@ -1,0 +1,3 @@
+User-agent: *
+Disallow: /
+# Staging is intentionally not indexed. Publish a production-specific robots.txt only after SEO migration QA.

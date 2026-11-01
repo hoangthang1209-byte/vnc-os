@@ -1,0 +1,83 @@
+/* Design port from business-owned beta.vietnamclothing.vn (vietnam-clothing-v2).
+   Neutral white/stone/black editorial direction, spacious Tailwind-inspired composition.
+   Existing content remains global merchandise / sourcing. No unverified beta proof claims. */
+:root{--ink:#111;--paper:#fff;--muted:#676767;--line:#e8e8e8;--soft:#f5f5f4;--accent:#111;--radius:3px}
+html{scroll-behavior:smooth}*{box-sizing:border-box}
+body{font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif!important;background:white!important;color:#111!important;line-height:1.65!important}
+a{color:inherit}
+.wrap{width:min(1280px,calc(100% - 48px))!important}
+.top{background:#111!important;color:#f3f3f3!important;letter-spacing:.16em;text-transform:uppercase;font-size:.66rem!important;padding:9px!important}
+.nav{min-height:95px;padding:19px 0!important}
+.brand{color:#111!important;letter-spacing:-.055em!important;font-size:1.45rem!important}
+.brand small{color:#777!important;font-size:.56rem!important}
+.nav-links{gap:30px!important;font-size:.85rem!important;font-weight:650}
+.nav-links a:not(.btn){color:#262626!important}
+.btn{background:#111!important;color:white!important;border-radius:0!important;border:1px solid #111!important;padding:13px 27px!important;min-height:52px!important;font-weight:740!important;transition:background .22s,transform .22s!important}
+.btn:hover{background:#414141!important;transform:translateY(-2px)!important}
+.btn-outline{background:transparent!important;border-color:#ddd!important;color:#111!important}
+.btn-outline:hover{background:#eee!important;color:#111!important}
+.hero{position:relative;background:linear-gradient(180deg,#fff 0%,#f5f5f4 100%)!important;color:#111!important;overflow:hidden}
+.hero-inner{grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr)!important;gap:74px!important;min-height:670px!important;padding:110px 0 100px!important}
+.hero h1{color:#111!important;font-size:clamp(3.5rem,6.65vw,7rem)!important;letter-spacing:-.077em!important;font-weight:790!important;line-height:.99!important;max-width:830px!important;margin:24px 0 30px!important}
+.hero p{color:#626262!important;font-size:1.12rem!important;max-width:570px!important;line-height:1.85}
+.hero .eyebrow{color:#555!important}
+.eyebrow{color:#727272!important;letter-spacing:.22em!important;text-transform:uppercase!important;font-size:.71rem!important}
+.actions{gap:13px!important;margin-top:35px!important}
+.abstract{height:520px!important;border-radius:0!important;border:0!important;box-shadow:0 25px 60px #00000014!important;background:linear-gradient(180deg,#0000 56%,#0007),url("https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?q=85&w=1500&auto=format&fit=crop") center/cover!important;position:relative}
+.abstract:before,.abstract:after{content:none!important}
+.hero-caption{left:24px!important;bottom:23px!important;font-size:.73rem!important;color:#fff!important}
+.stats{grid-template-columns:repeat(3,1fr)!important;gap:0!important;border:1px solid #e9e9e9!important;border-top:0!important;padding:0!important;background:#fff}
+.stats>div{padding:30px 35px!important;border-right:1px solid #eee!important;color:#777!important;font-size:.81rem!important}
+.stats>div:last-child{border-right:0!important}
+.stats strong{color:#111!important;font-size:1.1rem!important;font-weight:800!important;letter-spacing:-.035em}
+.section{padding:130px 0!important}
+.section-head{max-width:850px!important;margin-bottom:62px!important}
+.section h2{font-size:clamp(2.8rem,5vw,5rem)!important;letter-spacing:-.072em!important;font-weight:760!important;line-height:1.07!important;color:#111!important}
+.lead{color:#747474!important;line-height:1.9!important;font-size:1.08rem!important}
+.cards{gap:18px!important}
+.card{background:#f8f8f7!important;border:1px solid #ededed!important;min-height:305px!important;padding:36px!important;box-shadow:none!important;transition:transform .33s cubic-bezier(.2,.7,.2,1),background .33s,box-shadow .33s!important}
+.card:hover{transform:translateY(-8px);background:#fff!important;box-shadow:0 22px 65px #00000012!important}
+.card h3{font-size:1.6rem!important;color:#161616!important;font-weight:760!important;margin:28px 0 12px!important}
+.card p{color:#727272!important}
+.card a{color:#111!important;text-decoration:underline;text-underline-offset:6px}
+.num{color:#898989!important;font-weight:750!important}
+.band{background:#f5f5f4!important}
+.steps{gap:30px!important}
+.step{border-top:1px solid #bbb!important;padding-top:25px!important}
+.step b{color:#111!important;font-size:1.15rem!important}
+.step p{color:#777!important}
+.tag{border-radius:0!important;background:#f3f3f3!important;color:#303030!important}
+.rfq{background:#111!important;color:white!important}
+.rfq .eyebrow,.rfq h2{color:#fff!important}
+.rfq p{color:#aaa!important}
+.rfq a{color:#f4f4f4!important}
+.form{background:#fff!important;color:#111!important;border-radius:0!important;padding:35px!important;box-shadow:none!important}
+.form .field{color:#333!important}
+.form .field input,.form .field select,.form .field textarea{border:1px solid #dedede!important;border-radius:0!important;background:#fff!important}
+.form .hint{color:#777!important}
+.form .btn{background:#111!important;color:#fff!important}
+.footer{background:#070707!important;color:#bcbcbc!important}
+.footer a{color:#eee!important}
+:where(a,button,input,select,textarea):focus-visible{outline:3px solid #858585!important;outline-offset:4px}
+[data-reveal]{opacity:0;transform:translateY(35px);transition:opacity .8s cubic-bezier(.2,.7,.2,1),transform .8s cubic-bezier(.2,.7,.2,1)}
+[data-reveal].is-visible{opacity:1;transform:translateY(0)}
+@media(max-width:980px){.hero-inner{grid-template-columns:1fr!important;padding:75px 0!important;min-height:0!important;gap:42px!important}.abstract{height:420px!important}.cards{grid-template-columns:repeat(2,1fr)!important}}
+@media(max-width:620px){.wrap{width:calc(100% - 32px)!important}.nav{min-height:72px!important}.hero h1{font-size:clamp(3rem,12vw,4.8rem)!important}.hero-inner{padding:65px 0 45px!important}.abstract{height:330px!important}.section{padding:85px 0!important}.section h2{font-size:2.9rem!important}.cards,.stats,.steps,.form{grid-template-columns:1fr!important}.stats>div{border-right:0!important;border-bottom:1px solid #eee!important}.card{min-height:0!important}.rfq-inner{grid-template-columns:1fr!important}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto!important}[data-reveal]{opacity:1!important;transform:none!important;transition:none!important}.card,.btn{transition:none!important}}
+
+
+/* Type rhythm: correct over-tight -0.077em and cramped line-height used in old VNC draft. */
+body{font-family:Inter,"Helvetica Neue",Arial,sans-serif!important;font-weight:400!important;letter-spacing:0!important;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+.hero h1{letter-spacing:-.037em!important;line-height:1.115!important;font-weight:700!important;overflow-wrap:normal;word-break:normal}
+.section h2{letter-spacing:-.035em!important;line-height:1.22!important;font-weight:700!important}
+.card h3,article h2{letter-spacing:-.015em!important;line-height:1.32!important;font-weight:680!important}
+.hero p,.lead,article p,.card p,.step p{letter-spacing:.005em!important;line-height:1.8!important}
+.nav-links,.brand{letter-spacing:0!important}
+@media(max-width:620px){.hero h1{font-size:clamp(2.65rem,10.5vw,4.2rem)!important;letter-spacing:-.027em!important;line-height:1.13!important}.section h2{font-size:clamp(2.15rem,8.2vw,3rem)!important;line-height:1.2!important}}
+.vnc-media-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;margin-top:36px}
+.vnc-media-tile{margin:0;background:#f5f5f4;min-height:220px;overflow:hidden;position:relative}
+.vnc-media-tile img{display:block;width:100%;height:300px;object-fit:cover;transition:transform .6s ease}
+.vnc-media-tile:hover img{transform:scale(1.035)}
+.vnc-media-tile figcaption{padding:16px 18px;color:#555;font-size:.86rem}
+.vnc-media-status{padding:22px;background:#f5f5f4;border-left:3px solid #222;color:#525252}
+@media(max-width:750px){.vnc-media-grid{grid-template-columns:1fr 1fr}}@media(max-width:500px){.vnc-media-grid{grid-template-columns:1fr}}

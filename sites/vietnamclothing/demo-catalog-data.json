@@ -1,0 +1,113 @@
+{
+  "site": "vietnamclothing.vn",
+  "schemaVersion": 1,
+  "source": "DEMO_SAMPLE_NOT_PUBLISHED",
+  "demoOnly": true,
+  "products": [
+    {
+      "site": "vietnamclothing.vn",
+      "status": "DRAFT",
+      "demo": true,
+      "publicApproved": false,
+      "mediaRightsApproved": false,
+      "slug": "demo-artist-tour-tee",
+      "category": "entertainment",
+      "title": "Artist Tour T-Shirt Concept",
+      "summary": "Concept apparel for licensed entertainment merchandise programs.",
+      "description": "Concept apparel for licensed entertainment merchandise programs. This is fictitious concept content for layout testing only. Capabilities, prices, lead times and availability require confirmation.",
+      "media": [
+        {
+          "url": "./demo-media/demo-artist-tour-tee.svg",
+          "alt": "Illustrative demo graphic for Artist Tour T-Shirt Concept; not a product photo",
+          "visibility": "DEMO",
+          "approved": false,
+          "usageRightsApproved": false
+        }
+      ]
+    },
+    {
+      "site": "vietnamclothing.vn",
+      "status": "DRAFT",
+      "demo": true,
+      "publicApproved": false,
+      "mediaRightsApproved": false,
+      "slug": "demo-campaign-kit",
+      "category": "promotional",
+      "title": "Campaign Welcome Kit Concept",
+      "summary": "Customizable campaign packs for promotional gifting.",
+      "description": "Customizable campaign packs for promotional gifting. This is fictitious concept content for layout testing only. Capabilities, prices, lead times and availability require confirmation.",
+      "media": [
+        {
+          "url": "./demo-media/demo-campaign-kit.svg",
+          "alt": "Illustrative demo graphic for Campaign Welcome Kit Concept; not a product photo",
+          "visibility": "DEMO",
+          "approved": false,
+          "usageRightsApproved": false
+        }
+      ]
+    },
+    {
+      "site": "vietnamclothing.vn",
+      "status": "DRAFT",
+      "demo": true,
+      "publicApproved": false,
+      "mediaRightsApproved": false,
+      "slug": "demo-corporate-gift",
+      "category": "corporate",
+      "title": "Corporate Gift Set Concept",
+      "summary": "A curated branded gift experience for business partners.",
+      "description": "A curated branded gift experience for business partners. This is fictitious concept content for layout testing only. Capabilities, prices, lead times and availability require confirmation.",
+      "media": [
+        {
+          "url": "./demo-media/demo-corporate-gift.svg",
+          "alt": "Illustrative demo graphic for Corporate Gift Set Concept; not a product photo",
+          "visibility": "DEMO",
+          "approved": false,
+          "usageRightsApproved": false
+        }
+      ]
+    },
+    {
+      "site": "vietnamclothing.vn",
+      "status": "DRAFT",
+      "demo": true,
+      "publicApproved": false,
+      "mediaRightsApproved": false,
+      "slug": "demo-product-development",
+      "category": "sourcing",
+      "title": "Product Sourcing Concept",
+      "summary": "Example of coordinating materials, samples and packaging.",
+      "description": "Example of coordinating materials, samples and packaging. This is fictitious concept content for layout testing only. Capabilities, prices, lead times and availability require confirmation.",
+      "media": [
+        {
+          "url": "./demo-media/demo-product-development.svg",
+          "alt": "Illustrative demo graphic for Product Sourcing Concept; not a product photo",
+          "visibility": "DEMO",
+          "approved": false,
+          "usageRightsApproved": false
+        }
+      ]
+    },
+    {
+      "site": "vietnamclothing.vn",
+      "status": "DRAFT",
+      "demo": true,
+      "publicApproved": false,
+      "mediaRightsApproved": false,
+      "slug": "demo-private-label-hoodie",
+      "category": "apparel",
+      "title": "Private Label Hoodie Concept",
+      "summary": "An illustrative apparel OEM product-development brief.",
+      "description": "An illustrative apparel OEM product-development brief. This is fictitious concept content for layout testing only. Capabilities, prices, lead times and availability require confirmation.",
+      "media": [
+        {
+          "url": "./demo-media/demo-private-label-hoodie.svg",
+          "alt": "Illustrative demo graphic for Private Label Hoodie Concept; not a product photo",
+          "visibility": "DEMO",
+          "approved": false,
+          "usageRightsApproved": false
+        }
+      ]
+    }
+  ]
+}

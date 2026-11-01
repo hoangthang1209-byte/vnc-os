@@ -168,10 +168,23 @@ export async function renderInvoicePdf(invoice:InvoicePdfInput):Promise<Buffer>{
     invoice.createdByDisplayName!=="Legacy / not recorded" ? invoice.createdByDisplayName : null;
   const attribution=invoice.preparedByName||historicalCreator;
   if(attribution){
-   y+=14;ensure(32);
-   write(invoice.preparedByName?"PREPARED BY":"CREATED BY",L,y,145,true,6.8,GREY);
-   write(attribution.slice(0,160),L+167,y,332,false,7.8,INK);
-   y+=24;
+   // Optional wet-signature zone on the right; the verified Sales/Account
+   // preparer is not the same as the authenticated audit creator.
+   y+=15;
+   ensure(invoice.preparedByName?112:44);
+   const signatureX=R-193,signatureWidth=193;
+   if(invoice.preparedByName){
+    write("PREPARED BY / NGƯỜI LẬP",signatureX,y,signatureWidth,true,7.2,NAVY,"right");
+    y+=65; // Blank area intentionally reserved for physical handwritten signature.
+    pdf.strokeColor("#b7c1cd").lineWidth(.7).moveTo(signatureX+26,y).lineTo(R,y).stroke();
+    y+=9;
+    write(attribution.slice(0,160),signatureX,y,signatureWidth,true,8.5,INK,"right");
+    y+=22;
+   }else{
+    write("CREATED BY (SYSTEM AUDIT)",signatureX,y,signatureWidth,true,6.8,GREY,"right");
+    write(attribution.slice(0,160),signatureX,y+17,signatureWidth,false,7.8,INK,"right");
+    y+=43;
+   }
   }
   const pageRange=pdf.bufferedPageRange();
   for(let p=0;p<pageRange.count;p++){

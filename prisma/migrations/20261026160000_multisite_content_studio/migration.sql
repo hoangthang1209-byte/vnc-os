@@ -39,3 +39,8 @@ CREATE TABLE "StudioPageRevision" (
 );
 CREATE UNIQUE INDEX "StudioPageRevision_pageId_version_key" ON "StudioPageRevision"("pageId","version");
 CREATE INDEX "StudioPageRevision_pageId_status_createdAt_idx" ON "StudioPageRevision"("pageId","status","createdAt");
+
+-- Explicit independent CMS approval permission (no automatic role grants).
+INSERT INTO "AdminPermission" ("id","code","module","action","name","description","sortOrder","updatedAt")
+VALUES ('cms-approve-v1','cms.approve','cms','approve','Phê duyệt nội dung CMS','Separate permission for independently approving reviewed CMS revisions',900,CURRENT_TIMESTAMP)
+ON CONFLICT ("code") DO NOTHING;

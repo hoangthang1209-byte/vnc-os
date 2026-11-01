@@ -14,6 +14,7 @@ type AdminAuditEvent = {
     | "forbidden_api"
     | "forbidden_data"
     | "custom_invoice_issued"
+    | "custom_invoice_email_sent"
     | "vnc_legal_entity_created"
     | "vnc_legal_entity_updated"
     | "vnc_bank_account_created"

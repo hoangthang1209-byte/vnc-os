@@ -72,6 +72,11 @@ export async function POST(request:NextRequest,context:{params:Promise<{id:strin
   });
   if(!result.ok){
    console.error("[custom invoice email] email provider rejected request",{invoiceId:id,status:result.status});
+   try{
+    await prisma.customPaymentInvoice.updateMany({where:{id,status:"ISSUED"},data:{
+     emailDeliveryStatus:"FAILED",emailDeliveryUpdatedAt:new Date()
+    }});
+   }catch{console.error("[custom invoice email] could not record provider rejection",{invoiceId:id});}
    return NextResponse.json({error:"Dịch vụ gửi email từ chối yêu cầu. Kiểm tra cấu hình và thử lại.",providerStatus:result.status},{status:502});
   }
   const response=await result.json() as {id?:string};

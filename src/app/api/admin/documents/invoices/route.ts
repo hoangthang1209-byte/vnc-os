@@ -146,7 +146,7 @@ export async function POST(request: NextRequest) {
 export async function GET(request:NextRequest) {
   const refused=authorize(request,"orders.view_financials");if(refused)return refused;
   try {
-    const invoices=await prisma.customPaymentInvoice.findMany({take:100,orderBy:{createdAt:"desc"},select:{id:true,invoiceNo:true,status:true,recipientName:true,currency:true,total:true,createdAt:true,createdByDisplayName:true,createdByMode:true,preparedByName:true,orderId:true,customerId:true}});
+    const invoices=await prisma.customPaymentInvoice.findMany({take:100,orderBy:{createdAt:"desc"},select:{id:true,invoiceNo:true,status:true,recipientName:true,currency:true,total:true,createdAt:true,createdByDisplayName:true,createdByMode:true,preparedByName:true,emailedAt:true,emailedTo:true,emailSendCount:true,orderId:true,customerId:true}});
     return NextResponse.json({invoices});
   }catch(error) {
     console.error("[custom invoice list]",error);

@@ -4,6 +4,7 @@ import { getAdminSessionFromCookies } from "@/lib/admin-auth/get-admin-session";
 import { can } from "@/features/auth/admin-permissions";
 import { isContentSiteId, canPublishStudioRevision } from "@/features/content-studio/content-studio-policy";
 import { validatedStudioProduct } from "@/features/content-studio/product-feed";
+import { verifiedCatalogMedia } from "@/features/content-studio/media-rights-gate";
 
 /**
  * Publish an already-approved immutable revision, never a draft.
@@ -40,7 +41,7 @@ export async function POST(
       if (!revision) return { status: 404, message: "Revision not found" };
       const latest = await tx.studioPageRevision.findFirst({ where: { pageId }, orderBy: { version: "desc" }, select: { id: true } });
       if (latest?.id !== revision.id) return { status: 409, message: "Only latest approved revision may be published" };
-      if (page.slug.startsWith("/products/") && !validatedStudioProduct(page.slug, revision.content)) return { status: 409, message: "Bilingual product/media publishing gate failed" };
+      if (page.slug.startsWith("/products/")) { const product = validatedStudioProduct(page.slug, revision.content); if (!product || !(await verifiedCatalogMedia(product.media))) return { status: 409, message: "Media rights verification or bilingual publication gate failed" }; }
       if (!canPublishStudioRevision(revision.status, revision.approvedById)) {
         return { status: 409, message: "Revision must be independently approved before publishing" };
       }

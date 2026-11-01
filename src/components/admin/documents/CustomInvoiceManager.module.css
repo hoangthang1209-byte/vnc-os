@@ -61,7 +61,7 @@
 .paper { font-family:"Manrope","Be Vietnam Pro","Inter",Arial,sans-serif; padding:29px 27px; letter-spacing:-.012em; }
 .paperHeader { align-items:flex-start; border:0; padding-bottom:18px; }
 .paperBrand { width:55%; min-width:0; }
-.paperLogo { display:block; width:100%; max-width:174px; height:auto; object-fit:contain; object-position:left center; }
+.paperLogo { display:block; width:100%; max-width:220px; height:auto; object-fit:contain; object-position:left center; }
 .paperTitleBlock { text-align:right; }
 .paperTitle { font-size:16px; letter-spacing:-.038em; line-height:1.2; font-weight:800; color:#17283a; }
 .paperSubtitle { font-size:8px; margin-top:8px; color:#7f8e9d; letter-spacing:.065em; font-weight:700; }

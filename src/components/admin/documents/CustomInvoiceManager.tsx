@@ -87,9 +87,9 @@ export default function CustomInvoiceManager(){
   }catch(error){setMessage(error instanceof Error?error.message:"Lưu không thành công");}
   finally{setBusy(false);}
  }
- async function sendEmail(id:string):Promise<{ok:boolean;recipient?:string;error?:string}>{
+ async function sendEmail(id:string,forceResend=false):Promise<{ok:boolean;recipient?:string;error?:string}>{
   try{
-   const r=await fetch("/api/admin/documents/invoices/"+encodeURIComponent(id)+"/send-email",{method:"POST"});
+   const r=await fetch("/api/admin/documents/invoices/"+encodeURIComponent(id)+"/send-email",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({forceResend})});
    const result=await r.json();
    if(!r.ok)throw new Error(result.error||"Không thể gửi email.");
    setEmailDelivery({id,state:"sent",recipient:result.recipient});
@@ -121,7 +121,7 @@ export default function CustomInvoiceManager(){
  async function retryEmail(id:string){
   if(!window.confirm("Gửi Commercial Invoice PDF đã phát hành tới email khách hàng đã lưu?"))return;
   setBusy(true);setMessage("Đang gửi email cho khách...");
-  const delivered=await sendEmail(id);
+  const delivered=await sendEmail(id,true);
   setMessage(delivered.ok?"Đã gửi email đến "+delivered.recipient+".":"CHƯA gửi email: "+delivered.error);
   setBusy(false);
  }

@@ -24,6 +24,8 @@ export default function CustomInvoiceManager(){
  const [assignedFromOrder,setAssignedFromOrder]=useState(false);
  const [staff,setStaff]=useState<Array<{id:string;fullName:string;jobTitle:string|null}>>([]);
  const [recipientEmail,setRecipientEmail]=useState("");
+ const [sendAfterIssue,setSendAfterIssue]=useState(true);
+ const [emailDelivery,setEmailDelivery]=useState<{id:string;state:"sent"|"failed";recipient?:string}|null>(null);
  const [recipientAddress,setRecipientAddress]=useState("");
  const [issuerName,setIssuerName]=useState("");
  const [issuerAddress,setIssuerAddress]=useState("");
@@ -85,15 +87,43 @@ export default function CustomInvoiceManager(){
   }catch(error){setMessage(error instanceof Error?error.message:"Lưu không thành công");}
   finally{setBusy(false);}
  }
+ async function sendEmail(id:string):Promise<{ok:boolean;recipient?:string;error?:string}>{
+  try{
+   const r=await fetch("/api/admin/documents/invoices/"+encodeURIComponent(id)+"/send-email",{method:"POST"});
+   const result=await r.json();
+   if(!r.ok)throw new Error(result.error||"Không thể gửi email.");
+   setEmailDelivery({id,state:"sent",recipient:result.recipient});
+   return {ok:true,recipient:result.recipient};
+  }catch(error){
+   setEmailDelivery({id,state:"failed"});
+   return {ok:false,error:error instanceof Error?error.message:"Gửi email thất bại."};
+  }
+ }
  async function issue(id:string){
-  if(!window.confirm("Phát hành sẽ khóa nội dung Invoice. Bạn xác nhận thông tin và tài khoản ngân hàng đã chính xác?"))return;
+  const message=sendAfterIssue?
+    "Phát hành sẽ khóa nội dung Invoice và gửi bản PDF đến email khách hàng nếu đã cấu hình dịch vụ gửi. Bạn xác nhận?":
+    "Phát hành sẽ khóa nội dung Invoice. Bạn xác nhận thông tin và tài khoản ngân hàng đã chính xác?";
+  if(!window.confirm(message))return;
   setBusy(true);setMessage("Đang phát hành Invoice...");
   try{
    const r=await fetch("/api/admin/documents/invoices/"+encodeURIComponent(id)+"/issue",{method:"POST"});
    const data=await r.json();if(!r.ok)throw new Error(data.error||"Không thể phát hành");
-   if(id===pdfId)setIssued(true);setMessage("Invoice đã phát hành. Có thể tải PDF.");await refresh();
+   if(id===pdfId)setIssued(true);
+   await refresh();
+   if(sendAfterIssue){
+    setMessage("Invoice đã phát hành. Đang gửi PDF qua email...");
+    const delivered=await sendEmail(id);
+    setMessage(delivered.ok?"Invoice đã phát hành. Đã gửi email đến "+delivered.recipient+".":"Invoice đã phát hành nhưng CHƯA gửi email: "+delivered.error+" Bạn có thể gửi lại.");
+   }else setMessage("Invoice đã phát hành. Bạn có thể tải PDF hoặc gửi email sau.");
   }catch(error){setMessage(error instanceof Error?error.message:"Phát hành không thành công");}
   finally{setBusy(false);}
+ }
+ async function retryEmail(id:string){
+  if(!window.confirm("Gửi Commercial Invoice PDF đã phát hành tới email khách hàng đã lưu?"))return;
+  setBusy(true);setMessage("Đang gửi email cho khách...");
+  const delivered=await sendEmail(id);
+  setMessage(delivered.ok?"Đã gửi email đến "+delivered.recipient+".":"CHƯA gửi email: "+delivered.error);
+  setBusy(false);
  }
  const field=(label:string,value:string,change:(v:string)=>void,placeholder="",type="text")=><div className={s.field}><label>{label}</label><input className={s.input} type={type} value={value} readOnly={["Đơn vị phát hành *","Địa chỉ bên phát hành","Tên người thụ hưởng","Ngân hàng","Số tài khoản","SWIFT (nếu có)","Account Address","Bank Address","Branch"].includes(label)} placeholder={placeholder} onChange={e=>{change(e.target.value);setPdfId("");setIssued(false);}}/></div>;
  return <main className={s.workspace}>
@@ -161,6 +191,7 @@ export default function CustomInvoiceManager(){
       <div className={s.fields}>
       {field("Đơn vị phát hành *",issuerName,v=>{setIssuerName(v);setLegalEntityId("");setBankAccountId("");},"Tên pháp nhân VNC")}
       {field("Khách hàng *",recipientName,v=>{setRecipientName(v);setCustomerId("");},"Tên công ty / cá nhân")}
+      {field("Email nhận Invoice",recipientEmail,setRecipientEmail,"accounting@customer.com","email")}
       {field("Địa chỉ bên phát hành",issuerAddress,setIssuerAddress,"Địa chỉ pháp lý")}
       {field("Địa chỉ khách hàng",recipientAddress,setRecipientAddress,"Địa chỉ nhận Invoice")}
      </div></div>
@@ -188,8 +219,10 @@ export default function CustomInvoiceManager(){
     </div>
     <div className={s.actions}>
      <button className={s.primary} type="button" disabled={busy||!permissions.canCreateCustomInvoice} onClick={()=>void save()}>{busy?"Đang xử lý...":"Lưu bản nháp"}</button>
-     {pdfId&&!issued&&permissions.canIssueCustomInvoice&&<button className={s.secondary} type="button" disabled={busy} onClick={()=>void issue(pdfId)}>Phát hành Invoice</button>}
+     {pdfId&&!issued&&permissions.canIssueCustomInvoice&&<label className={s.invoiceEmailToggle}><input type="checkbox" checked={sendAfterIssue} onChange={e=>setSendAfterIssue(e.target.checked)} disabled={busy}/> Gửi PDF cho khách ngay sau phát hành</label>}
+     {pdfId&&!issued&&permissions.canIssueCustomInvoice&&<button className={s.secondary} type="button" disabled={busy} onClick={()=>void issue(pdfId)}>{sendAfterIssue?"Phát hành & gửi email":"Phát hành Invoice"}</button>}
      {pdfId&&issued&&<a className={s.secondary} href={"/api/admin/documents/invoices/"+encodeURIComponent(pdfId)+"/pdf"}>Tải PDF</a>}
+     {pdfId&&issued&&permissions.canIssueCustomInvoice&&<button className={s.secondary} type="button" disabled={busy} onClick={()=>void retryEmail(pdfId)}>Gửi email Invoice</button>}
     </div>
     <p role="status" className={s.status}>{message}</p>
    </section>
@@ -227,7 +260,7 @@ export default function CustomInvoiceManager(){
    </div><p className={s.helper}>Đây là bản xem trước theo dữ liệu đang nhập, không phải Invoice đã lưu. Khi sửa khoản thu, cần lưu lại bằng số Invoice mới; PDF chỉ phản ánh bản đã phát hành và khóa dữ liệu.</p></aside>
   </div>
   <section className={s.panel+" "+s.listPanel}><div className={s.panelHead}><h2>Invoice đã lưu</h2><button type="button" className={s.secondary} onClick={()=>void refresh()}>Làm mới danh sách</button></div>
-   {invoices.length===0?<p className={s.empty}>Chưa có Invoice nào được tải. Tạo bản nháp để bắt đầu.</p>:invoices.map(inv=><div className={s.listRow} key={inv.id}><div><div className={s.listMain}>{inv.invoiceNo} · {inv.recipientName}</div><div className={s.listSub}>{inv.currency} {inv.total} · Sales/Account: {inv.preparedByName||"Chưa xác định"} · Tạo bởi: {inv.createdByDisplayName} · {new Date(inv.createdAt).toLocaleString("vi-VN")}</div></div><div className={s.listActions}><span className={inv.status==="ISSUED"?s.state+" "+s.stateIssued:s.state}>{inv.status==="ISSUED"?"Đã phát hành":"Bản nháp"}</span>{inv.status==="DRAFT"&&permissions.canIssueCustomInvoice&&<button type="button" className={s.link} onClick={()=>void issue(inv.id)}>Phát hành</button>}{inv.status==="ISSUED"&&<a className={s.link} href={"/api/admin/documents/invoices/"+encodeURIComponent(inv.id)+"/pdf"}>Tải PDF</a>}</div></div>)}
+   {invoices.length===0?<p className={s.empty}>Chưa có Invoice nào được tải. Tạo bản nháp để bắt đầu.</p>:invoices.map(inv=><div className={s.listRow} key={inv.id}><div><div className={s.listMain}>{inv.invoiceNo} · {inv.recipientName}</div><div className={s.listSub}>{inv.currency} {inv.total} · Sales/Account: {inv.preparedByName||"Chưa xác định"} · Tạo bởi: {inv.createdByDisplayName} · {new Date(inv.createdAt).toLocaleString("vi-VN")}</div></div><div className={s.listActions}><span className={inv.status==="ISSUED"?s.state+" "+s.stateIssued:s.state}>{inv.status==="ISSUED"?"Đã phát hành":"Bản nháp"}</span>{inv.status==="DRAFT"&&permissions.canIssueCustomInvoice&&<button type="button" className={s.link} onClick={()=>void issue(inv.id)}>Phát hành</button>}{inv.status==="ISSUED"&&<a className={s.link} href={"/api/admin/documents/invoices/"+encodeURIComponent(inv.id)+"/pdf"}>Tải PDF</a>}{inv.status==="ISSUED"&&permissions.canIssueCustomInvoice&&<button type="button" className={s.link} disabled={busy} onClick={()=>void retryEmail(inv.id)}>{emailDelivery?.id===inv.id&&emailDelivery.state==="sent"?"Đã gửi · Gửi lại":"Gửi email"}</button>}</div></div>)}
   </section>
  </main>;
 }

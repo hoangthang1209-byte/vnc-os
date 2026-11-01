@@ -1,4 +1,5 @@
 import {NextRequest,NextResponse} from "next/server";
+import {createHash} from "node:crypto";
 import {prisma} from "@/lib/prisma";
 import {getAdminSessionFromRequest} from "@/lib/admin-auth/get-admin-session";
 import {can} from "@/features/auth/admin-permissions";
@@ -45,9 +46,10 @@ export async function POST(request:NextRequest,context:{params:Promise<{id:strin
    invoiceNo:String(snapshot.invoiceNo),customerName:String(snapshot.recipientName),
    issuerName:String(snapshot.issuerName),currency:String(snapshot.currency),total:String(snapshot.total)
   });
+  const idempotencyKey="vnc-invoice-"+createHash("sha256").update(id+":"+email.toLowerCase()).digest("hex");
   const result=await fetch("https://api.resend.com/emails",{
    method:"POST",signal:AbortSignal.timeout(18000),
-   headers:{"Authorization":`Bearer ${apiKey}`,"Content-Type":"application/json","Idempotency-Key":`vnc-invoice-${id}-${email}`},
+   headers:{"Authorization":`Bearer ${apiKey}`,"Content-Type":"application/json","Idempotency-Key":idempotencyKey},
    body:JSON.stringify({
     from,to:[email],subject:emailContent.subject,text:emailContent.text,
     attachments:[{filename:`commercial-invoice-${String(snapshot.invoiceNo).replace(/[^A-Za-z0-9-]/g,"")}.pdf`,content:pdf.toString("base64")}]

@@ -24,9 +24,15 @@ export async function POST(request:NextRequest,context:{params:Promise<{id:strin
   const invoice=await prisma.customPaymentInvoice.findUnique({where:{id}});
   if(!invoice)return NextResponse.json({error:"Invoice không tồn tại."},{status:404});
   if(invoice.status!=="ISSUED"||!invoice.issuedSnapshot)return NextResponse.json({error:"Chỉ gửi Invoice đã phát hành."},{status:409});
+  const body:unknown=await request.json().catch(()=>({}));
+  const forceResend=typeof body==="object"&&body!==null&&!Array.isArray(body)&&
+    (body as {forceResend?:unknown}).forceResend===true;
   const snapshot=invoice.issuedSnapshot as Record<string,unknown>;
   const email=snapshot.recipientEmail;
   if(!validInvoiceRecipient(email))return NextResponse.json({error:"Invoice chưa có email khách hàng hợp lệ. Không thể gửi."},{status:422});
+  if(invoice.emailedAt && invoice.emailedTo?.toLowerCase()===email.toLowerCase()&&!forceResend){
+   return NextResponse.json({sent:true,alreadySent:true,recipient:email,emailedAt:invoice.emailedAt.toISOString()});
+  }
   const issued=(value:unknown)=>typeof value==="string"?new Date(value):null;
   const issueDate=issued(snapshot.issueDate);
   if(!issueDate||!Number.isFinite(issueDate.getTime()))throw new Error("Bad issued invoice date");
@@ -46,7 +52,7 @@ export async function POST(request:NextRequest,context:{params:Promise<{id:strin
    invoiceNo:String(snapshot.invoiceNo),customerName:String(snapshot.recipientName),
    issuerName:String(snapshot.issuerName),currency:String(snapshot.currency),total:String(snapshot.total)
   });
-  const idempotencyKey="vnc-invoice-"+createHash("sha256").update(id+":"+email.toLowerCase()).digest("hex");
+  const idempotencyKey="vnc-invoice-"+createHash("sha256").update(id+":"+email.toLowerCase()+":"+invoice.emailSendCount).digest("hex");
   const result=await fetch("https://api.resend.com/emails",{
    method:"POST",signal:AbortSignal.timeout(18000),
    headers:{"Authorization":`Bearer ${apiKey}`,"Content-Type":"application/json","Idempotency-Key":idempotencyKey},
@@ -60,6 +66,10 @@ export async function POST(request:NextRequest,context:{params:Promise<{id:strin
    return NextResponse.json({error:"Dịch vụ gửi email từ chối yêu cầu. Kiểm tra cấu hình và thử lại.",providerStatus:result.status},{status:502});
   }
   const response=await result.json() as {id?:string};
+  await prisma.customPaymentInvoice.update({where:{id},data:{
+   emailedAt:new Date(),emailedTo:email,emailProviderId:response.id??null,
+   emailSendCount:{increment:1}
+  }});
   logAdminAuditEvent({action:"custom_invoice_email_sent",userId:session.userId,employeeId:session.employeeId,route:request.nextUrl.pathname,
    detail:{invoiceId:id,invoiceNo:invoice.invoiceNo,recipient:email,providerMessageId:response.id??null}});
   return NextResponse.json({sent:true,recipient:email,messageId:response.id??null},{headers:{"Cache-Control":"private, no-store"}});

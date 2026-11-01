@@ -1,6 +1,7 @@
 /** Site-isolated public product export. Public approval is a reviewer attestation,
  * not proof that underlying media rights have been independently verified.
  */
+import { VNC_CATEGORY_IDS } from "./catalog-taxonomy-v1";
 const CATEGORY = new Set(["entertainment","promotional","corporate","sourcing","apparel"]);
 const SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 type Obj = Record<string, unknown>;
@@ -21,7 +22,7 @@ export function validatedStudioProduct(pagePath: string, content: unknown): Obj 
   const blocks = content.blocks;
   if (blocks.length !== 1 || !obj(blocks[0]) || blocks[0].type !== "product" || !obj(blocks[0].data)) return null;
   const d = blocks[0].data as Obj;
-  if (d.slug !== slug || !CATEGORY.has(String(d.category)) || !nonempty(d.title) || !nonempty(d.summary) || !nonempty(d.description)) return null;
+  if (d.slug !== slug || !CATEGORY.has(String(d.category)) || !VNC_CATEGORY_IDS.has(String(d.categoryId)) || !nonempty(d.title) || !nonempty(d.summary) || !nonempty(d.description)) return null;
   if (!obj(d.vi) || !nonempty(d.vi.title) || !nonempty(d.vi.summary) || !nonempty(d.vi.description)) return null;
   if (d.publicApproved !== true || d.mediaRightsApproved !== true) return null;
   const approved = approvedMedia(d.media);

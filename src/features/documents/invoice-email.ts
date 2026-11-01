@@ -19,7 +19,7 @@ export function parseInvoiceRecipients(value:unknown,max=10):string[]{
  const emails=value.split(/[,;\n]+/).map(x=>x.trim()).filter(Boolean);
  if(emails.length>max)throw new Error("Tối đa "+max+" địa chỉ email trong mỗi nhóm.");
  for(const address of emails){
-  if(!validInvoiceRecipient(address))throw new Error("Email không hợp lệ: "+address.slice(0,100));
+  if(!validInvoiceRecipient(address))throw new Error("Email không hợp lệ: "+String(address).slice(0,100));
  }
  return Array.from(new Map(emails.map(email=>[email.toLowerCase(),email.toLowerCase()])).values());
 }

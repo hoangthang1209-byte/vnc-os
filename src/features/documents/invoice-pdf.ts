@@ -137,11 +137,15 @@ export async function renderInvoicePdf(invoice:InvoicePdfInput):Promise<Buffer>{
    block("PAYMENT TERMS & NOTES",W,8.5,true,NAVY,8);
    block(invoice.notes.slice(0,1700),W,7.8,false,INK,10);
   }
-  // Sales/Account is the document preparer, independent of the system audit creator.
-  if(invoice.preparedByName){
+  // Modern invoices show the verified Sales/Account. Historical issued snapshots
+  // retain their original creator, explicitly labeled as an audit actor — not Sales.
+  const historicalCreator=!invoice.preparedByName && invoice.createdByDisplayName &&
+    invoice.createdByDisplayName!=="Legacy / not recorded" ? invoice.createdByDisplayName : null;
+  const attribution=invoice.preparedByName||historicalCreator;
+  if(attribution){
    y+=8;ensure(28);
-   write("PREPARED BY",L,y,145,true,6.8,GREY);
-   write(invoice.preparedByName.slice(0,160),L+167,y,332,false,7.8,INK);
+   write(invoice.preparedByName?"PREPARED BY":"CREATED BY",L,y,145,true,6.8,GREY);
+   write(attribution.slice(0,160),L+167,y,332,false,7.8,INK);
    y+=24;
   }
   const pageRange=pdf.bufferedPageRange();

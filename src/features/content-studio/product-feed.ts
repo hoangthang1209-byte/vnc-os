@@ -7,10 +7,10 @@ const SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 type Obj = Record<string, unknown>;
 function obj(x: unknown): x is Obj { return !!x && typeof x === "object" && !Array.isArray(x); }
 function nonempty(x: unknown): x is string { return typeof x === "string" && x.trim().length > 0; }
-function approvedMedia(input: unknown): Array<{url:string;alt:string;approved:true;visibility:"PUBLIC";usageRightsApproved:true}> {
+function approvedMedia(input: unknown): Array<{mediaAssetId:string;url:string;alt:string;approved:true;visibility:"PUBLIC";usageRightsApproved:true}> {
   if (!Array.isArray(input)) return [];
-  return input.filter((m): m is {url:string;alt:string;approved:true;visibility:"PUBLIC";usageRightsApproved:true} => {
-    if (!obj(m) || !nonempty(m.url) || !nonempty(m.alt) || m.approved !== true || m.visibility !== "PUBLIC" || m.usageRightsApproved !== true) return false;
+  return input.filter((m): m is {mediaAssetId:string;url:string;alt:string;approved:true;visibility:"PUBLIC";usageRightsApproved:true} => {
+    if (!obj(m) || !nonempty(m.mediaAssetId) || !nonempty(m.url) || !nonempty(m.alt) || m.approved !== true || m.visibility !== "PUBLIC" || m.usageRightsApproved !== true) return false;
     try { const u = new URL(m.url); return u.protocol === "https:" && Boolean(u.hostname) && !u.username && !u.password; }
     catch { return false; }
   });

@@ -1,14 +1,15 @@
 "use client";
 import { useEffect, useState } from "react";
+import { VNC_CATEGORIES_V1, VNC_PARENT_CATEGORIES } from "@/features/content-studio/catalog-taxonomy-v1";
 
 type ProductFields = {
-  slug:string; category:string; title:string; summary:string; description:string;
+  slug:string; category:string; categoryId:string; title:string; summary:string; description:string;
   titleVi:string; summaryVi:string; descriptionVi:string; imageUrl:string; imageAlt:string;
   publicApproved:boolean; mediaRightsApproved:boolean;
 };
 type Revision = {id:string;version:number;status:string;authorId:string|null;approvedById:string|null;content:{blocks?:Array<{type:string;data:Record<string,unknown>}>}};
 type Page = {id:string;slug:string;title:string;publishedRevisionId:string|null};
-const init:ProductFields={slug:"",category:"apparel",title:"",summary:"",description:"",titleVi:"",summaryVi:"",descriptionVi:"",imageUrl:"",imageAlt:"",publicApproved:false,mediaRightsApproved:false};
+const init:ProductFields={slug:"",category:"apparel",categoryId:"APP-01",title:"",summary:"",description:"",titleVi:"",summaryVi:"",descriptionVi:"",imageUrl:"",imageAlt:"",publicApproved:false,mediaRightsApproved:false};
 const categories=["entertainment","promotional","corporate","sourcing","apparel"];
 const path="/api/admin/content-studio/pages";
 const style:React.CSSProperties={width:"100%",padding:10,border:"1px solid #becbc0",borderRadius:7,marginTop:5};
@@ -37,11 +38,11 @@ export default function StudioProductEditor(){
    const vi=(d.vi||{}) as Record<string,unknown>;
    const media=Array.isArray(d.media)?d.media[0] as Record<string,unknown>:{};
    const str=(x:unknown)=>typeof x==="string"?x:"";
-   setValue({slug:str(d.slug),category:str(d.category)||"apparel",title:str(d.title),summary:str(d.summary),description:str(d.description),titleVi:str(vi.title),summaryVi:str(vi.summary),descriptionVi:str(vi.description),imageUrl:str(media.url),imageAlt:str(media.alt),publicApproved:d.publicApproved===true,mediaRightsApproved:d.mediaRightsApproved===true});
+   setValue({slug:str(d.slug),category:str(d.category)||"apparel",categoryId:str(d.categoryId)||"APP-01",title:str(d.title),summary:str(d.summary),description:str(d.description),titleVi:str(vi.title),summaryVi:str(vi.summary),descriptionVi:str(vi.description),imageUrl:str(media.url),imageAlt:str(media.alt),publicApproved:d.publicApproved===true,mediaRightsApproved:d.mediaRightsApproved===true});
    setPageId(p.id);setRevision(rev);setPublishedId(data.page.publishedRevisionId);
   }catch(e){setError(e instanceof Error?e.message:"Cannot load product");}finally{setBusy(false);}
  };
- const productData=()=>({slug:value.slug,category:value.category,title:value.title,summary:value.summary,description:value.description,
+ const productData=()=>({slug:value.slug,category:value.category,categoryId:value.categoryId,title:value.title,summary:value.summary,description:value.description,
    vi:{title:value.titleVi,summary:value.summaryVi,description:value.descriptionVi},
    publicApproved:value.publicApproved,mediaRightsApproved:value.mediaRightsApproved,
    media:[{url:value.imageUrl,alt:value.imageAlt,approved:value.mediaRightsApproved,visibility:"PUBLIC",usageRightsApproved:value.mediaRightsApproved}]});
@@ -80,7 +81,8 @@ export default function StudioProductEditor(){
   <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(260px,1fr))",gap:20,marginTop:20}}>
     <div><h3>English</h3>{field("slug","Product slug")}{field("title","Product name")}{field("summary","Short description",true)}{field("description","Detailed description",true)}</div>
     <div><h3>Tiếng Việt</h3>{field("titleVi","Tên sản phẩm")}{field("summaryVi","Mô tả ngắn",true)}{field("descriptionVi","Mô tả chi tiết",true)}
-      <label style={{fontSize:13,fontWeight:600}}>Category<select style={style} value={value.category} onChange={e=>update("category",e.target.value)}>{categories.map(c=><option key={c}>{c}</option>)}</select></label></div>
+      <label style={{fontSize:13,fontWeight:600}}>Category<select style={style} value={value.category} onChange={e=>update("category",e.target.value)}>{categories.map(c=><option key={c}>{c}</option>)}</select></label>
+      <label style={{fontSize:13,fontWeight:600}}>VNC Product Category V1<select style={style} value={value.categoryId} onChange={e=>update("categoryId",e.target.value)}>{VNC_PARENT_CATEGORIES.map(parent=><optgroup key={parent.id} label={parent.nameEn+" / "+parent.nameVi}>{VNC_CATEGORIES_V1.filter(x=>x.parentId===parent.id).map(child=><option key={child.id} value={child.id}>{child.nameEn} / {child.nameVi}</option>)}</optgroup>)}</select></label></div>
   </div>
   <h3>Media Library reference</h3>
   <p style={{fontSize:12}}>Use only verified HTTPS media URLs from your approved media collection. Direct Media Library picker is not integrated yet.</p>

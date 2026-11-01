@@ -38,7 +38,7 @@ export default function StudioProductEditor(){
    const d=rev?.content?.blocks?.find(b=>b.type==="product")?.data;
    if(!rev||!d)throw Error("No product revision found");
    const vi=(d.vi||{}) as Record<string,unknown>;
-   const media=Array.isArray(d.media)?d.media[0] as Record<string,unknown>:{};
+   const media=Array.isArray(d.media)&&d.media[0]&&typeof d.media[0]==="object"?d.media[0] as Record<string,unknown>:{};
    const str=(x:unknown)=>typeof x==="string"?x:"";
    setValue({slug:str(d.slug),category:str(d.category)||"apparel",categoryId:str(d.categoryId)||"APP-01",title:str(d.title),summary:str(d.summary),description:str(d.description),titleVi:str(vi.title),summaryVi:str(vi.summary),descriptionVi:str(vi.description),imageMediaAssetId:str(media.mediaAssetId),imageUrl:str(media.url),imageAlt:str(media.alt),publicApproved:d.publicApproved===true,mediaRightsApproved:d.mediaRightsApproved===true});
    setPageId(p.id);setRevision(rev);setPublishedId(data.page.publishedRevisionId);
@@ -66,7 +66,7 @@ export default function StudioProductEditor(){
    const res=await fetch(edit?path+"/"+encodeURIComponent(pageId!):path,{method:edit?"PUT":"POST",headers:{"content-type":"application/json"},body:JSON.stringify(edit?{...data,expectedVersion:revision?.version}:data)});
    const body=await res.json();if(!res.ok)throw Error(body.message||"Save failed");
    setNotice("DRAFT saved. It is not published. Submit for independent review before publication.");
-   if(edit){setRevision(null);await refresh();}else{setPageId(body.page.id);await refresh();const found={id:body.page.id,slug:data.slug,title:data.title,publishedRevisionId:null};await load(found);}
+   if(edit){await refresh();await load({id:pageId!,slug:data.slug,title:data.title,publishedRevisionId:publishedId});}else{setPageId(body.page.id);await refresh();const found={id:body.page.id,slug:data.slug,title:data.title,publishedRevisionId:null};await load(found);}
   }catch(e){setError(e instanceof Error?e.message:"Save failed");}finally{setBusy(false);}
  };
  const transition=async(action:"review"|"approve"|"publish")=>{

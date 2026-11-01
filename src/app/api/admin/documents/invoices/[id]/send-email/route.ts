@@ -35,7 +35,10 @@ export async function POST(request:NextRequest,context:{params:Promise<{id:strin
   const {to,cc}=recipients;
   const recipientsKey=[...to.map(x=>"to:"+x),...cc.map(x=>"cc:"+x)].sort().join("|");
   const recipientsLabel=to.join(", ")+(cc.length?" | CC: "+cc.join(", "):"");
-  if(invoice.emailedAt && invoice.emailedTo===recipientsLabel&&!forceResend){
+  const recorded=(invoice.emailedTo||"").trim().toLowerCase();
+  const alreadySentToSameRecipients=recorded===recipientsLabel.toLowerCase() ||
+    (cc.length===0 && to.length===1 && recorded===to[0]);
+  if(invoice.emailedAt && alreadySentToSameRecipients&&!forceResend){
    return NextResponse.json({sent:true,alreadySent:true,recipients:{to,cc},emailedAt:invoice.emailedAt.toISOString()});
   }
   const issued=(value:unknown)=>typeof value==="string"?new Date(value):null;
@@ -62,7 +65,7 @@ export async function POST(request:NextRequest,context:{params:Promise<{id:strin
    method:"POST",signal:AbortSignal.timeout(18000),
    headers:{"Authorization":`Bearer ${apiKey}`,"Content-Type":"application/json","Idempotency-Key":idempotencyKey},
    body:JSON.stringify({
-    from,to,cc,subject:emailContent.subject,text:emailContent.text,
+    from,to,...(cc.length?{cc}:{}),subject:emailContent.subject,text:emailContent.text,
     attachments:[{filename:`commercial-invoice-${String(snapshot.invoiceNo).replace(/[^A-Za-z0-9-]/g,"")}.pdf`,content:pdf.toString("base64")}]
    })
   });

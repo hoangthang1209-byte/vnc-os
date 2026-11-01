@@ -9,6 +9,7 @@ import InvoiceIssuerPicker, { type IssuerSelection } from "./InvoiceIssuerPicker
 import InvoiceOrderPicker, { type InvoiceOrderOption } from "./InvoiceOrderPicker";
 import { VNC_LOGO_PNG_DATA_URI } from "@/features/documents/vnc-invoice-brand";
 import { isValidInvoiceNumericInput } from "@/features/documents/custom-invoice-calculation";
+import {parseInvoiceRecipients} from "@/features/documents/invoice-email";
 type Line={description:string;quantity:string;unit:string;unitPrice:string};
 type SavedInvoice={id:string;invoiceNo:string;status:string;recipientName:string;currency:string;total:string;createdAt:string;createdByDisplayName:string;createdByMode:string;preparedByName:string|null;emailedAt:string|null;emailedTo:string|null;emailSendCount:number};
 const blank=():Line=>({description:"",quantity:"1",unit:"pcs",unitPrice:"0"});
@@ -24,6 +25,7 @@ export default function CustomInvoiceManager(){
  const [assignedFromOrder,setAssignedFromOrder]=useState(false);
  const [staff,setStaff]=useState<Array<{id:string;fullName:string;jobTitle:string|null}>>([]);
  const [recipientEmail,setRecipientEmail]=useState("");
+ const [recipientCcEmails,setRecipientCcEmails]=useState("");
  const [sendAfterIssue,setSendAfterIssue]=useState(false);
  const [emailServiceReady,setEmailServiceReady]=useState(false);
  const [emailDelivery,setEmailDelivery]=useState<{id:string;state:"sent"|"failed";recipient?:string}|null>(null);
@@ -82,6 +84,12 @@ export default function CustomInvoiceManager(){
  },[]);
  async function save(){
   if(!issuerName.trim()||!recipientName.trim()){setMessage("Vui lòng nhập tên bên phát hành và tên khách hàng.");return;}
+  try{
+   const to=parseInvoiceRecipients(recipientEmail,10);
+   const cc=parseInvoiceRecipients(recipientCcEmails,10);
+   if(to.length+cc.filter(email=>!to.includes(email)).length>20)throw new Error("Tối đa 20 người nhận.");
+   if(sendAfterIssue&&!to.length)throw new Error("Nhập ít nhất một email To trước khi phát hành và gửi.");
+  }catch(error){setMessage(error instanceof Error?error.message:"Email không hợp lệ.");return;}
   const blankLine=lines.findIndex(line=>!line.description.trim());
   if(blankLine>=0){setMessage("Khoản thu "+(blankLine+1)+" chưa có nội dung. Hãy nhập mô tả hoặc xóa khoản thu này.");return;}
   const numeric=[...lines.flatMap(line=>[line.quantity,line.unitPrice]),discount,extraCharge,tax];
@@ -90,7 +98,7 @@ export default function CustomInvoiceManager(){
   if(swift.trim()&&!/^[A-Za-z]{6}[A-Za-z0-9]{2}([A-Za-z0-9]{3})?$/.test(swift.trim())){setMessage("SWIFT/BIC gồm 8 hoặc 11 ký tự, khác với số tài khoản. Nếu không có hãy để trống.");return;}
   setBusy(true);setMessage("Đang lưu bản nháp...");
   try{
-   const r=await fetch("/api/admin/documents/invoices",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({preparedByEmployeeId:preparedByEmployeeId||null,customerId:customerId||null,orderId:orderId||null,legalEntityId:legalEntityId||null,bankAccountId:bankAccountId||null,recipientName,recipientAddress,recipientEmail,issuerName,issuerAddress,issuerTaxId,currency,issueDate,dueDate,lines,beneficiary,bank,bankAccount,accountAddress,bankAddress,branch,swift,notes,discount,extraCharge,tax})});
+   const r=await fetch("/api/admin/documents/invoices",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({preparedByEmployeeId:preparedByEmployeeId||null,customerId:customerId||null,orderId:orderId||null,legalEntityId:legalEntityId||null,bankAccountId:bankAccountId||null,recipientName,recipientAddress,recipientEmail,recipientCcEmails,issuerName,issuerAddress,issuerTaxId,currency,issueDate,dueDate,lines,beneficiary,bank,bankAccount,accountAddress,bankAddress,branch,swift,notes,discount,extraCharge,tax})});
    const data=await r.json();if(!r.ok)throw new Error(data.error||"Không thể lưu bản nháp");
    setInvoiceNo(data.invoiceNo);setPdfId(data.id);setIssued(false);setMessage("Đã lưu bản nháp "+data.invoiceNo+".");await refresh();
   }catch(error){setMessage(error instanceof Error?error.message:"Lưu không thành công");}
@@ -201,7 +209,8 @@ export default function CustomInvoiceManager(){
       <div className={s.fields}>
       {field("Đơn vị phát hành *",issuerName,v=>{setIssuerName(v);setLegalEntityId("");setBankAccountId("");},"Tên pháp nhân VNC")}
       {field("Khách hàng *",recipientName,v=>{setRecipientName(v);setCustomerId("");},"Tên công ty / cá nhân")}
-      {field("Email nhận Invoice",recipientEmail,setRecipientEmail,"accounting@customer.com","email")}
+      <div className={s.field}><label>Email To — người nhận chính</label><textarea className={s.textarea} rows={2} value={recipientEmail} onChange={e=>{setRecipientEmail(e.target.value);setPdfId("");setIssued(false);}} placeholder="accounting@customer.com, purchasing@customer.com"/><p className={s.helper}>Có thể nhập nhiều email, phân cách bằng dấu phẩy, chấm phẩy hoặc xuống dòng.</p></div>
+      <div className={s.field}><label>Email CC — người nhận bản sao</label><textarea className={s.textarea} rows={2} value={recipientCcEmails} onChange={e=>{setRecipientCcEmails(e.target.value);setPdfId("");setIssued(false);}} placeholder="manager@customer.com; team@customer.com"/><p className={s.helper}>Một email Invoice sẽ được gửi chung đến toàn bộ To và CC.</p></div>
       {field("Địa chỉ bên phát hành",issuerAddress,setIssuerAddress,"Địa chỉ pháp lý")}
       {field("Địa chỉ khách hàng",recipientAddress,setRecipientAddress,"Địa chỉ nhận Invoice")}
      </div></div>
@@ -230,7 +239,7 @@ export default function CustomInvoiceManager(){
     <div className={s.actions}>
      <button className={s.primary} type="button" disabled={busy||!permissions.canCreateCustomInvoice} onClick={()=>void save()}>{busy?"Đang xử lý...":"Lưu bản nháp"}</button>
      {pdfId&&!issued&&permissions.canIssueCustomInvoice&&<label className={s.invoiceEmailToggle}><input type="checkbox" checked={sendAfterIssue} onChange={e=>setSendAfterIssue(e.target.checked)} disabled={busy||!emailServiceReady}/> Gửi PDF cho khách ngay sau phát hành{!emailServiceReady?" (chưa cấu hình email)":""}</label>}
-     {pdfId&&!issued&&permissions.canIssueCustomInvoice&&<button className={s.secondary} type="button" disabled={busy} onClick={()=>void issue(pdfId)}>{sendAfterIssue?"Phát hành & gửi email":"Phát hành Invoice"}</button>}
+     {pdfId&&!issued&&permissions.canIssueCustomInvoice&&<button className={s.secondary} type="button" disabled={busy} onClick={()=>void issue(pdfId)}>{sendAfterIssue?"Phát hành & gửi email (To + CC)":"Phát hành Invoice"}</button>}
      {pdfId&&issued&&<a className={s.secondary} href={"/api/admin/documents/invoices/"+encodeURIComponent(pdfId)+"/pdf"}>Tải PDF</a>}
      {pdfId&&issued&&permissions.canIssueCustomInvoice&&<button className={s.secondary} type="button" disabled={busy||!emailServiceReady} onClick={()=>void retryEmail(pdfId)}>Gửi email Invoice</button>}
     </div>
@@ -262,7 +271,19 @@ export default function CustomInvoiceManager(){
       {lines.map((l,i)=><tr key={i}><td>{l.description||"—"}</td><td className={s.right}>{l.quantity}</td><td>{l.unit}</td><td className={s.right}>{amount(l.unitPrice,currency)}</td><td className={s.right}>{amount(String((Number(l.quantity)||0)*(Number(l.unitPrice)||0)),currency)}</td></tr>)}
      </tbody></table>
      <div className={s.paperFinancials}><div className={s.paperSubtotal}><span>Subtotal</span><span>{currency} {amount(String(sum),currency)}</span></div>{Number(discount)>0&&<div className={s.paperSubtotal}><span>Discount</span><span>− {currency} {amount(discount,currency)}</span></div>}{Number(extraCharge)>0&&<div className={s.paperSubtotal}><span>Additional charges</span><span>{currency} {amount(extraCharge,currency)}</span></div>}{Number(tax)>0&&<div className={s.paperSubtotal}><span>Tax / other charges</span><span>{currency} {amount(tax,currency)}</span></div>}<div className={s.total}><span>TOTAL AMOUNT DUE</span><span>{currency} {amount(String(estimated),currency)}</span></div></div>
-     <div className={s.paperBank}><div className={s.paperTableTitle}>BANK TRANSFER INSTRUCTIONS</div><div className={s.paperBankGrid}><div className={s.paperCaption}>BENEFICIARY</div><div>{beneficiary||"—"}</div><div className={s.paperCaption}>BANK</div><div>{bank||"—"}</div><div className={s.paperCaption}>ACCOUNT NUMBER</div><div>{bankAccount||"—"}</div>{accountAddress&&<><div className={s.paperCaption}>ACCOUNT ADDRESS</div><div>{accountAddress}</div></>}{bankAddress&&<><div className={s.paperCaption}>BANK ADDRESS</div><div>{bankAddress}</div></>}{branch&&<><div className={s.paperCaption}>BRANCH</div><div>{branch}</div></>}{swift&&<><div className={s.paperCaption}>SWIFT / BIC</div><div>{swift}</div></>}</div></div>
+     <div className={s.paperBank}>
+      <div className={s.paperTableTitle}>BANK TRANSFER DETAILS</div>
+      <div className={s.paperBankGrid}>
+       {([
+         ["ACCOUNT NAME",beneficiary],["BANK NAME",bank],
+         ["ACCOUNT NUMBER",bankAccount],["CURRENCY",currency],
+         ["SWIFT / BIC",swift],["BRANCH",branch],
+         ["ACCOUNT ADDRESS",accountAddress],["BANK ADDRESS",bankAddress]
+       ] as [string,string][]).filter(([,value])=>Boolean(value)).map(([label,value])=>
+        <div className={s.paperBankCell} key={label}><div className={s.paperCaption}>{label}</div><div>{value}</div></div>
+       )}
+      </div>
+     </div>
      {notes&&<div className={s.paperNotes}><div className={s.paperTableTitle}>PAYMENT TERMS & NOTES</div><div>{notes}</div></div>}
      {preparedByName&&<div className={s.paperSignature}><span className={s.paperCaption}>PREPARED BY / NGƯỜI LẬP</span><div className={s.paperSignatureSpace} aria-label="Khoảng trống ký tay"/><strong>{preparedByName}</strong></div>}
      <div className={s.paperFooter}>Commercial payment request only. This document is not a Vietnamese VAT e-invoice.</div>

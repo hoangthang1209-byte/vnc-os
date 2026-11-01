@@ -30,7 +30,7 @@ async function companyLogoBuffer(source: string | null | undefined): Promise<Buf
     return bytes.length>0 && bytes.length<=3_000_000?bytes:fallback;
   }catch{return fallback;}
 }
-const L=48, R=547, W=R-L, BOTTOM=747, INK="#222c39", NAVY="#273647", GREY="#77818f", LIGHT="#e9edf1";
+const L=48, R=547, W=R-L, BOTTOM=759, INK="#222c39", NAVY="#273647", GREY="#77818f", LIGHT="#e9edf1";
 function object(v:unknown):Record<string,unknown>{return v&&typeof v==="object"&&!Array.isArray(v)?v as Record<string,unknown>:{};}
 function str(v:unknown):string{return typeof v==="string"?v:"";}
 function items(v:unknown):InvoiceLine[]{
@@ -66,29 +66,29 @@ export async function renderInvoicePdf(invoice:InvoicePdfInput):Promise<Buffer>{
   }
   function companyHeader(){
    // Restrained enterprise letterhead — artwork and title remain clearly separated.
-   pdf.image(logoBuffer,L,43,{fit:[134,43]});
-   write("COMMERCIAL INVOICE",309,51,238,true,13.4,NAVY,"right");
-   write("PAYMENT REQUEST",344,76,203,false,7.2,GREY,"right");
-   pdf.strokeColor(NAVY).lineWidth(1.4).moveTo(L,108).lineTo(R,108).stroke();
-   y=127;
+   pdf.image(logoBuffer,L,41,{fit:[118,35]});
+   write("COMMERCIAL INVOICE",309,46,238,true,12.8,NAVY,"right");
+   write("PAYMENT REQUEST",344,65,203,false,7,GREY,"right");
+   pdf.strokeColor(NAVY).lineWidth(1.1).moveTo(L,90).lineTo(R,90).stroke();
+   y=103;
   }
   companyHeader();
   // Company identity and document metadata.
   const half=(W-26)/2,right=L+half+26;
   write("ISSUED BY",L,y,half,true,7,GREY);
   write("BILL TO",right,y,half,true,7,GREY);
-  y+=15;
+  y+=12;
   const issuerName=invoice.issuerName.slice(0,500),recipientName=invoice.recipientName.slice(0,500);
   const issuerHeight=height(issuerName,half,true,9.1),customerHeight=height(recipientName,half,true,9.1);
   write(issuerName,L,y,half,true,9.1);write(recipientName,right,y,half,true,9.1);
-  y+=Math.max(issuerHeight,customerHeight)+6;
+  y+=Math.max(issuerHeight,customerHeight)+4;
   const issuerAddress=str(invoice.issuerAddress).slice(0,850),customerAddress=str(invoice.recipientAddress).slice(0,850);
   const addrHeight=Math.max(issuerAddress?height(issuerAddress,half,false,7.6):0,customerAddress?height(customerAddress,half,false,7.6):0);
   if(issuerAddress)write(issuerAddress,L,y,half,false,7.6,GREY);
   if(customerAddress)write(customerAddress,right,y,half,false,7.6,GREY);
-  y+=addrHeight+17;
-  ensure(62);
-  pdf.roundedRect(L,y,W,49,3).fill("#f7f8fa");
+  y+=addrHeight+12;
+  ensure(48);
+  pdf.roundedRect(L,y,W,39,3).fill("#f7f8fa");
   const meta=[
    ["INVOICE NUMBER",invoice.invoiceNo],
    ["ISSUE DATE",invoice.issueDate.toISOString().slice(0,10)],
@@ -97,70 +97,83 @@ export async function renderInvoicePdf(invoice:InvoicePdfInput):Promise<Buffer>{
   const cell=W/3;
   meta.forEach(([label,val],i)=>{
     const x=L+12+i*cell;
-    write(label,x,y+9,cell-16,true,6.5,GREY);
-    write(val.slice(0,75),x,y+25,cell-16,true,8.7,INK);
+    write(label,x,y+5,cell-16,true,6.4,GREY);
+    write(val.slice(0,75),x,y+19,cell-16,true,8.5,INK);
   });
-  y+=68;
-  ensure(62);
-  write("INVOICE ITEMS",L,y,200,true,8.5,NAVY);y+=15;
+  y+=51;
+  ensure(42);
+  write("INVOICE ITEMS",L,y,200,true,8.3,NAVY);y+=13;
   const columns=[L,L+246,L+296,L+353,L+433,R];
   function tableHead(){
-   pdf.rect(L,y,W,25).fill(NAVY);
+   pdf.rect(L,y,W,22).fill(NAVY);
    const heads=[["DESCRIPTION",columns[0]+9,238,"left"],["QTY",columns[1],44,"right"],["UNIT",columns[2]+4,48,"left"],["UNIT PRICE",columns[3],70,"right"],["AMOUNT",columns[4],R-columns[4]-9,"right"]] as const;
-   for(const [label,x,width,align] of heads)write(label,x,y+8,width,true,6.4,"#ffffff",align);
-   y+=25;
+   for(const [label,x,width,align] of heads)write(label,x,y+6,width,true,6.3,"#ffffff",align);
+   y+=22;
   }
   tableHead();
   totals.lines.forEach((item,index)=>{
    const desc=item.description.slice(0,650);
-   const rowHeight=Math.max(27,height(desc,229,false,7.8)+12);
+   const rowHeight=Math.max(22,height(desc,229,false,7.5)+8);
    if(y+rowHeight>BOTTOM){pdf.addPage();y=L+6;tableHead();}
    if(index%2===1)pdf.rect(L,y,W,rowHeight).fill("#f8f9fb");
-   write(desc,L+9,y+8,229,false,7.8);
-   write(item.quantity,columns[1],y+8,44,false,7.7,INK,"right");
-   write(item.unit.slice(0,40),columns[2]+4,y+8,48,false,7.7);
-   write(item.unitPrice,columns[3],y+8,70,false,7.7,INK,"right");
-   write(formatMinor(item.amountMinor,currency),columns[4],y+8,R-columns[4]-9,true,7.8,INK,"right");
+   write(desc,L+9,y+5,229,false,7.5);
+   write(item.quantity,columns[1],y+5,44,false,7.5,INK,"right");
+   write(item.unit.slice(0,40),columns[2]+4,y+5,48,false,7.5);
+   write(item.unitPrice,columns[3],y+5,70,false,7.5,INK,"right");
+   write(formatMinor(item.amountMinor,currency),columns[4],y+5,R-columns[4]-9,true,7.6,INK,"right");
    y+=rowHeight;rule(y); 
   });
-  y+=12;ensure(116);
+  y+=7;
   const sums:Array<[string,string,boolean]>=[["Subtotal",formatMinor(totals.subtotalMinor,currency),false]];
   if(totals.discountMinor)sums.push(["Discount","-"+formatMinor(totals.discountMinor,currency),false]);
   if(totals.extraChargeMinor)sums.push(["Additional charges",formatMinor(totals.extraChargeMinor,currency),false]);
   if(totals.taxMinor)sums.push(["Tax / other charges",formatMinor(totals.taxMinor,currency),false]);
+  ensure(sums.length*16+43);
   const sx=L+260,sw=W-260;
   for(const [label,val] of sums){
     write(label,sx,y,sw*.55,false,7.9,GREY);
-    write(currency+" "+val,sx+sw*.55,y,sw*.45,false,7.9,INK,"right");y+=20;
+    write(currency+" "+val,sx+sw*.55,y,sw*.45,false,7.9,INK,"right");y+=16;
   }
-  y+=4;pdf.roundedRect(sx-8,y,sw+8,40,3).fill(NAVY);
-  write("TOTAL AMOUNT DUE",sx,y+11,sw*.5,true,6.6,"#e5eaf0");
-  write(currency+" "+invoice.total,sx+sw*.43,y+12,sw*.55,true,10.5,"#ffffff","right");
-  y+=54;
-  ensure(170);
-  write("BANK TRANSFER DETAILS",L,y,340,true,9.1,NAVY);y+=18;
-  pdf.strokeColor("#cdd7e1").lineWidth(.9).moveTo(L,y).lineTo(R,y).stroke();y+=13;
-  const banking:[string,string][]=[
-   ["ACCOUNT NUMBER",str(bank.account)],["CURRENCY",str(bank.currency)||currency],
-   ["ACCOUNT NAME",str(bank.beneficiary)],["ACCOUNT ADDRESS",str(bank.accountAddress)],
-   ["BANK NAME",str(bank.bank)],["BANK ADDRESS",str(bank.bankAddress)],
-   ["BRANCH",str(bank.branch)],["SWIFT / BIC",str(bank.swift)]
+  y+=3;pdf.roundedRect(sx-8,y,sw+8,32,3).fill(NAVY);
+  write("TOTAL AMOUNT DUE",sx,y+8,sw*.5,true,6.6,"#e5eaf0");
+  write(currency+" "+invoice.total,sx+sw*.43,y+8,sw*.55,true,10.2,"#ffffff","right");
+  y+=40;
+  // Compact two-column banking grid. All remittance fields remain readable and
+  // complete; the layout only changes their presentation, never saved data.
+  const bankPairs:[string,string,string,string][]=[
+   ["ACCOUNT NAME",str(bank.beneficiary),"BANK NAME",str(bank.bank)],
+   ["ACCOUNT NUMBER",str(bank.account),"CURRENCY",str(bank.currency)||currency],
+   ["SWIFT / BIC",str(bank.swift),"BRANCH",str(bank.branch)],
+   ["ACCOUNT ADDRESS",str(bank.accountAddress),"BANK ADDRESS",str(bank.bankAddress)],
   ];
-  for(const [label,value] of banking){
-   if(!value)continue;
-   const isPrimary=label==="ACCOUNT NUMBER"||label==="ACCOUNT NAME";
-   const lines=height(value,320,isPrimary,7.8),rh=Math.max(18,lines+7);
-   ensure(rh+2);
-   write(label,L,y+2,150,true,6.6,GREY);
-   write(value.slice(0,800),L+167,y,332,isPrimary,7.8,INK);
-   y+=rh;
-   pdf.strokeColor("#eef1f5").lineWidth(.45).moveTo(L,y).lineTo(R,y).stroke();
-   y+=3;
+  const bankGap=20,bankCol=(W-bankGap)/2;
+  const bankLabelWidth=73,bankValueWidth=bankCol-bankLabelWidth-7;
+  const bankRows=bankPairs.map(([leftLabel,leftValue,rightLabel,rightValue])=>{
+   const leftHeight=leftValue?height(leftValue,bankValueWidth,leftLabel==="ACCOUNT NUMBER"||leftLabel==="ACCOUNT NAME",7.15):0;
+   const rightHeight=rightValue?height(rightValue,bankValueWidth,rightLabel==="ACCOUNT NUMBER"||rightLabel==="ACCOUNT NAME",7.15):0;
+   return {leftLabel,leftValue,rightLabel,rightValue,rowHeight:Math.max(17,leftHeight+4,rightHeight+4)};
+  }).filter(row=>row.leftValue||row.rightValue);
+  const bankHeight=23+bankRows.reduce((sum,row)=>sum+row.rowHeight,0);
+  ensure(bankHeight+6);
+  write("BANK TRANSFER DETAILS",L,y,340,true,8.3,NAVY);y+=13;
+  pdf.strokeColor("#cdd7e1").lineWidth(.7).moveTo(L,y).lineTo(R,y).stroke();y+=10;
+  for(const row of bankRows){
+   const cells:[[string,string,number],[string,string,number]]=[
+    [row.leftLabel,row.leftValue,L],
+    [row.rightLabel,row.rightValue,L+bankCol+bankGap],
+   ];
+   for(const [label,value,x] of cells){
+    if(!value)continue;
+    const emphasis=label==="ACCOUNT NUMBER"||label==="ACCOUNT NAME";
+    write(label,x,y+1,bankLabelWidth-3,true,6.15,GREY);
+    write(value.slice(0,800),x+bankLabelWidth,y,bankValueWidth,emphasis,7.15,INK);
+   }
+   y+=row.rowHeight;
   }
   if(invoice.notes){
-   y+=8;ensure(65);rule(y);y+=11;
-   block("PAYMENT TERMS & NOTES",W,8.5,true,NAVY,8);
-   block(invoice.notes.slice(0,1700),W,7.8,false,INK,10);
+   y+=4;ensure(45);rule(y);y+=7;
+   block("PAYMENT TERMS & NOTES",W,8,true,NAVY,4);
+   block(invoice.notes.slice(0,1700),W,7.4,false,INK,6);
   }
   // New invoices show verified Sales/Account; legacy immutable snapshots retain
   // their original creator attribution with an explicit CREATED BY label.
@@ -170,20 +183,20 @@ export async function renderInvoicePdf(invoice:InvoicePdfInput):Promise<Buffer>{
   if(attribution){
    // Optional wet-signature zone on the right; the verified Sales/Account
    // preparer is not the same as the authenticated audit creator.
-   y+=15;
-   ensure(invoice.preparedByName?112:44);
+   y+=8;
+   ensure(invoice.preparedByName?75:35);
    const signatureX=R-193,signatureWidth=193;
    if(invoice.preparedByName){
     write("PREPARED BY / NGƯỜI LẬP",signatureX,y,signatureWidth,true,7.2,NAVY,"right");
-    y+=65; // Blank area intentionally reserved for physical handwritten signature.
+    y+=39; // Clear blank area for handwritten signature on the right.
     pdf.strokeColor("#b7c1cd").lineWidth(.7).moveTo(signatureX+26,y).lineTo(R,y).stroke();
-    y+=9;
-    write(attribution.slice(0,160),signatureX,y,signatureWidth,true,8.5,INK,"right");
-    y+=22;
+    y+=6;
+    write(attribution.slice(0,160),signatureX,y,signatureWidth,true,8,INK,"right");
+    y+=17;
    }else{
     write("CREATED BY (SYSTEM AUDIT)",signatureX,y,signatureWidth,true,6.8,GREY,"right");
     write(attribution.slice(0,160),signatureX,y+17,signatureWidth,false,7.8,INK,"right");
-    y+=43;
+    y+=35;
    }
   }
   const pageRange=pdf.bufferedPageRange();

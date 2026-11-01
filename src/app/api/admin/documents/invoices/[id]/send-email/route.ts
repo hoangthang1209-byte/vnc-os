@@ -4,7 +4,7 @@ import {prisma} from "@/lib/prisma";
 import {getAdminSessionFromRequest} from "@/lib/admin-auth/get-admin-session";
 import {can} from "@/features/auth/admin-permissions";
 import {renderInvoicePdf} from "@/features/documents/invoice-pdf";
-import {validInvoiceRecipient,invoiceEmailContent} from "@/features/documents/invoice-email";
+import {invoiceEmailContent,invoiceRecipients} from "@/features/documents/invoice-email";
 import {logAdminAuditEvent} from "@/features/auth/admin-audit-log";
 
 export const runtime="nodejs";
@@ -15,8 +15,9 @@ export async function POST(request:NextRequest,context:{params:Promise<{id:strin
  if(!session.authenticated)return NextResponse.json({error:"Unauthorized"},{status:401});
  if(!can(session,"orders.view_financials")||!can(session,"payments.manage"))return NextResponse.json({error:"Forbidden"},{status:403});
  const apiKey=process.env.RESEND_API_KEY;
- const from=process.env.VNC_INVOICE_FROM_EMAIL;
- if(!apiKey||!from||!validInvoiceRecipient(from)){
+ // The sender address is fixed by VNC policy; domain verification is required at provider.
+ const from="Vietnam Clothing <support@vietnamclothing.vn>";
+ if(!apiKey||process.env.VNC_INVOICE_FROM_EMAIL?.trim().toLowerCase()!=="support@vietnamclothing.vn"){
   return NextResponse.json({error:"Chưa cấu hình dịch vụ gửi email Invoice và địa chỉ người gửi đã xác minh."},{status:503});
  }
  const {id}=await context.params;
@@ -28,10 +29,17 @@ export async function POST(request:NextRequest,context:{params:Promise<{id:strin
   const forceResend=typeof body==="object"&&body!==null&&!Array.isArray(body)&&
     (body as {forceResend?:unknown}).forceResend===true;
   const snapshot=invoice.issuedSnapshot as Record<string,unknown>;
-  const email=snapshot.recipientEmail;
-  if(!validInvoiceRecipient(email))return NextResponse.json({error:"Invoice chưa có email khách hàng hợp lệ. Không thể gửi."},{status:422});
-  if(invoice.emailedAt && invoice.emailedTo?.toLowerCase()===email.toLowerCase()&&!forceResend){
-   return NextResponse.json({sent:true,alreadySent:true,recipient:email,emailedAt:invoice.emailedAt.toISOString()});
+  let recipients:{to:string[];cc:string[]};
+  try{recipients=invoiceRecipients(snapshot.recipientEmail,snapshot.recipientCcEmails);}
+  catch(error){return NextResponse.json({error:error instanceof Error?error.message:"Email khách hàng không hợp lệ."},{status:422});}
+  const {to,cc}=recipients;
+  const recipientsKey=[...to.map(x=>"to:"+x),...cc.map(x=>"cc:"+x)].sort().join("|");
+  const recipientsLabel=to.join(", ")+(cc.length?" | CC: "+cc.join(", "):"");
+  const recorded=(invoice.emailedTo||"").trim().toLowerCase();
+  const alreadySentToSameRecipients=recorded===recipientsLabel.toLowerCase() ||
+    (cc.length===0 && to.length===1 && recorded===to[0]);
+  if(invoice.emailedAt && alreadySentToSameRecipients&&!forceResend){
+   return NextResponse.json({sent:true,alreadySent:true,recipients:{to,cc},emailedAt:invoice.emailedAt.toISOString()});
   }
   const issued=(value:unknown)=>typeof value==="string"?new Date(value):null;
   const issueDate=issued(snapshot.issueDate);
@@ -52,12 +60,12 @@ export async function POST(request:NextRequest,context:{params:Promise<{id:strin
    invoiceNo:String(snapshot.invoiceNo),customerName:String(snapshot.recipientName),
    issuerName:String(snapshot.issuerName),currency:String(snapshot.currency),total:String(snapshot.total)
   });
-  const idempotencyKey="vnc-invoice-"+createHash("sha256").update(id+":"+email.toLowerCase()+":"+invoice.emailSendCount).digest("hex");
+  const idempotencyKey="vnc-invoice-"+createHash("sha256").update(id+":"+recipientsKey+":"+invoice.emailSendCount).digest("hex");
   const result=await fetch("https://api.resend.com/emails",{
    method:"POST",signal:AbortSignal.timeout(18000),
    headers:{"Authorization":`Bearer ${apiKey}`,"Content-Type":"application/json","Idempotency-Key":idempotencyKey},
    body:JSON.stringify({
-    from,to:[email],subject:emailContent.subject,text:emailContent.text,
+    from,to,...(cc.length?{cc}:{}),subject:emailContent.subject,text:emailContent.text,
     attachments:[{filename:`commercial-invoice-${String(snapshot.invoiceNo).replace(/[^A-Za-z0-9-]/g,"")}.pdf`,content:pdf.toString("base64")}]
    })
   });
@@ -69,7 +77,7 @@ export async function POST(request:NextRequest,context:{params:Promise<{id:strin
   let deliveryRecorded=true;
   try{
    await prisma.customPaymentInvoice.update({where:{id},data:{
-    emailedAt:new Date(),emailedTo:email,emailProviderId:response.id??null,
+    emailedAt:new Date(),emailedTo:recipientsLabel,emailProviderId:response.id??null,
     emailSendCount:{increment:1}
    }});
   }catch{
@@ -77,8 +85,8 @@ export async function POST(request:NextRequest,context:{params:Promise<{id:strin
    console.error("[custom invoice email] provider accepted but delivery record could not be saved",{invoiceId:id});
   }
   logAdminAuditEvent({action:"custom_invoice_email_sent",userId:session.userId,employeeId:session.employeeId,route:request.nextUrl.pathname,
-   detail:{invoiceId:id,invoiceNo:invoice.invoiceNo,recipient:email,providerMessageId:response.id??null}});
-  return NextResponse.json({sent:true,deliveryRecorded,recipient:email,messageId:response.id??null,warning:deliveryRecorded?null:"Email accepted by provider but delivery status could not be recorded."},{status:deliveryRecorded?200:202,headers:{"Cache-Control":"private, no-store"}});
+   detail:{invoiceId:id,invoiceNo:invoice.invoiceNo,to,cc,providerMessageId:response.id??null}});
+  return NextResponse.json({sent:true,deliveryRecorded,recipient:to.join(", "),recipients:{to,cc},messageId:response.id??null,warning:deliveryRecorded?null:"Email accepted by provider but delivery status could not be recorded."},{status:deliveryRecorded?200:202,headers:{"Cache-Control":"private, no-store"}});
  }catch(error){
   console.error("[custom invoice email] failed",error);
   return NextResponse.json({error:"Không thể gửi Invoice. Chứng từ đã phát hành vẫn được giữ nguyên."},{status:500});

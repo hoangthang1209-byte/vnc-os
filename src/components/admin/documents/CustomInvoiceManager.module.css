@@ -178,3 +178,33 @@
 /* V5.2 — explicit invoice e-mail delivery control */
 .invoiceEmailToggle{display:inline-flex;align-items:center;gap:9px;font-size:12px;font-weight:650;color:#40516a;cursor:pointer;line-height:1.4}
 .invoiceEmailToggle input{accent-color:#243b58;width:16px;height:16px}
+
+/* Document V5.3 — compact A4 preview, matched to PDF layout for 5–10 short rows. */
+.paper{padding:22px 24px;min-height:0}
+.paperHeader{padding-bottom:9px}
+.paperLogo{max-width:122px}
+.paperParties{padding-top:10px;gap:15px}
+.paperPartyName{margin-top:4px;line-height:1.3}
+.paperPartyAddress{margin-top:3px;line-height:1.35}
+.paperMetaEnterprise{margin-top:11px;padding:8px 10px}
+.paperMetaEnterprise+.paperTableTitle{margin-top:12px}
+.paperTableTitle{margin-bottom:7px}
+.paperTable th{padding:6px 5px}
+.paperTable td{padding:5px 5px;line-height:1.3}
+.paperFinancials{margin-top:9px}
+.paperSubtotal{padding:3px 0}
+.total{padding:9px 8px;margin-top:4px}
+.paperBank{margin-top:12px}
+.paperBankGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px 13px;padding-top:7px;line-height:1.35}
+.paperBankCell{display:grid;grid-template-columns:76px minmax(0,1fr);gap:4px;min-width:0;overflow-wrap:anywhere}
+.paperBankCell>div:last-child{font-size:7.5px}
+.paperNotes{margin-top:8px;padding-top:7px;line-height:1.4}
+.paperSignature{margin-top:11px;gap:4px}
+.paperSignatureSpace{height:26px}
+.paperFooter{margin-top:16px;padding-top:7px}
+@media(max-width:650px){
+ .paper{padding:16px 11px}
+ .paperBankGrid{gap:6px}
+ .paperBankCell{grid-template-columns:1fr;gap:2px}
+ .paperSignatureSpace{height:22px}
+}

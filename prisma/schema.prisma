@@ -6615,7 +6615,8 @@ model CustomPaymentInvoice {
   legalEntity   VncLegalEntity? @relation(fields: [legalEntityId], references: [id], onDelete: SetNull)
   bankAccountId String?
   bankAccount   VncBankAccount? @relation(fields: [bankAccountId], references: [id], onDelete: SetNull)
-  recipientEmail String?
+  recipientEmail String? @db.Text
+  recipientCcEmails String? @db.Text
   recipientAddress String? @db.Text
   issuerName    String
   issuerAddress String? @db.Text

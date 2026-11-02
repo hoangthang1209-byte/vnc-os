@@ -122,6 +122,7 @@ type HistoryEvent = {
 };
 
 type MeasurementDraftRow = Array<{
+  id?: string;
   pointOfMeasure: string;
   description: string | null;
   baseSize: string | null;
@@ -174,6 +175,7 @@ function measurementsToDraft(rows: MeasurementRow[]): MeasurementDraftRow {
     Array.from(new Set(rows.flatMap((row) => row.values.map((value) => value.size.trim()).filter(Boolean)))),
   );
   return rows.map((row, index) => ({
+    id: row.id,
     pointOfMeasure: row.pointOfMeasure,
     description: row.description ?? "",
     baseSize: row.baseSize ?? "",

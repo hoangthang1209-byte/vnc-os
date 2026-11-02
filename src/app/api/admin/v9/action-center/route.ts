@@ -21,7 +21,7 @@ export async function GET() {
         id: true, title: true, dueAt: true, ownerId: true,
         lead: { select: { id: true, fullName: true, companyName: true } },
       },
-      orderBy: [{ dueAt: "asc" }, { createdAt: "desc" }],
+      orderBy: [{ dueAt: { sort: "asc", nulls: "last" } }, { createdAt: "desc" }],
       take: 101,
     });
     const tasks = rows.slice(0, 100).map((task) => ({

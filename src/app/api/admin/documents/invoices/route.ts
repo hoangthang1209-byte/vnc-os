@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { can } from "@/features/auth/admin-permissions";
 import { getAdminSessionFromRequest } from "@/lib/admin-auth/get-admin-session";
-import { calculateCustomInvoice, formatMinor, nextCustomInvoiceNumber, type InvoiceCurrency, type InvoiceLine } from "@/features/documents/custom-invoice-calculation";
+import { calculateCustomInvoice, formatMinor, nextMonthlyCustomInvoiceNumber, type InvoiceCurrency, type InvoiceLine } from "@/features/documents/custom-invoice-calculation";
 
 function authorize(request: NextRequest, permission: string) {
   const session=getAdminSessionFromRequest(request);
@@ -94,11 +94,15 @@ export async function POST(request: NextRequest) {
     const dueDate=body.dueDate ? strictDate(body.dueDate):null;
     if(dueDate && dueDate < issueDate) throw new Error("Due date precedes issue date");
     const year=issueDate.getUTCFullYear();
+    const month=issueDate.getUTCMonth()+1;
+    const monthKey=`${year}-${String(month).padStart(2,"0")}`;
     const invoice=await prisma.$transaction(async tx=>{
-      await tx.$queryRaw<{locked:number}[]>`SELECT 1::integer AS locked FROM pg_advisory_xact_lock(hashtext(${`vnc-custom-invoice-${year}`}))`;
-      const prefix=`CI-${year}-`;
+      // Serialize allocations per month to avoid duplicate numbers from
+      // concurrent users. Existing legacy CI-YYYY-XXXX numbers are unchanged.
+      await tx.$queryRaw<{locked:number}[]>`SELECT 1::integer AS locked FROM pg_advisory_xact_lock(hashtext(${`vnc-custom-invoice-${monthKey}`}))`;
+      const prefix=`CI-${monthKey}-`;
       const existing=await tx.customPaymentInvoice.findMany({where:{invoiceNo:{startsWith:prefix}},select:{invoiceNo:true}});
-      const invoiceNo=nextCustomInvoiceNumber(year,existing.map(row=>row.invoiceNo));
+      const invoiceNo=nextMonthlyCustomInvoiceNumber(year,month,existing.map(row=>row.invoiceNo));
       return tx.customPaymentInvoice.create({data:{
       invoiceNo,
       createdByUserId:creatorSession.userId,

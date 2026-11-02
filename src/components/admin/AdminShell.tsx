@@ -374,7 +374,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
               <div className={styles.brandRow}>
                 <Link href="/admin/dashboard" scroll={false} className={styles.brand}>
                   <span className={styles.brandMark}>VNC OS</span>
-                  <span className={styles.brandSub}>Design Authority</span>
+                  <span className={styles.brandSub}>Enterprise Operations</span>
                 </Link>
                 <AdminEnvironmentBadge />
               </div>

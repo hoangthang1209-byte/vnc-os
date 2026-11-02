@@ -123,8 +123,8 @@ test("Draft PDF has distinct watermarked bytes, retains total and renders across
  assert.equal(draft.subarray(0,5).toString(),"%PDF-");
  assert.equal(final.subarray(0,5).toString(),"%PDF-");
  assert.ok(!draft.equals(final),"Draft must not be identical to final invoice PDF");
- const draftPages=(draft.toString("latin1").match(/\\/Type\\s*\\/Page\\b/g)||[]).length;
- const finalPages=(final.toString("latin1").match(/\\/Type\\s*\\/Page\\b/g)||[]).length;
+ const draftPages=(draft.toString("latin1").match(/\/Type\s*\/Page\b/g)||[]).length;
+ const finalPages=(final.toString("latin1").match(/\/Type\s*\/Page\b/g)||[]).length;
  assert.ok(draftPages>=2,"Expected multi-page draft");
  assert.equal(draftPages,finalPages,"Watermark must not add pages");
 });

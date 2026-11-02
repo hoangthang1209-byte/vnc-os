@@ -85,3 +85,23 @@ export function nextCustomInvoiceNumber(year:number,invoiceNumbers:readonly stri
   if(last>=9999)throw new Error("Invoice sequence exhausted for year");
   return prefix+String(last+1).padStart(4,"0");
 }
+
+
+/**
+ * New Invoice sequence from V5.4: CI-YYYY-MM-NNNN.
+ * Uses the invoice's issueDate month (UTC), resets for each calendar month.
+ * Historical CI-YYYY-NNNN records do not consume monthly sequence numbers.
+ * Caller MUST acquire a month-specific transaction advisory lock.
+ */
+export function nextMonthlyCustomInvoiceNumber(year:number,month:number,invoiceNumbers:readonly string[]):string {
+ if(!Number.isInteger(year)||year<2000||year>9999)throw new Error("Invalid invoice year");
+ if(!Number.isInteger(month)||month<1||month>12)throw new Error("Invalid invoice month");
+ const prefix=`CI-${year}-${String(month).padStart(2,"0")}-`;
+ const latest=invoiceNumbers.reduce((max,value)=>{
+  if(!value.startsWith(prefix))return max;
+  const suffix=value.slice(prefix.length);
+  return /^[0-9]{4}$/.test(suffix)?Math.max(max,Number(suffix)):max;
+ },0);
+ if(latest>=9999)throw new Error("Invoice sequence exhausted for month");
+ return prefix+String(latest+1).padStart(4,"0");
+}

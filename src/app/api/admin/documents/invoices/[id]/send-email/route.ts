@@ -5,6 +5,7 @@ import {getAdminSessionFromRequest} from "@/lib/admin-auth/get-admin-session";
 import {can} from "@/features/auth/admin-permissions";
 import {renderInvoicePdf} from "@/features/documents/invoice-pdf";
 import {invoiceEmailContent,invoiceRecipients} from "@/features/documents/invoice-email";
+import {summarizeInvoiceDelivery} from "@/features/documents/invoice-email-webhook";
 import {logAdminAuditEvent} from "@/features/auth/admin-audit-log";
 
 export const runtime="nodejs";
@@ -65,21 +66,43 @@ export async function POST(request:NextRequest,context:{params:Promise<{id:strin
    method:"POST",signal:AbortSignal.timeout(18000),
    headers:{"Authorization":`Bearer ${apiKey}`,"Content-Type":"application/json","Idempotency-Key":idempotencyKey},
    body:JSON.stringify({
-    from,to,...(cc.length?{cc}:{}),subject:emailContent.subject,text:emailContent.text,
+    from,to,...(cc.length?{cc}:{}),reply_to:"support@vietnamclothing.vn",subject:emailContent.subject,text:emailContent.text,html:emailContent.html,
     attachments:[{filename:`commercial-invoice-${String(snapshot.invoiceNo).replace(/[^A-Za-z0-9-]/g,"")}.pdf`,content:pdf.toString("base64")}]
    })
   });
   if(!result.ok){
    console.error("[custom invoice email] email provider rejected request",{invoiceId:id,status:result.status});
+   try{
+    await prisma.customPaymentInvoice.updateMany({where:{id,status:"ISSUED",emailedAt:null},data:{
+     // Do not overwrite a previous delivered message when a later resend fails.
+     emailDeliveryStatus:"FAILED",emailDeliveryUpdatedAt:new Date()
+    }});
+   }catch{console.error("[custom invoice email] could not record provider rejection",{invoiceId:id});}
    return NextResponse.json({error:"Dịch vụ gửi email từ chối yêu cầu. Kiểm tra cấu hình và thử lại.",providerStatus:result.status},{status:502});
   }
   const response=await result.json() as {id?:string};
   let deliveryRecorded=true;
   try{
-   await prisma.customPaymentInvoice.update({where:{id},data:{
-    emailedAt:new Date(),emailedTo:recipientsLabel,emailProviderId:response.id??null,
-    emailSendCount:{increment:1}
-   }});
+   await prisma.$transaction(async tx=>{
+    const acceptedAt=new Date();
+    await tx.customPaymentInvoice.update({where:{id},data:{
+     emailedAt:acceptedAt,emailedTo:recipientsLabel,emailProviderId:response.id??null,
+     emailSendCount:{increment:1},emailDeliveryStatus:"SENT",emailDeliveryUpdatedAt:acceptedAt
+    }});
+    // Webhook can arrive before our API response is stored. Reconcile its event
+    // ledger to avoid downgrading a delivered/bounced message back to Sent.
+    if(response.id){
+     const events=await tx.vncInvoiceEmailDeliveryEvent.findMany({
+      where:{providerEmailId:response.id},select:{eventType:true,recipient:true,occurredAt:true}});
+     if(events.length){
+      const summary=summarizeInvoiceDelivery([...to,...cc],events);
+      await tx.customPaymentInvoice.update({where:{id},data:{
+       emailDeliveryStatus:summary.status,emailDeliveryUpdatedAt:new Date()
+      }});
+      await tx.vncInvoiceEmailDeliveryEvent.updateMany({where:{providerEmailId:response.id,invoiceId:null},data:{invoiceId:id}});
+     }
+    }
+   });
   }catch{
    deliveryRecorded=false;
    console.error("[custom invoice email] provider accepted but delivery record could not be saved",{invoiceId:id});

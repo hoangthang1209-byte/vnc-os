@@ -11,7 +11,14 @@ import { VNC_LOGO_PNG_DATA_URI } from "@/features/documents/vnc-invoice-brand";
 import { isValidInvoiceNumericInput } from "@/features/documents/custom-invoice-calculation";
 import {parseInvoiceRecipients} from "@/features/documents/invoice-email";
 type Line={description:string;quantity:string;unit:string;unitPrice:string};
-type SavedInvoice={id:string;invoiceNo:string;status:string;recipientName:string;currency:string;total:string;createdAt:string;createdByDisplayName:string;createdByMode:string;preparedByName:string|null;emailedAt:string|null;emailedTo:string|null;emailSendCount:number};
+type SavedInvoice={id:string;invoiceNo:string;status:string;recipientName:string;currency:string;total:string;createdAt:string;createdByDisplayName:string;createdByMode:string;preparedByName:string|null;emailedAt:string|null;emailedTo:string|null;emailSendCount:number;emailDeliveryStatus:string|null;emailDeliveryUpdatedAt:string|null};
+type DeliveryDetails={invoiceNo:string;sent:boolean;emailedAt:string|null;status:string;sendCount:number;recipients:string|null;summary:null|{delivered:number;failed:number;pending:number;byRecipient:{email:string;status:string}[]};events:{eventType:string;recipient:string|null;occurredAt:string;detail:string|null}[]};
+const deliveryStatusText=(value:string|null|undefined):string=>({
+ SENT:"Sent · Đã được dịch vụ tiếp nhận",DELIVERED:"Delivered · Máy chủ nhận đã chấp nhận",
+ DELAYED:"Delayed · Đang thử lại",BOUNCED:"Bounced · Bị trả lại",
+ FAILED:"Failed · Gửi thất bại",PARTIAL:"Một số người nhận đã nhận",
+ NOT_SENT:"Chưa gửi"
+} as Record<string,string>)[value||"NOT_SENT"]||"Đang cập nhật";
 const blank=():Line=>({description:"",quantity:"1",unit:"pcs",unitPrice:"0"});
 const amount=(n:string,currency:string)=>new Intl.NumberFormat("en-US",{minimumFractionDigits:currency==="VND"?0:2,maximumFractionDigits:currency==="VND"?0:2}).format(Number(n)||0);
 export default function CustomInvoiceManager(){
@@ -28,7 +35,8 @@ export default function CustomInvoiceManager(){
  const [recipientCcEmails,setRecipientCcEmails]=useState("");
  const [sendAfterIssue,setSendAfterIssue]=useState(false);
  const [emailServiceReady,setEmailServiceReady]=useState(false);
- const [emailDelivery,setEmailDelivery]=useState<{id:string;state:"sent"|"failed";recipient?:string}|null>(null);
+ const [deliveryDetails,setDeliveryDetails]=useState<{id:string;value:DeliveryDetails}|null>(null);
+ const [deliveryLoading,setDeliveryLoading]=useState<string|null>(null);
  const [recipientAddress,setRecipientAddress]=useState("");
  const [issuerName,setIssuerName]=useState("");
  const [issuerAddress,setIssuerAddress]=useState("");
@@ -104,16 +112,25 @@ export default function CustomInvoiceManager(){
   }catch(error){setMessage(error instanceof Error?error.message:"Lưu không thành công");}
   finally{setBusy(false);}
  }
+ async function loadDelivery(id:string){
+  if(deliveryDetails?.id===id){setDeliveryDetails(null);return;}
+  setDeliveryLoading(id);
+  try{
+   const response=await fetch("/api/admin/documents/invoices/"+encodeURIComponent(id)+"/delivery",{cache:"no-store"});
+   const data=await response.json();
+   if(!response.ok)throw new Error(data.error||"Không tải được trạng thái email.");
+   setDeliveryDetails({id,value:data});
+  }catch(error){setMessage(error instanceof Error?error.message:"Không thể tải trạng thái email.");}
+  finally{setDeliveryLoading(null);}
+ }
  async function sendEmail(id:string,forceResend=false):Promise<{ok:boolean;recipient?:string;error?:string;warning?:string}>{
   try{
    const r=await fetch("/api/admin/documents/invoices/"+encodeURIComponent(id)+"/send-email",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({forceResend})});
    const result=await r.json();
    if(!r.ok)throw new Error(result.error||"Không thể gửi email.");
-   setEmailDelivery({id,state:"sent",recipient:result.recipient});
    await refresh();
    return {ok:true,recipient:result.recipient,warning:result.deliveryRecorded===false?(result.warning||"Email đã được dịch vụ tiếp nhận nhưng chưa thể ghi trạng thái trong hệ thống."):undefined};
   }catch(error){
-   setEmailDelivery({id,state:"failed"});
    return {ok:false,error:error instanceof Error?error.message:"Gửi email thất bại."};
   }
  }
@@ -140,7 +157,7 @@ export default function CustomInvoiceManager(){
   if(!window.confirm("Gửi Commercial Invoice PDF đã phát hành tới email khách hàng đã lưu?"))return;
   setBusy(true);setMessage("Đang gửi email cho khách...");
   const delivered=await sendEmail(id,true);
-  setMessage(delivered.ok?(delivered.warning||"Đã gửi email đến "+delivered.recipient+"."):"CHƯA gửi email: "+delivered.error);
+  setMessage(delivered.ok?(delivered.warning||"Đã gửi email đến "+delivered.recipient+"."):"Lần gửi lại không thành công: "+delivered.error+" (trạng thái giao nhận trước đó được giữ nguyên)");
   setBusy(false);
  }
  const field=(label:string,value:string,change:(v:string)=>void,placeholder="",type="text")=><div className={s.field}><label>{label}</label><input className={s.input} type={type} value={value} readOnly={["Đơn vị phát hành *","Địa chỉ bên phát hành","Tên người thụ hưởng","Ngân hàng","Số tài khoản","SWIFT (nếu có)","Account Address","Bank Address","Branch"].includes(label)} placeholder={placeholder} onChange={e=>{change(e.target.value);setPdfId("");setIssued(false);}}/></div>;
@@ -291,7 +308,36 @@ export default function CustomInvoiceManager(){
    </div><p className={s.helper}>Đây là bản xem trước theo dữ liệu đang nhập, không phải Invoice đã lưu. Khi sửa khoản thu, cần lưu lại bằng số Invoice mới; PDF chỉ phản ánh bản đã phát hành và khóa dữ liệu.</p></aside>
   </div>
   <section className={s.panel+" "+s.listPanel}><div className={s.panelHead}><h2>Invoice đã lưu</h2><button type="button" className={s.secondary} onClick={()=>void refresh()}>Làm mới danh sách</button></div>
-   {invoices.length===0?<p className={s.empty}>Chưa có Invoice nào được tải. Tạo bản nháp để bắt đầu.</p>:invoices.map(inv=><div className={s.listRow} key={inv.id}><div><div className={s.listMain}>{inv.invoiceNo} · {inv.recipientName}</div><div className={s.listSub}>{inv.currency} {inv.total} · Sales/Account: {inv.preparedByName||"Chưa xác định"} · Tạo bởi: {inv.createdByDisplayName} · {new Date(inv.createdAt).toLocaleString("vi-VN")}</div></div><div className={s.listActions}><span className={inv.status==="ISSUED"?s.state+" "+s.stateIssued:s.state}>{inv.status==="ISSUED"?"Đã phát hành":"Bản nháp"}</span>{inv.status==="DRAFT"&&permissions.canIssueCustomInvoice&&<button type="button" className={s.link} onClick={()=>void issue(inv.id,false)}>Phát hành</button>}{inv.status==="ISSUED"&&<a className={s.link} href={"/api/admin/documents/invoices/"+encodeURIComponent(inv.id)+"/pdf"}>Tải PDF</a>}{inv.status==="ISSUED"&&permissions.canIssueCustomInvoice&&<button type="button" className={s.link} disabled={busy||!emailServiceReady} onClick={()=>void retryEmail(inv.id)}>{emailDelivery?.id===inv.id&&emailDelivery.state==="sent"||inv.emailedAt?"Gửi lại email":"Gửi email"}</button>}{inv.emailedAt&&<span className={s.stateIssued+" "+s.state}>Đã gửi email · {inv.emailedTo}</span>}</div></div>)}
+   {invoices.length===0?<p className={s.empty}>Chưa có Invoice nào được tải. Tạo bản nháp để bắt đầu.</p>:
+    invoices.map(inv=><div className={s.deliveryEntry} key={inv.id}>
+     <div className={s.listRow}>
+      <div>
+       <div className={s.listMain}>{inv.invoiceNo} · {inv.recipientName}</div>
+       <div className={s.listSub}>{inv.currency} {inv.total} · Sales/Account: {inv.preparedByName||"Chưa xác định"} · Tạo bởi: {inv.createdByDisplayName} · {new Date(inv.createdAt).toLocaleString("vi-VN")}</div>
+       {(inv.emailedAt||inv.emailDeliveryStatus)&&<div className={s.deliveryStatus}>{deliveryStatusText(inv.emailDeliveryStatus||"SENT")} · {inv.emailDeliveryUpdatedAt||inv.emailedAt?new Date(inv.emailDeliveryUpdatedAt||inv.emailedAt||"").toLocaleString("vi-VN"):""}</div>}
+      </div>
+      <div className={s.listActions}>
+       <span className={inv.status==="ISSUED"?s.state+" "+s.stateIssued:s.state}>{inv.status==="ISSUED"?"Đã phát hành":"Bản nháp"}</span>
+       {inv.status==="DRAFT"&&<a className={s.link} href={"/api/admin/documents/invoices/"+encodeURIComponent(inv.id)+"/draft-pdf"}>Tải bản nháp</a>}{inv.status==="DRAFT"&&permissions.canIssueCustomInvoice&&<button type="button" className={s.link} onClick={()=>void issue(inv.id,false)}>Phát hành</button>}
+       {inv.status==="ISSUED"&&<a className={s.link} href={"/api/admin/documents/invoices/"+encodeURIComponent(inv.id)+"/pdf"}>Tải PDF</a>}
+       {inv.status==="ISSUED"&&permissions.canIssueCustomInvoice&&<button type="button" className={s.link} disabled={busy||!emailServiceReady} onClick={()=>void retryEmail(inv.id)}>{inv.emailedAt?"Gửi lại email":"Gửi email"}</button>}
+       {(inv.emailedAt||inv.emailDeliveryStatus)&&<button type="button" className={s.link} disabled={deliveryLoading===inv.id} onClick={()=>void loadDelivery(inv.id)}>{deliveryLoading===inv.id?"Đang tải...":deliveryDetails?.id===inv.id?"Ẩn lịch sử":"Chi tiết giao nhận"}</button>}
+      </div>
+     </div>
+     {deliveryDetails?.id===inv.id&&<div className={s.deliveryPanel}>
+      <div className={s.deliveryPanelTitle}>Trạng thái giao nhận · {deliveryDetails.value.invoiceNo}</div>
+      <p>{deliveryStatusText(deliveryDetails.value.status)} · Đã gửi {deliveryDetails.value.sendCount} lần</p>
+      <p className={s.helper}>Delivered chỉ xác nhận máy chủ email người nhận đã chấp nhận, không xác nhận thư đã vào Inbox hoặc được đọc.</p>
+      <div className={s.deliveryRecipientList}>
+       {deliveryDetails.value.summary?.byRecipient.map(item=><div className={s.deliveryRecipient} key={item.email}><strong>{item.email}</strong><span>{deliveryStatusText(item.status)}</span></div>)}
+      </div>
+      <div className={s.deliveryEvents}>
+       {deliveryDetails.value.events.length?deliveryDetails.value.events.map((event,i)=><div key={i}>
+        {new Date(event.occurredAt).toLocaleString("vi-VN")} · {event.eventType} · {event.recipient||"—"}{event.detail?" · "+event.detail:""}
+       </div>):<div>Chưa có sự kiện giao nhận từ Resend. Hiện chỉ xác nhận dịch vụ đã tiếp nhận yêu cầu gửi.</div>}
+      </div>
+     </div>}
+    </div>)}
   </section>
  </main>;
 }

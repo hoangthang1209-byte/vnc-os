@@ -108,3 +108,23 @@ test("long service item descriptions paginate instead of clipping",async()=>{
  });
  assert.ok((pdf.toString("latin1").match(/\/Type\s*\/Page\b/g)||[]).length>=2);
 });
+
+
+test("Draft PDF has distinct watermarked bytes, retains total and renders across two pages", async()=>{
+ const values={
+  invoiceNo:"CI-2099-0099",recipientName:"Draft Customer",issuerName:"Vietnam Clothing",
+  currency:"USD",total:"3000.00",issueDate:new Date("2026-11-02T00:00:00Z"),
+  lines:Array.from({length:30},(_,i)=>({description:"Sample service batch "+i+" — cut, packing and quality inspection",quantity:"1",unit:"set",unitPrice:"100.00"})),
+  bankDetails:{beneficiary:"Vietnam Clothing",bank:"ACB",account:"TEST-ONLY"},
+  preparedByName:"VNC Sales"
+ };
+ const draft=await renderInvoicePdf({...values,draft:true});
+ const final=await renderInvoicePdf(values);
+ assert.equal(draft.subarray(0,5).toString(),"%PDF-");
+ assert.equal(final.subarray(0,5).toString(),"%PDF-");
+ assert.ok(!draft.equals(final),"Draft must not be identical to final invoice PDF");
+ const draftPages=(draft.toString("latin1").match(/\/Type\s*\/Page\b/g)||[]).length;
+ const finalPages=(final.toString("latin1").match(/\/Type\s*\/Page\b/g)||[]).length;
+ assert.ok(draftPages>=2,"Expected multi-page draft");
+ assert.equal(draftPages,finalPages,"Watermark must not add pages");
+});

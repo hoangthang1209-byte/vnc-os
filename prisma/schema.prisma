@@ -6641,12 +6641,32 @@ model CustomPaymentInvoice {
   emailedTo            String?
   emailProviderId       String?
   emailSendCount        Int      @default(0)
+  emailDeliveryStatus    String?
+  emailDeliveryUpdatedAt DateTime?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
   @@index([status, createdAt])
   @@index([recipientName])
   @@index([customerId])
+}
+
+/** Signed, deduplicated Resend notifications for every invoice recipient.
+ * A later resend uses a different emailProviderId, so old events remain history.
+ */
+model VncInvoiceEmailDeliveryEvent {
+  id              String   @id @default(cuid())
+  webhookId       String   @unique
+  providerEmailId String
+  eventType       String
+  recipient       String?  @db.Text
+  invoiceId       String?
+  occurredAt      DateTime
+  receivedAt      DateTime @default(now())
+  detail          String?  @db.Text
+
+  @@index([providerEmailId, occurredAt])
+  @@index([invoiceId, occurredAt])
 }
 
 /** VNC Document Center issuer master data. Never overwrite issued invoice snapshots. */

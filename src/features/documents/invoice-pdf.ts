@@ -10,6 +10,8 @@ type InvoicePdfInput = {
   issueDate: Date; dueDate?: Date | null; lines: unknown; adjustments?: unknown;
   bankDetails?: unknown; notes?: string | null; createdByDisplayName?: string | null; preparedByName?: string | null;
   companyLogoUrl?: string | null;
+  /** Explicit draft rendering only; final issued PDFs never carry a watermark. */
+  draft?: boolean;
 };
 async function companyLogoBuffer(source: string | null | undefined): Promise<Buffer> {
   const fallback=vncLogoPngBuffer();
@@ -66,11 +68,12 @@ export async function renderInvoicePdf(invoice:InvoicePdfInput):Promise<Buffer>{
   }
   function companyHeader(){
    // Restrained enterprise letterhead — artwork and title remain clearly separated.
-   pdf.image(logoBuffer,L,41,{fit:[118,35]});
-   write("COMMERCIAL INVOICE",309,46,238,true,12.8,NAVY,"right");
-   write("PAYMENT REQUEST",344,65,203,false,7,GREY,"right");
-   pdf.strokeColor(NAVY).lineWidth(1.1).moveTo(L,90).lineTo(R,90).stroke();
-   y=103;
+   // Wider, taller VNC artwork without crowding the invoice title or line items.
+   pdf.image(logoBuffer,L,35,{fit:[177,50],valign:"center"});
+   write("COMMERCIAL INVOICE",309,47,238,true,12.8,NAVY,"right");
+   write("PAYMENT REQUEST",344,66,203,false,7,GREY,"right");
+   pdf.strokeColor(NAVY).lineWidth(1.1).moveTo(L,95).lineTo(R,95).stroke();
+   y=107;
   }
   companyHeader();
   // Company identity and document metadata.
@@ -202,6 +205,20 @@ export async function renderInvoicePdf(invoice:InvoicePdfInput):Promise<Buffer>{
   const pageRange=pdf.bufferedPageRange();
   for(let p=0;p<pageRange.count;p++){
    pdf.switchToPage(pageRange.start+p);
+   if(invoice.draft===true){
+    // Visible across every A4 page, including multi-page drafts, without
+    // replacing the PDF content or the final-issued invoice rendering.
+    pdf.save();
+    pdf.opacity(0.20);
+    pdf.translate(297.64,420.94).rotate(-35);
+    pdf.font("Heading").fontSize(100).fillColor("#6f7c8b");
+    pdf.text("DRAFT",-255,-64,{width:510,align:"center",lineBreak:false});
+    pdf.restore();
+    pdf.save();
+    pdf.font("Heading").fontSize(8).fillColor("#8b5561");
+    pdf.text("DRAFT · NOT ISSUED",L,765,{width:220,lineBreak:false});
+    pdf.restore();
+   }
    rule(775);
    write("COMMERCIAL PAYMENT REQUEST · NOT A VIETNAMESE VAT E-INVOICE",L,786,420,false,6.2,GREY);
    write(`${p+1} / ${pageRange.count}`,R-58,786,58,false,6.2,GREY,"right");

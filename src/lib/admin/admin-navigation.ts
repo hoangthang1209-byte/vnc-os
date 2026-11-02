@@ -39,247 +39,57 @@ export const adminDashboardNavItem: AdminNavigationItem = {
  * VNC OS Admin 2.0 — operations-first navigation for a multi-role production team.
  * Routes not listed remain reachable by URL / contextual links; they are not deleted.
  */
+/** V9 FINAL HTML IA; only verified existing application routes are active. */
 export const adminNavigationSections: AdminNavigationSection[] = [
-  {
-    label: "ĐƠN HÀNG & VẬN HÀNH",
-    icon: "🏭",
-    platforms: domainItems([
-      {
-        label: "Tất cả đơn hàng",
-        href: "/admin/orders",
-        status: "active",
-        requiredPermissions: ["canViewOrders"],
-      },
-      {
-        label: "Dự án đơn hàng",
-        href: "/admin/orders/projects",
-        status: "active",
-        requiredPermissions: ["canManageUsers"],
-      },
-      {
-        label: "Tiến độ sản xuất",
-        href: "/admin/manufacturing/production-timeline",
-        status: "active",
-        requiredPermissions: ["canViewProduction"],
-      },
-      {
-        label: "Tổng quan sản xuất",
-        href: "/admin/production",
-        status: "active",
-        requiredPermissions: ["canViewProduction"],
-      },
-      {
-        label: "Giao hàng",
-        href: "/admin/delivery",
-        status: "active",
-        requiredPermissions: ["canViewDelivery"],
-      },
-    ]),
-  },
-  {
-    label: "BÁN HÀNG & CRM",
-    icon: "💼",
-    platforms: domainItems([
-      {
-        label: "Khách hàng",
-        href: "/admin/crm/customers",
-        status: "active",
-        requiredPermissions: ["canViewCrm"],
-      },
-      {
-        label: "Lead",
-        href: "/admin/crm/leads",
-        status: "active",
-        requiredPermissions: ["canViewCrm"],
-      },
-      {
-        label: "Tính giá",
-        href: "/admin/pricing/costing",
-        status: "active",
-        requiredPermissions: ["canAccessPricing"],
-      },
-      {
-        label: "Báo giá",
-        href: "/admin/quotes",
-        status: "active",
-        requiredPermissions: ["canAccessQuotes"],
-      },
-      {
-        label: "Custom Invoice",
-        href: "/admin/documents/invoices",
-        status: "active",
-        requiredPermissions: ["canViewFinancials"],
-      },
-    ]),
-  },
-  {
-    label: "SOURCING & SRM",
-    icon: "🏷️",
-    platforms: domainItems([
-      {
-        label: "Nhà cung cấp",
-        href: "/admin/production-suppliers",
-        status: "active",
-        requiredPermissions: ["canViewProduction"],
-      },
-    ]),
-  },
-  {
-    label: "TÀI CHÍNH",
-    icon: "💳",
-    platforms: domainItems([
-      {
-        label: "Giao dịch ngân hàng",
-        href: "/admin/bank-transactions",
-        status: "active",
-        requiredPermissions: ["canViewFinancials"],
-      },
-    ]),
-  },
-  {
-    label: "SẢN PHẨM",
-    icon: "📦",
-    platforms: domainItems([
-      {
-        label: "Sản phẩm",
-        href: "/admin/products",
-        status: "active",
-        requiredPermissions: ["canManageProducts"],
-      },
-      {
-        label: "Danh mục sản phẩm",
-        href: "/admin/danh-muc",
-        status: "active",
-        requiredPermissions: ["canManageProducts"],
-      },
-      {
-        label: "Media",
-        href: "/admin/media",
-        status: "active",
-        requiredPermissions: ["canManageProducts"],
-      },
-    ]),
-  },
-  {
-    label: "MẪU & KỸ THUẬT",
-    icon: "📐",
-    platforms: domainItems([
-      {
-        label: "Tech Pack",
-        href: "/admin/tech-pack",
-        status: "active",
-        requiredPermissions: ["canViewProduction"],
-      },
-      {
-        label: "Rập",
-        href: "/admin/pattern",
-        status: "active",
-        requiredPermissions: ["canViewProduction"],
-      },
-      {
-        label: "Nguyên vật liệu",
-        href: "/admin/production-materials",
-        status: "active",
-        requiredPermissions: ["canViewProduction"],
-      },
-    ]),
-  },
-  {
-    label: "MARKETING & NỘI DUNG",
-    icon: "📝",
-    platforms: domainItems([
-      {
-        label: "Blog",
-        href: "/admin/blog",
-        status: "active",
-        requiredPermissions: ["canManageCms"],
-      },
-      {
-        label: "Landing Page",
-        href: "/admin/landing-pages",
-        status: "active",
-        requiredPermissions: ["canManageCms"],
-      },
-      {
-        label: "SEO",
-        href: "/admin/content/seo",
-        status: "active",
-        requiredPermissions: ["canManageCms"],
-      },
-      {
-        label: "Case Study",
-        href: "/admin/case-studies",
-        status: "active",
-        requiredPermissions: ["canManageCms"],
-      },
-    ]),
-  },
-  {
-    label: "WEBSITE",
-    icon: "🌐",
-    platforms: domainItems([
-      {
-        label: "Trang chủ",
-        href: "/admin/settings/homepage",
-        status: "active",
-        requiredPermissions: ["canManageCms"],
-      },
-      {
-        label: "Điều hướng & Footer",
-        href: "/admin/site-navigation",
-        status: "active",
-        requiredPermissions: ["canManageCms"],
-      },
-      {
-        label: "Logo khách hàng",
-        href: "/admin/client-logos",
-        status: "active",
-        requiredPermissions: ["canManageCms"],
-      },
-    ]),
-  },
-  {
-    label: "HỆ THỐNG",
-    icon: "⚙️",
-    platforms: domainItems([
-      {
-        label: "Cấu hình giá",
-        href: "/admin/pricing",
-        status: "active",
-        requiredPermissions: ["canAccessPricing"],
-      },
-      {
-        label: "Người dùng",
-        href: "/admin/settings/users",
-        status: "active",
-        requiredPermissions: ["canManageUsers"],
-      },
-      {
-        label: "Vai trò & quyền",
-        href: "/admin/settings/roles",
-        status: "active",
-        requiredPermissions: ["canManageRoles"],
-      },
-      {
-        label: "Thông tin công ty VNC",
-        href: "/admin/settings/vnc-company",
-        status: "active",
-        requiredPermissions: ["canViewFinancials"],
-      },
-      {
-        label: "Thông tin website ATTD",
-        href: "/admin/settings/company",
-        status: "active",
-        requiredPermissions: ["canViewDashboard"],
-      },
-      {
-        label: "Tự động hóa",
-        href: "/admin/automation",
-        status: "active",
-        requiredPermissions: ["canViewDashboard"],
-      },
-    ]),
-  },
+  { label:"WORKSPACE", icon:"◫", platforms: domainItems([
+    { label:"Tổng quan", href:"/admin/dashboard", status:"active", requiredPermissions:["canViewDashboard"] },
+    { label:"Công việc & tự động hóa", href:"/admin/automation", status:"active", requiredPermissions:["canViewDashboard"] },
+  ]) },
+  { label:"SALES & CRM", icon:"⌁", platforms: domainItems([
+    { label:"Lead & Inbox", href:"/admin/crm/leads", status:"active", requiredPermissions:["canViewCrm"] },
+    { label:"Khách hàng", href:"/admin/crm/customers", status:"active", requiredPermissions:["canViewCrm"] },
+    { label:"Báo giá", href:"/admin/quotes", status:"active", requiredPermissions:["canAccessQuotes"] },
+    { label:"Tính giá", href:"/admin/pricing/costing", status:"active", requiredPermissions:["canAccessPricing"] },
+  ]) },
+  { label:"ORDERS & OPERATIONS", icon:"▤", platforms: domainItems([
+    { label:"Đơn hàng", href:"/admin/orders", status:"active", requiredPermissions:["canViewOrders"] },
+    { label:"Tạo đơn nhanh", href:"/admin/orders/new/quick", status:"active", requiredPermissions:["canCreateOrders"] },
+    { label:"Dự án & Batch", href:"/admin/orders/projects", status:"active", requiredPermissions:["canManageUsers"] },
+    { label:"Tiến độ sản xuất", href:"/admin/manufacturing/production-timeline", status:"active", requiredPermissions:["canViewProduction"] },
+    { label:"Điều hành sản xuất", href:"/admin/production", status:"active", requiredPermissions:["canViewProduction"] },
+    { label:"Giao hàng", href:"/admin/delivery", status:"active", requiredPermissions:["canViewDelivery"] },
+  ]) },
+  { label:"TECHNICAL & SOURCING", icon:"▧", platforms: domainItems([
+    { label:"Tech Pack", href:"/admin/tech-pack", status:"active", requiredPermissions:["canViewProduction"] },
+    { label:"Rập & bảng thông số", href:"/admin/pattern", status:"active", requiredPermissions:["canViewProduction"] },
+    { label:"Nguyên vật liệu", href:"/admin/production-materials", status:"active", requiredPermissions:["canViewProduction"] },
+    { label:"Nhà cung cấp (SRM)", href:"/admin/production-suppliers", status:"active", requiredPermissions:["canViewProduction"] },
+  ]) },
+  { label:"FINANCE & DOCUMENTS", icon:"◉", platforms: domainItems([
+    { label:"Invoice", href:"/admin/documents/invoices", status:"active", requiredPermissions:["canViewFinancials"] },
+    { label:"Giao dịch ngân hàng", href:"/admin/bank-transactions", status:"active", requiredPermissions:["canViewFinancials"] },
+  ]) },
+  { label:"PRODUCTS & MULTI-SITE", icon:"▣", platforms: domainItems([
+    { label:"Product Catalog", href:"/admin/products", status:"active", requiredPermissions:["canManageProducts"] },
+    { label:"Danh mục sản phẩm", href:"/admin/danh-muc", status:"active", requiredPermissions:["canManageProducts"] },
+    { label:"Media Library", href:"/admin/media", status:"active", requiredPermissions:["canManageProducts"] },
+    { label:"Trang chủ website", href:"/admin/settings/homepage", status:"active", requiredPermissions:["canManageCms"] },
+    { label:"Điều hướng & Footer", href:"/admin/site-navigation", status:"active", requiredPermissions:["canManageCms"] },
+    { label:"Logo khách hàng", href:"/admin/client-logos", status:"active", requiredPermissions:["canManageCms"] },
+  ]) },
+  { label:"CONTENT & MARKETING", icon:"◈", platforms: domainItems([
+    { label:"Bài viết", href:"/admin/blog", status:"active", requiredPermissions:["canManageCms"] },
+    { label:"Landing Page", href:"/admin/landing-pages", status:"active", requiredPermissions:["canManageCms"] },
+    { label:"SEO & Publishing", href:"/admin/content/seo", status:"active", requiredPermissions:["canManageCms"] },
+    { label:"Case Study", href:"/admin/case-studies", status:"active", requiredPermissions:["canManageCms"] },
+  ]) },
+  { label:"ADMINISTRATION", icon:"⚙", platforms: domainItems([
+    { label:"Người dùng", href:"/admin/settings/users", status:"active", requiredPermissions:["canManageUsers"] },
+    { label:"Vai trò & quyền", href:"/admin/settings/roles", status:"active", requiredPermissions:["canManageRoles"] },
+    { label:"Thông tin công ty VNC", href:"/admin/settings/vnc-company", status:"active", requiredPermissions:["canViewFinancials"] },
+    { label:"Thông tin website ATTD", href:"/admin/settings/company", status:"active", requiredPermissions:["canViewDashboard"] },
+    { label:"Cấu hình giá", href:"/admin/pricing", status:"active", requiredPermissions:["canAccessPricing"] },
+  ]) },
 ];
 
 /**
@@ -308,7 +118,7 @@ export function filterNavigationForWorkspaceMode(
 ): AdminNavigationSection[] {
   if (!isSolo) return sections;
   return sections.map((section) => {
-    if (section.label !== "MARKETING & NỘI DUNG" && section.label !== "CONTENT & SEO" && section.label !== "NỘI DUNG") {
+    if (section.label !== "CONTENT & MARKETING" && section.label !== "CONTENT & SEO" && section.label !== "NỘI DUNG") {
       return section;
     }
     return {

@@ -10,7 +10,7 @@ test("owner may read the CRM task queue", () => {
   assert.deepEqual(getLeadTaskAccess(createOwnerSession()), { allowed: true });
 });
 test("non-owner requires both leads.view and an employee identity", () => {
-  const base: AdminSessionUser = { ...createAnonymousSession(), authenticated: true, mode: "user", permissions: new Map([["leads.view", "ALL"]]) };
+  const base: AdminSessionUser = { ...createAnonymousSession(), authenticated: true, mode: "user", permissions: new Map([["leads.view", "ALL" as const]]) };
   assert.deepEqual(getLeadTaskAccess(base), { allowed: false, status: 403 });
   assert.deepEqual(getLeadTaskAccess({ ...base, employeeId:"emp_001" }), { allowed: true, ownerId:"emp_001" });
   assert.deepEqual(getLeadTaskAccess({ ...base, employeeId:"emp_001", permissions:new Map() }), { allowed: false, status: 403 });

@@ -2,6 +2,7 @@ import { PatternSourceType, ProductionMaterialCategory } from "@prisma/client";
 import { PatternValidationError } from "@/features/patterns/pattern.service";
 
 export type PatternMeasurementInput = {
+  id?: string;
   pointOfMeasure: string;
   description: string | null;
   baseSize: string | null;
@@ -157,6 +158,7 @@ function parseMeasurements(value: unknown): PatternMeasurementInput[] | undefine
       }
 
       return {
+        id: typeof record.id === "string" && record.id.trim() ? record.id.trim() : undefined,
         pointOfMeasure,
         description:
           record.description === null

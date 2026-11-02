@@ -436,36 +436,98 @@ export async function updatePattern(
   }
 
   try {
-    const operations: Prisma.PrismaPromise<unknown>[] = [];
-
-    if (hasMetadataPatch) {
-      operations.push(
-        prisma.pattern.update({
-          where: { id },
-          data: metadataPatch,
-        }),
-      );
-    }
-
-    if (input.measurements !== undefined) {
-      operations.push(
-        prisma.patternMeasurementValue.deleteMany({
-          where: { measurement: { patternId: id } },
-        }),
-        prisma.patternMeasurement.deleteMany({ where: { patternId: id } }),
-      );
-
-      for (const [index, row] of input.measurements.entries()) {
-        const data = patternMeasurementCreateInput(id, row, index);
-        if (!data) continue;
-        operations.push(prisma.patternMeasurement.create({ data }));
+    return await prisma.$transaction(async (tx) => {
+      if (hasMetadataPatch) {
+        await tx.pattern.update({ where: { id }, data: metadataPatch });
       }
-    }
 
-    operations.push(prisma.pattern.findUniqueOrThrow({ where: { id }, include: PATTERN_INCLUDE }));
+      if (input.measurements !== undefined) {
+        const currentRows = await tx.patternMeasurement.findMany({
+          where: { patternId: id },
+          select: { id: true, pointOfMeasure: true },
+        });
+        const currentById = new Map(currentRows.map((row) => [row.id, row]));
+        const currentByPom = new Map(
+          currentRows.map((row) => [row.pointOfMeasure.trim().toLocaleLowerCase("vi"), row]),
+        );
+        const retainedIds = new Set<string>();
+        const pendingRows = input.measurements
+          .map((row, index) => ({ row, data: patternMeasurementCreateInput(id, row, index) }))
+          .filter((item): item is { row: PatternMeasurementInput; data: Prisma.PatternMeasurementCreateInput } => item.data !== null);
 
-    const result = await prisma.$transaction(operations);
-    return result.at(-1) as PatternDetail;
+        // Match by stable server ID first; keep backward compatibility for older
+        // clients that submit only the original POM name.
+        for (const { row, data } of pendingRows) {
+          const suppliedId = row.id?.trim();
+          if (suppliedId && !currentById.has(suppliedId)) {
+            throw new PatternValidationError("Điểm đo không thuộc rập này hoặc đã bị xóa.", undefined, "CONFLICT");
+          }
+          const existingRow = suppliedId
+            ? currentById.get(suppliedId)
+            : currentByPom.get(data.pointOfMeasure.trim().toLocaleLowerCase("vi"));
+          if (existingRow) {
+            if (retainedIds.has(existingRow.id)) {
+              throw new PatternValidationError("Bảng đo chứa điểm đo bị trùng.", undefined, "CONFLICT");
+            }
+            retainedIds.add(existingRow.id);
+            await tx.patternMeasurement.update({
+              where: { id: existingRow.id },
+              data: {
+                pointOfMeasure: data.pointOfMeasure,
+                description: data.description,
+                baseSize: data.baseSize,
+                tolerance: data.tolerance,
+                sortOrder: data.sortOrder,
+              },
+            });
+            await tx.patternMeasurementValue.deleteMany({
+              where: { measurementId: existingRow.id },
+            });
+            const values = row.values
+              .map((value) => ({ size: value.size.trim(), value: value.value.trim() }))
+              .filter((value) => value.size && value.value);
+            if (values.length) {
+              await tx.patternMeasurementValue.createMany({
+                data: values.map((value) => ({ ...value, measurementId: existingRow.id })),
+              });
+            }
+          } else {
+            const created = await tx.patternMeasurement.create({ data });
+            retainedIds.add(created.id);
+          }
+        }
+
+        const removedIds = currentRows.filter((row) => !retainedIds.has(row.id)).map((row) => row.id);
+        if (removedIds.length > 0) {
+          const annotation = await tx.pattern.findUnique({
+            where: { id }, select: { measurementAnnotations: true },
+          });
+          const raw = annotation?.measurementAnnotations;
+          const annotations = raw && typeof raw === "object" && !Array.isArray(raw)
+            ? raw as Record<string, Prisma.JsonValue>
+            : null;
+          const lines = annotations && Array.isArray(annotations.lines) ? annotations.lines : [];
+          const referenced = lines.some((line) =>
+            line && typeof line === "object" && !Array.isArray(line) &&
+            typeof line.measurementId === "string" && removedIds.includes(line.measurementId),
+          );
+          if (referenced) {
+            throw new PatternValidationError(
+              "Có điểm đo đang được sử dụng trên sơ đồ. Hãy xóa đường đo liên kết trước khi xóa POM.",
+              undefined, "CONFLICT",
+            );
+          }
+          await tx.patternMeasurementValue.deleteMany({
+            where: { measurementId: { in: removedIds } },
+          });
+          await tx.patternMeasurement.deleteMany({
+            where: { id: { in: removedIds }, patternId: id },
+          });
+        }
+      }
+
+      return tx.pattern.findUniqueOrThrow({ where: { id }, include: PATTERN_INCLUDE });
+    });
   } catch (err) {
     const mapped = mapPatternPrismaError(err);
     if (mapped) throw mapped;

@@ -49,3 +49,18 @@ test("Out of order delayed or sent events must not downgrade later delivery",()=
  assert.equal(eventDeliveryStatus("email.failed"),"FAILED");
  assert.equal(eventDeliveryStatus("email.opened"),null);
 });
+
+
+test("three recipients are all Delivered once all callbacks are present",()=>{
+ const time=new Date("2026-11-02T05:15:26.000Z");
+ const recipients=["finance@example.com","buyer@example.com","accounting@example.com"];
+ const events=recipients.flatMap(recipient=>[
+  {eventType:"email.sent",recipient,occurredAt:new Date(time.getTime()-3000)},
+  {eventType:"email.delivered",recipient,occurredAt:time}
+ ]);
+ const delivery=summarizeInvoiceDelivery(recipients,events);
+ assert.equal(delivery.status,"DELIVERED");
+ assert.equal(delivery.delivered,3);
+ assert.equal(delivery.pending,0);
+ assert.equal(delivery.failed,0);
+});

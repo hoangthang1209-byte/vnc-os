@@ -318,7 +318,7 @@ export default function CustomInvoiceManager(){
       </div>
       <div className={s.listActions}>
        <span className={inv.status==="ISSUED"?s.state+" "+s.stateIssued:s.state}>{inv.status==="ISSUED"?"Đã phát hành":"Bản nháp"}</span>
-       {inv.status==="DRAFT"&&permissions.canIssueCustomInvoice&&<button type="button" className={s.link} onClick={()=>void issue(inv.id,false)}>Phát hành</button>}
+       {inv.status==="DRAFT"&&<a className={s.link} href={"/api/admin/documents/invoices/"+encodeURIComponent(inv.id)+"/draft-pdf"}>Tải bản nháp</a>}{inv.status==="DRAFT"&&permissions.canIssueCustomInvoice&&<button type="button" className={s.link} onClick={()=>void issue(inv.id,false)}>Phát hành</button>}
        {inv.status==="ISSUED"&&<a className={s.link} href={"/api/admin/documents/invoices/"+encodeURIComponent(inv.id)+"/pdf"}>Tải PDF</a>}
        {inv.status==="ISSUED"&&permissions.canIssueCustomInvoice&&<button type="button" className={s.link} disabled={busy||!emailServiceReady} onClick={()=>void retryEmail(inv.id)}>{inv.emailedAt?"Gửi lại email":"Gửi email"}</button>}
        {(inv.emailedAt||inv.emailDeliveryStatus)&&<button type="button" className={s.link} disabled={deliveryLoading===inv.id} onClick={()=>void loadDelivery(inv.id)}>{deliveryLoading===inv.id?"Đang tải...":deliveryDetails?.id===inv.id?"Ẩn lịch sử":"Chi tiết giao nhận"}</button>}

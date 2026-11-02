@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { resolveInvoiceOrderPreparer } from "./invoice-preparer";
-import { calculateCustomInvoice, formatMinor, lineAmountMinor, toMinor, isValidInvoiceNumericInput, nextCustomInvoiceNumber } from "./custom-invoice-calculation";
+import { calculateCustomInvoice, formatMinor, lineAmountMinor, toMinor, isValidInvoiceNumericInput, nextCustomInvoiceNumber, nextMonthlyCustomInvoiceNumber } from "./custom-invoice-calculation";
 
 test("calculates sample fee invoice in USD exactly", () => {
   const result = calculateCustomInvoice({ currency: "USD", lines: [
@@ -46,4 +46,18 @@ test("Sales/Account on linked Order determines Prepared By; never audit creator"
   assert.deepEqual(resolveInvoiceOrderPreparer({salesName:"Legacy Sales",salesRepresentative:{fullName:"Account Rep",employeeId:"rep-1"}}),{name:"Account Rep",employeeId:"rep-1"});
   assert.deepEqual(resolveInvoiceOrderPreparer({salesName:"Legacy Sales",salesRepresentative:{fullName:"Account Rep",employeeId:"rep-1"},salesEmployee:{fullName:"Assigned Sales"},salesEmployeeId:"emp-1"}),{name:"Assigned Sales",employeeId:"emp-1"});
   assert.deepEqual(resolveInvoiceOrderPreparer({salesEmployee:{fullName:"  "}}),{name:null,employeeId:null});
+});
+
+
+test("monthly Invoice number uses CI-YYYY-MM-XXXX, resets and ignores legacy annual invoices",()=>{
+ assert.equal(nextMonthlyCustomInvoiceNumber(2026,11,[]),"CI-2026-11-0001");
+ assert.equal(nextMonthlyCustomInvoiceNumber(2026,11,[
+  "CI-2026-0005","CI-2026-11-0001","CI-2026-11-0021",
+  "CI-2026-10-0088","CI-2025-11-0099","CI-2026-11-TEST"
+ ]),"CI-2026-11-0022");
+ assert.equal(nextMonthlyCustomInvoiceNumber(2026,12,["CI-2026-11-0022"]),"CI-2026-12-0001");
+ assert.equal(nextMonthlyCustomInvoiceNumber(2027,1,["CI-2026-12-9999"]),"CI-2027-01-0001");
+ assert.throws(()=>nextMonthlyCustomInvoiceNumber(2026,0,[]),/month/);
+ assert.throws(()=>nextMonthlyCustomInvoiceNumber(2026,13,[]),/month/);
+ assert.throws(()=>nextMonthlyCustomInvoiceNumber(2026,11,["CI-2026-11-9999"]),/exhausted/);
 });

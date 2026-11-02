@@ -120,11 +120,6 @@ function AdminShellNav() {
 
   return (
     <nav className={styles.nav}>
-      {visibleNavigation.dashboard ? (
-        <div className={styles.navGroup}>
-          <AdminNavItem item={visibleNavigation.dashboard} activeHref={activeHref} />
-        </div>
-      ) : null}
       {visibleNavigation.sections.map((section) => (
         <section key={section.label} className={styles.navSection} aria-labelledby={`admin-nav-${section.label}`}>
           <p id={`admin-nav-${section.label}`} className={styles.sectionLabel}>

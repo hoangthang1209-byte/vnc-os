@@ -45,11 +45,19 @@ export async function POST(request:NextRequest){
    const invoice=await tx.customPaymentInvoice.findFirst({where:{emailProviderId:emailId},select:{
     id:true,issuedSnapshot:true,emailProviderId:true
    }});
+   // Serialize webhook updates for one invoice. Resend sends recipient events
+   // concurrently; without a row lock two transactions can each aggregate a
+   // subset of committed events and the last update overwrites DELIVERED as PARTIAL.
+   // Lock BEFORE writing this event and querying the ledger.
+   const locked=invoice
+    ?await tx.$queryRaw<{id:string}[]>`SELECT "id" FROM "CustomPaymentInvoice" WHERE "id"=${invoice.id} AND "emailProviderId"=${emailId} FOR UPDATE`
+    :[];
+   const matched=locked.length===1;
    await tx.vncInvoiceEmailDeliveryEvent.create({data:{
     webhookId:headers.id!,providerEmailId:emailId,eventType:type,recipient,
-    invoiceId:invoice?.id||null,occurredAt,detail:summary
+    invoiceId:matched?invoice!.id:null,occurredAt,detail:summary
    }});
-   if(!invoice)return {matched:false};
+   if(!invoice||!matched)return {matched:false};
    let expected:string[]=[];
    try{
     const snapshot=invoice.issuedSnapshot as Record<string,unknown>|null;

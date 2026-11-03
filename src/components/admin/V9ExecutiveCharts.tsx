@@ -5,7 +5,8 @@ import styles from "./V9ExecutiveCharts.module.css";
 
 type Monthly = { label: string; count: number };
 type Source = { label: string; count: number };
-export default function V9ExecutiveCharts({ months, sources }: { months: Monthly[]; sources: Source[] }) {
+type StatusBucket = { label: string; count: number };
+export default function V9ExecutiveCharts({ months, sources, statuses }: { months: Monthly[]; sources: Source[]; statuses: StatusBucket[] }) {
   const [mode, setMode] = useState<"bar" | "line">("bar");
   const max = Math.max(1, ...months.map((item) => item.count));
   const total = sources.reduce((sum, item) => sum + item.count, 0);
@@ -31,6 +32,18 @@ export default function V9ExecutiveCharts({ months, sources }: { months: Monthly
         <div className={styles.sources}>
           {total > 0 ? sources.map((source,i)=><div className={styles.source} key={source.label}><div className={styles.sourceTop}><span>{source.label}</span><b>{source.count} · {Math.round(source.count / total * 100)}%</b></div><div className={styles.track}><div style={{width:`${source.count/total*100}%`,background:palette[i%palette.length]}}/></div></div>) : <p className={styles.empty}>Chưa có dữ liệu nguồn lead.</p>}
         </div>
+      </div>
+    </div>
+    <div className={styles.panel} style={{ marginTop: 14 }}>
+      <header><div><strong>Cơ cấu trạng thái đơn hàng</strong><small>Đếm đơn theo trạng thái hiện hành, không gộp tiền tệ</small></div></header>
+      <div className={styles.sources} role="list" aria-label="Phân bổ đơn hàng theo trạng thái">
+        {statuses.length ? statuses.map((item, i) => {
+          const all = statuses.reduce((sum, row) => sum + row.count, 0);
+          return <div role="listitem" key={item.label} className={styles.source}>
+            <div className={styles.sourceTop}><span>{item.label}</span><b>{item.count} đơn · {all ? Math.round(item.count / all * 100) : 0}%</b></div>
+            <div className={styles.track}><div style={{ width: `${all ? item.count / all * 100 : 0}%`, background: palette[i % palette.length] }}/></div>
+          </div>;
+        }) : <p className={styles.empty}>Chưa có đơn hàng.</p>}
       </div>
     </div>
     <p className={styles.note}>Phạm vi biểu đồ: Owner. Thống kê đếm bản ghi hiện có trong database, không lấy số liệu minh họa từ HTML V9. Các báo cáo tiền tệ sẽ được bổ sung sau khi xác minh chuẩn quy đổi.</p>

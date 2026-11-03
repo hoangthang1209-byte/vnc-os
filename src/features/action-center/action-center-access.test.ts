@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { classifyDueAt, getLeadTaskAccess } from "./action-center-access";
+import { buildOpenLeadTaskWhere, classifyDueAt, getLeadTaskAccess } from "./action-center-access";
 import { createAnonymousSession, createOwnerSession, type AdminSessionUser } from "@/features/auth/admin-session.types";
 
 test("anonymous cannot read Action Center", () => {
@@ -21,4 +21,11 @@ test("due date classification uses Vietnam business date", () => {
   assert.equal(classifyDueAt(new Date("2026-11-02T17:30:00.000Z"), now), "today");
   assert.equal(classifyDueAt(new Date("2026-11-04T00:00:00.000Z"), now), "upcoming");
   assert.equal(classifyDueAt(null, now), "unscheduled");
+});
+
+test("task query for staff cannot see peers or leads assigned to another employee", () => {
+  assert.deepEqual(buildOpenLeadTaskWhere({ allowed: true, ownerId: "emp_001" }), {
+    completedAt: null, ownerId: "emp_001", lead: { assignedEmployeeId: "emp_001" },
+  });
+  assert.deepEqual(buildOpenLeadTaskWhere({ allowed: true }), { completedAt: null });
 });

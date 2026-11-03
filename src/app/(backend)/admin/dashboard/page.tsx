@@ -10,6 +10,8 @@ import { adminPageMetadata } from "@/lib/admin/admin-metadata";
 import { getAdminSessionFromCookies } from "@/lib/admin-auth/get-admin-session";
 import { isOwnerLikeSession } from "@/features/auth/admin-permissions";
 import V9ExecutiveCharts from "@/components/admin/V9ExecutiveCharts";
+import V9LeadFunnel from "@/components/admin/crm/V9LeadFunnel";
+import { can } from "@/features/auth/admin-permissions";
 
 export const metadata = adminPageMetadata("Tổng quan");
 
@@ -92,6 +94,7 @@ export default async function DashboardPage() {
   return (
     <>
       <AdminPageTitle title={"Tổng quan"} />
+      {can(session, "leads.view") && <V9LeadFunnel />}
       {executiveKpis && (
         <div className="admin-crm-kpi-grid" aria-label="Chỉ số điều hành V9" style={{ marginBottom: 16 }}>
           {[

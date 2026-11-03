@@ -20,6 +20,7 @@ import {
 import { useCustomerTypeOptions } from "@/components/admin/crm/useCustomerTypeOptions";
 import LeadStatusBadge from "@/components/admin/LeadStatusBadge";
 import CustomerAccountWorkspace from "@/components/admin/crm/CustomerAccountWorkspace";
+import V9CustomerOverview from "@/components/admin/crm/V9CustomerOverview";
 import {
   CUSTOMER_STATUS_LABELS,
   REPRESENTATIVE_SALUTATION_LABELS,
@@ -59,7 +60,7 @@ export default function CrmCustomerDetailView({
   initialCustomer: CrmCustomerRecord;
   overview: CustomerAccountOverview;
 }) {
-  const [activeV9Tab, setActiveV9Tab] = useState<"overview" | "profile" | "contacts" | "activity">("overview");
+  const [activeV9Tab, setActiveV9Tab] = useState<"overview" | "profile" | "contacts" | "activity" | "advanced">("overview");
   const mutate = useAdminMutation();
   const { types: customerTypes, loading: typesLoading } = useCustomerTypeOptions(true);
   const [customer, setCustomer] = useState(initialCustomer);
@@ -195,41 +196,36 @@ export default function CrmCustomerDetailView({
   });
 
   return (
-    <div className="admin-panel">
-      <div className="admin-crm-detail-header">
-        <div>
-          <p className="admin-crm-detail-code">Mã khách hàng: {customer.code}</p>
-          <h2>{customer.name}</h2>
-          <div className="admin-crm-detail-badges">
-            <CustomerMasterTypeBadge label={customer.customerType?.name} />
-            <CustomerStatusBadge status={customer.status} />
-          </div>
-        </div>
-        <Link href="/admin/crm/customers" className="admin-btn admin-btn--secondary">
-          ← Danh sách khách hàng
-        </Link>
+    <div className={styles.customerRoot}>
+      <div className={styles.topline}>
+        <Link href="/admin/crm/customers" className={styles.backLink}>← Danh sách khách hàng</Link>
+        <span className={styles.customerCode}>CUSTOMER ACCOUNT · {customer.code}</span>
       </div>
-
-      {message && (
-        <p className={`admin-message admin-message--${message.type}`} role="alert">
-          {message.text}
-        </p>
-      )}
-
-      <p className={styles.kicker}>Customer 360 · VNC OS V9</p>
-      <div className={styles.tabs} role="group" aria-label="Điều hướng hồ sơ khách hàng">
+      {message && <p className={`admin-message admin-message--${message.type}`} role="alert">{message.text}</p>}
+      {activeV9Tab === "overview" ? (
+        <V9CustomerOverview
+          customer={customer}
+          overview={overview}
+          onEdit={() => setActiveV9Tab("profile")}
+          onContact={() => setActiveV9Tab("contacts")}
+          onActivity={() => setActiveV9Tab("activity")}
+        />
+      ) : null}
+      <div className={styles.legacyToolbar}>
+        <strong>Workspace khách hàng</strong>
         {([
-          ["overview", "Tổng quan & đơn hàng"],
-          ["profile", "Hồ sơ doanh nghiệp"],
-          ["contacts", "Người liên hệ"],
-          ["activity", "Lead & hoạt động"],
+          ["overview", "Tổng quan"],
+          ["profile", "Chỉnh sửa hồ sơ"],
+          ["contacts", "Quản lý liên hệ"],
+          ["activity", "Lead & nhật ký"],
+          ["advanced", "Nghiệp vụ mở rộng"],
         ] as const).map(([tab, label]) => (
-          <button key={tab} type="button" aria-pressed={activeV9Tab === tab}
+          <button type="button" key={tab} aria-pressed={activeV9Tab === tab}
             className={`${styles.tab} ${activeV9Tab === tab ? styles.active : ""}`}
             onClick={() => setActiveV9Tab(tab)}>{label}</button>
         ))}
       </div>
-      <div className={activeV9Tab === "overview" ? undefined : styles.hiddenPanel}>
+      <div className={activeV9Tab === "advanced" ? undefined : styles.hiddenPanel}>
         <CustomerAccountWorkspace overview={overview} />
       </div>
 
@@ -475,7 +471,7 @@ export default function CrmCustomerDetailView({
         </section>
       </div>
 
-      <div className="admin-form-actions">
+      <div className={activeV9Tab === "profile" ? "admin-form-actions" : styles.hiddenPanel}>
         <AdminLoadingButton
           type="button"
           variant="primary"

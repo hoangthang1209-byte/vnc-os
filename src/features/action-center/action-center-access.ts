@@ -23,3 +23,14 @@ export function classifyDueAt(dueAt: Date | null, now: Date): "overdue" | "today
   const d = key(dueAt), n = key(now);
   return d < n ? "overdue" : d === n ? "today" : "upcoming";
 }
+
+
+/** A scoped employee can only see open tasks they own on a lead assigned to them. */
+export function buildOpenLeadTaskWhere(access: { allowed: true; ownerId?: string }) {
+  return {
+    completedAt: null,
+    ...(access.ownerId
+      ? { ownerId: access.ownerId, lead: { assignedEmployeeId: access.ownerId } }
+      : {}),
+  };
+}

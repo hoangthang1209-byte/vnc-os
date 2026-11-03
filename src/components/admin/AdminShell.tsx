@@ -10,6 +10,7 @@ import AdminScrollRestoration from "@/components/admin/AdminScrollRestoration";
 import AdminCommandPalette from "@/components/admin/AdminCommandPalette";
 import AdminMultiWindowWorkspace from "@/components/admin/AdminMultiWindowWorkspace";
 import AdminConnectedRecords from "@/components/admin/AdminConnectedRecords";
+import V9ActionCenter from "@/components/admin/V9ActionCenter";
 import { AdminTitleProvider, useAdminTitle } from "@/components/admin/AdminTitleContext";
 import { useAdminPermissions, type AdminPermissionFlags } from "@/components/admin/AdminPermissionsContext";
 import { WorkspaceModeProvider, useWorkspaceMode } from "@/components/admin/content/WorkspaceModeContext";
@@ -302,6 +303,7 @@ function AdminShellMain({
           ) : null}
         </div>
         <div className={styles.headerActions}>
+          <V9ActionCenter />
           <AdminConnectedRecords />
           <WorkspaceModeToggle />
           <AdminMultiWindowWorkspace />

@@ -16,6 +16,7 @@ import { EmptyState, PageHeader } from "@/components/admin/AdminUi";
 import { TableLoading } from "@/components/ui/loading/ContextLoading";
 import { useAdminToast } from "@/hooks/useAdminToast";
 import { useAdminPermissions } from "@/components/admin/AdminPermissionsContext";
+import v9Styles from "./CustomerV9List.module.css";
 
 type LoadState = "loading" | "error" | "empty" | "ready";
 
@@ -77,6 +78,7 @@ export default function CrmCustomersList() {
   const toast = useAdminToast();
   const { permissions } = useAdminPermissions();
   const { types: customerTypes } = useCustomerTypeOptions(false);
+  const [density, setDensity] = useState<"dense" | "comfortable">("dense");
   const [customers, setCustomers] = useState<CrmCustomerRecord[]>([]);
   const [total, setTotal] = useState(0);
   const [loadState, setLoadState] = useState<LoadState>("loading");
@@ -232,6 +234,12 @@ export default function CrmCustomersList() {
         }
         actions={
           <span data-testid="customers-workspace-actions" style={{ display: "contents" }}>
+            <span className={v9Styles.densityControl} role="group" aria-label="Mật độ bảng khách hàng">
+              <button type="button" className={`${v9Styles.densityButton} ${density === "dense" ? v9Styles.densityButtonActive : ""}`}
+                aria-pressed={density === "dense"} onClick={() => setDensity("dense")}>Gọn</button>
+              <button type="button" className={`${v9Styles.densityButton} ${density === "comfortable" ? v9Styles.densityButtonActive : ""}`}
+                aria-pressed={density === "comfortable"} onClick={() => setDensity("comfortable")}>Thoáng</button>
+            </span>
             <Link href="/admin/crm/customer-types" className="admin-btn admin-btn--secondary">
               Loại khách hàng
             </Link>
@@ -385,7 +393,7 @@ export default function CrmCustomersList() {
       )}
 
       {loadState === "ready" && (
-        <div className="admin-table-wrap admin-table-wrap--crm">
+        <div className={`admin-table-wrap admin-table-wrap--crm ${density === "dense" ? v9Styles.denseTable : v9Styles.comfortTable}`}>
           <table className="admin-table admin-table--crm">
             <thead>
               <tr>

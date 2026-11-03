@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { ClipboardList, RefreshCcw, X } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 
 type Task = { id: string; title: string; leadName: string; dueAt: string | null; status: "overdue" | "today" | "upcoming" | "unscheduled" };
 type Payload = { source: string; tasks: Task[]; counts: Record<Task["status"], number>; hasMore: boolean };
@@ -25,11 +25,15 @@ export default function V9ActionCenter() {
     } catch (err) { setError(err instanceof Error ? err.message : "Không thể tải công việc."); setData(null); }
     finally { setLoading(false); }
   }, []);
-  useEffect(() => { if (open && !data && !loading && !error) void load(); }, [open, data, loading, error, load]);
+  const toggle = () => {
+    const nextOpen = !open;
+    setOpen(nextOpen);
+    if (nextOpen && !data && !loading) void load();
+  };
 
   return (
     <div style={{ position: "relative" }}>
-      <button type="button" onClick={() => setOpen((value) => !value)} aria-expanded={open} aria-controls="v9-action-center-panel"
+      <button type="button" onClick={toggle} aria-expanded={open} aria-controls="v9-action-center-panel"
         style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "7px 10px", border: "1px solid #dbe2eb", borderRadius: 8, background: "#fff", color: "#202d3d", fontWeight: 650, fontSize: 12, cursor: "pointer" }}>
         <ClipboardList size={15} aria-hidden="true" /> Công việc
       </button>

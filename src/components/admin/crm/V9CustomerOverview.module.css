@@ -1,0 +1,39 @@
+.workspace{display:grid;gap:16px;margin-bottom:18px;color:#202d3d;font-family:"DM Sans",Arial,sans-serif}
+.columns{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;align-items:stretch}
+.panel{background:#fff;border:1px solid #e1e7ee;border-radius:10px;box-shadow:0 1px 2px #1422360b;overflow:hidden;min-width:0}
+.panelTitle{display:flex;align-items:center;justify-content:space-between;padding:15px 19px;border-bottom:1px solid #e1e7ee;color:#202d3d;font:800 13px/1.4 "Manrope","DM Sans",sans-serif}
+.profileBody{padding:19px}
+.identity{display:flex;align-items:center;gap:13px;margin-bottom:20px;min-width:0}
+.monogram{width:50px;height:50px;min-width:50px;display:flex;align-items:center;justify-content:center;background:#2c4564;border-radius:10px;color:white;font:800 17px "Manrope",sans-serif}
+.identityText{min-width:0}.identityText h2{font:800 19px/1.25 "Manrope",sans-serif;margin:0 0 6px;overflow-wrap:anywhere}
+.pills{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.keyValues{display:grid;grid-template-columns:minmax(115px,41%) minmax(0,1fr);gap:0;margin:0;font-size:12px}
+.keyValues dt,.keyValues dd{margin:0;padding:11px 0;border-bottom:1px solid #edf0f4;overflow-wrap:anywhere;min-width:0}
+.keyValues dt{color:#748397;padding-right:14px}.keyValues dd{color:#25384b;font-weight:600}.keyValues a{color:#276b9d;text-decoration:none}
+.actions,.contactShortcuts{display:flex;gap:8px;flex-wrap:wrap;margin-top:20px}
+.primary,.secondary{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:9px 12px;min-height:34px;border-radius:7px;font-size:12px;font-weight:700;text-decoration:none;cursor:pointer;font-family:inherit}
+.primary{background:#d92f3a;color:white;border:1px solid #d92f3a}
+.secondary{background:white;color:#334155;border:1px solid #d7dfe8}
+.primary:hover{background:#b92732;color:white}.secondary:hover{background:#f5f7fa;color:#142236}
+.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(132px,1fr));gap:10px}
+.metric{border:1px solid #e1e7ee;border-radius:8px;padding:13px;background:#f8fafc;display:grid;gap:5px}
+.metric span{font-size:11px;color:#738397}.metric strong{font:800 19px/1.3 "Manrope",sans-serif;overflow-wrap:anywhere}.metric small{font-size:10px;color:#8191a3}
+.activityPreview{margin-top:20px}.activityPreview h3{font:800 12px "Manrope",sans-serif;margin:0 0 12px}
+.event{display:flex;align-items:flex-start;gap:9px;font-size:12px;padding:10px 0;border-bottom:1px solid #edf0f4;color:#334155}
+.dot{width:7px;height:7px;min-width:7px;background:#d92f3a;border-radius:50%;margin-top:5px}
+.empty{padding:15px 0;color:#748397;font-size:12px;margin:0}
+.tabbar{display:flex;gap:20px;padding:0 17px;border-bottom:1px solid #e1e7ee;overflow-x:auto;scrollbar-width:thin}
+.tab,.activeTab{font:700 12px "DM Sans",sans-serif;white-space:nowrap;padding:13px 1px 11px;border:0;border-bottom:2px solid transparent;background:transparent;color:#788698;cursor:pointer}
+.activeTab{color:#b92732;border-bottom-color:#d92f3a}
+.tab:hover{color:#26374c}
+.tableArea{min-height:105px}.tableWrap{overflow:auto;max-width:100%}
+.tableWrap table{width:100%;border-collapse:collapse;text-align:left;font-size:12px}
+.tableWrap th{background:#f8fafc;color:#758397;font-size:10px;font-weight:800;letter-spacing:.025em}
+.tableWrap th,.tableWrap td{padding:13px 17px;border-bottom:1px solid #edf0f4;white-space:nowrap}
+.tableWrap td a{color:#b92732;text-decoration:none;font-weight:700}
+.tableWrap tr:hover td{background:#fcfdff}
+.contactsList{padding:8px 19px 18px}.contact{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid #eef1f4;font-size:12px}
+.contact>div{display:grid;gap:3px}.contact small{font-size:11px;color:#748397}.tag{margin-left:auto;font-size:10px;background:#e7f8ee;color:#247645;padding:4px 8px;border-radius:5px}
+.documentEmpty{display:flex;align-items:center;gap:12px;padding:18px;flex-wrap:wrap;color:#748397;font-size:12px}.documentEmpty p{flex:1;min-width:170px;margin:0}
+.footer{display:flex;align-items:center;gap:7px;color:#8291a2;font-size:10px;padding:12px 17px;border-top:1px solid #edf0f4}
+@media(max-width:1020px){.columns{grid-template-columns:1fr}}@media(max-width:600px){.profileBody{padding:13px}.panelTitle{padding:12px 14px}.tabbar{gap:15px}.tableWrap th,.tableWrap td{padding:11px 12px}.metric strong{font-size:16px}}

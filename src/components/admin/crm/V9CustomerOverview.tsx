@@ -28,13 +28,14 @@ export default function V9CustomerOverview({
   const { capabilities, kpis } = overview;
   const initials = customer.name.trim().split(/\s+/).slice(0, 2).map((x) => x[0] || "").join("").toUpperCase();
   const primaryContact = customer.contacts?.find((item) => item.isPrimary) || customer.contacts?.[0];
-  const panes: { key: Section; title: string; count: number | null }[] = [
+  const allPanes: { key: Section; title: string; count: number | null }[] = [
     { key: "orders", title: "Đơn hàng", count: capabilities.includeOrders ? kpis.totalOrders : null },
     { key: "quotes", title: "Báo giá", count: capabilities.includeQuotes ? kpis.openQuotations : null },
     { key: "contacts", title: "Liên hệ", count: customer.contacts?.length ?? 0 },
     { key: "documents", title: "Tài liệu", count: null },
     { key: "activity", title: "Lịch sử hoạt động", count: customer.activities?.length ?? 0 },
-  ].filter((p) => (p.key !== "orders" || capabilities.includeOrders) && (p.key !== "quotes" || capabilities.includeQuotes));
+  ];
+  const panes = allPanes.filter((p) => (p.key !== "orders" || capabilities.includeOrders) && (p.key !== "quotes" || capabilities.includeQuotes));
 
   return (
     <div className={styles.workspace} data-testid="v9-customer-360">

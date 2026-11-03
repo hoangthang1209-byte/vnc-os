@@ -33,6 +33,7 @@ export default async function DashboardPage() {
           count: await prisma.order.count({ where: { orderDate: { gte: start, lt: end } } }),
         }))),
         prisma.lead.groupBy({ by: ["source"], _count: { _all: true }, orderBy: { _count: { source: "desc" } } }),
+        prisma.order.groupBy({ by: ["status"], _count: { _all: true }, orderBy: { _count: { status: "desc" } } }),
       ])
     : null;
   const [
@@ -114,6 +115,7 @@ export default async function DashboardPage() {
       {analytics && <V9ExecutiveCharts
         months={analytics[0]}
         sources={analytics[1].map((source) => ({ label: source.source, count: source._count._all }))}
+        statuses={analytics[2].map((entry) => ({ label: entry.status, count: entry._count._all }))}
       />}
       <h2 className="admin-subtitle">Website & CMS Operations</h2>
       <div className="admin-dashboard-grid">

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAdminSessionFromCookies } from "@/lib/admin-auth/get-admin-session";
-import { classifyDueAt, getLeadTaskAccess } from "@/features/action-center/action-center-access";
+import { buildOpenLeadTaskWhere, classifyDueAt, getLeadTaskAccess } from "@/features/action-center/action-center-access";
 
 export const dynamic = "force-dynamic";
 
@@ -16,7 +16,7 @@ export async function GET() {
     const now = new Date();
     // Hard cap protects Neon and the UI. hasMore indicates there are additional tasks.
     const rows = await prisma.leadTask.findMany({
-      where: { completedAt: null, ...(access.ownerId ? { ownerId: access.ownerId, lead: { assignedEmployeeId: access.ownerId } } : {}) },
+      where: buildOpenLeadTaskWhere(access),
       select: {
         id: true, title: true, dueAt: true, ownerId: true,
         lead: { select: { id: true, fullName: true, companyName: true } },

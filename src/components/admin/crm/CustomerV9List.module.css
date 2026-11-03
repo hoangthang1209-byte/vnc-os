@@ -1,0 +1,7 @@
+.densityControl { display:inline-flex; align-items:center; gap:2px; padding:3px; background:#f1f4f8; border:1px solid #dce4ec; border-radius:9px; }
+.densityButton { border:0; padding:7px 10px; min-height:30px; border-radius:6px; background:transparent; color:#607185; font-size:11px; font-weight:700; cursor:pointer; }
+.densityButtonActive { color:#17293e; background:#fff; box-shadow:0 1px 4px #14223616; }
+.densityButton:focus-visible { outline:2px solid #d92f3a; outline-offset:2px; }
+.denseTable :global(.admin-table th), .denseTable :global(.admin-table td) { padding:8px 9px !important; font-size:12px; vertical-align:middle; }
+.comfortTable :global(.admin-table th), .comfortTable :global(.admin-table td) { padding:15px 13px !important; font-size:13px; vertical-align:middle; }
+@media(max-width:700px) { .densityControl { order:2; } }

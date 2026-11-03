@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import styles from "./CustomerV9Tabs.module.css";
 import Link from "next/link";
 import type { CustomerRepresentativeSalutation, CustomerStatus } from "@prisma/client";
 import CrmActivityTimeline from "@/components/admin/crm/CrmActivityTimeline";
@@ -58,6 +59,7 @@ export default function CrmCustomerDetailView({
   initialCustomer: CrmCustomerRecord;
   overview: CustomerAccountOverview;
 }) {
+  const [activeV9Tab, setActiveV9Tab] = useState<"overview" | "profile" | "contacts" | "activity">("overview");
   const mutate = useAdminMutation();
   const { types: customerTypes, loading: typesLoading } = useCustomerTypeOptions(true);
   const [customer, setCustomer] = useState(initialCustomer);
@@ -214,10 +216,25 @@ export default function CrmCustomerDetailView({
         </p>
       )}
 
-      <CustomerAccountWorkspace overview={overview} />
+      <p className={styles.kicker}>Customer 360 · VNC OS V9</p>
+      <div className={styles.tabs} role="group" aria-label="Điều hướng hồ sơ khách hàng">
+        {([
+          ["overview", "Tổng quan & đơn hàng"],
+          ["profile", "Hồ sơ doanh nghiệp"],
+          ["contacts", "Người liên hệ"],
+          ["activity", "Lead & hoạt động"],
+        ] as const).map(([tab, label]) => (
+          <button key={tab} type="button" aria-pressed={activeV9Tab === tab}
+            className={`${styles.tab} ${activeV9Tab === tab ? styles.active : ""}`}
+            onClick={() => setActiveV9Tab(tab)}>{label}</button>
+        ))}
+      </div>
+      <div className={activeV9Tab === "overview" ? undefined : styles.hiddenPanel}>
+        <CustomerAccountWorkspace overview={overview} />
+      </div>
 
       <div className="admin-crm-detail-grid">
-        <section className="admin-section-card">
+        <section className={`admin-section-card ${activeV9Tab === "contacts" ? "" : styles.hiddenPanel}`}>
           <div className="admin-section-header">
             <h3>Người liên hệ</h3>
             <button
@@ -280,7 +297,7 @@ export default function CrmCustomerDetailView({
           </div>
         </section>
 
-        <section className="admin-section-card">
+        <section className={`admin-section-card ${activeV9Tab === "profile" ? "" : styles.hiddenPanel}`}>
           <h3>A. Thông tin doanh nghiệp</h3>
           <div className="admin-form admin-form--compact admin-form-grid">
             <label>
@@ -329,7 +346,7 @@ export default function CrmCustomerDetailView({
           </div>
         </section>
 
-        <section className="admin-section-card">
+        <section className={`admin-section-card ${activeV9Tab === "profile" ? "" : styles.hiddenPanel}`}>
           <h3>Phân loại khách hàng</h3>
           <div className="admin-form admin-form--compact admin-form-grid">
             <label>
@@ -351,7 +368,7 @@ export default function CrmCustomerDetailView({
           </div>
         </section>
 
-        <section className="admin-section-card">
+        <section className={`admin-section-card ${activeV9Tab === "profile" ? "" : styles.hiddenPanel}`}>
           <h3>Người đại diện / người ký</h3>
           <p className="admin-field-hint">
             Dùng cho hợp đồng, báo giá hoặc chứng từ khi người ký khác với liên hệ làm việc hằng ngày.
@@ -401,7 +418,7 @@ export default function CrmCustomerDetailView({
           </div>
         </section>
 
-        <section className="admin-section-card">
+        <section className={`admin-section-card ${activeV9Tab === "profile" ? "" : styles.hiddenPanel}`}>
           <h3>B. Địa chỉ</h3>
           <CrmCustomerAddressFields
             values={addressValues}
@@ -410,7 +427,7 @@ export default function CrmCustomerDetailView({
           {addressPreview && <p className="admin-field-hint">Xem trước: {addressPreview}</p>}
         </section>
 
-        <section className="admin-section-card">
+        <section className={`admin-section-card ${activeV9Tab === "profile" ? "" : styles.hiddenPanel}`}>
           <h3>D. Ghi chú</h3>
           <div className="admin-form admin-form--compact">
             <label>
@@ -428,7 +445,7 @@ export default function CrmCustomerDetailView({
           </div>
         </section>
 
-        <section className="admin-section-card">
+        <section className={`admin-section-card ${activeV9Tab === "activity" ? "" : styles.hiddenPanel}`}>
           <h3>Lead liên quan</h3>
           {customer.leads?.length ? (
             <ul className="admin-crm-related-list">
@@ -445,13 +462,13 @@ export default function CrmCustomerDetailView({
           )}
         </section>
 
-        <section className="admin-section-card">
+        <section className={`admin-section-card ${activeV9Tab === "activity" ? "" : styles.hiddenPanel}`}>
           <h3>Nhu cầu sản phẩm</h3>
           <CrmProductInterestForm customerId={customer.id} onCreated={() => void refreshCustomer()} />
           <CrmProductInterestList interests={customer.productInterests ?? []} />
         </section>
 
-        <section className="admin-section-card">
+        <section className={`admin-section-card ${activeV9Tab === "activity" ? "" : styles.hiddenPanel}`}>
           <h3>Hoạt động</h3>
           <CrmAddActivityForm customerId={customer.id} onCreated={() => void refreshCustomer()} />
           <CrmActivityTimeline activities={customer.activities ?? []} />

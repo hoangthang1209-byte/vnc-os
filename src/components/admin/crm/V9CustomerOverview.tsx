@@ -11,6 +11,7 @@ import OrderStatusBadge from "@/components/admin/orders/OrderStatusBadge";
 import QuoteStatusBadge from "@/components/admin/quotes/QuoteStatusBadge";
 import { CustomerMasterTypeBadge, CustomerStatusBadge } from "@/components/admin/crm/CustomerBadges";
 import styles from "./V9CustomerOverview.module.css";
+import V9CustomerOrderChart from "./V9CustomerOrderChart";
 
 type Section = "orders" | "quotes" | "contacts" | "activity" | "documents";
 
@@ -89,6 +90,8 @@ export default function V9CustomerOverview({
           </div>
         </section>
       </div>
+
+      {capabilities.includeOrders && <V9CustomerOrderChart overview={overview} />}
 
       <section className={styles.panel} aria-label="Hoạt động thương mại và tài liệu">
         <div className={styles.panelTitle}>Hoạt động thương mại & tài liệu</div>

@@ -7,10 +7,32 @@ import { getCmsHealth } from "@/features/admin/services/cms-health.service";
 import AdminPageTitle from "@/components/admin/AdminPageTitle";
 import CmsHealthCard from "@/components/admin/CmsHealthCard";
 import { adminPageMetadata } from "@/lib/admin/admin-metadata";
+import { getAdminSessionFromCookies } from "@/lib/admin-auth/get-admin-session";
+import { isOwnerLikeSession } from "@/features/auth/admin-permissions";
+import V9ExecutiveCharts from "@/components/admin/V9ExecutiveCharts";
 
 export const metadata = adminPageMetadata("Tổng quan");
 
 export default async function DashboardPage() {
+  const session = await getAdminSessionFromCookies();
+  // The cross-organization aggregates are owner-only. Do not expose staff-wide
+  // counts until every dashboard query has a validated server-side scope.
+  const showExecutiveAnalytics = isOwnerLikeSession(session);
+  const now = new Date();
+  const months = Array.from({ length: 6 }, (_, index) => {
+    const start = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 5 + index, 1));
+    const end = new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth() + 1, 1));
+    return { start, end, label: `T${start.getUTCMonth() + 1}` };
+  });
+  const analytics = showExecutiveAnalytics
+    ? await Promise.all([
+        Promise.all(months.map(async ({ start, end, label }) => ({
+          label,
+          count: await prisma.order.count({ where: { orderDate: { gte: start, lt: end } } }),
+        }))),
+        prisma.lead.groupBy({ by: ["source"], _count: { _all: true }, orderBy: { _count: { source: "desc" } } }),
+      ])
+    : null;
   const [
     health,
     totalProducts,
@@ -61,6 +83,10 @@ export default async function DashboardPage() {
   return (
     <>
       <AdminPageTitle title={"Tổng quan"} />
+      {analytics && <V9ExecutiveCharts
+        months={analytics[0]}
+        sources={analytics[1].map((source) => ({ label: source.source, count: source._count._all }))}
+      />}
       <div className="admin-dashboard-grid">
         <CmsHealthCard health={health} />
         {cmsCards.map((card) => (

@@ -120,11 +120,6 @@ function AdminShellNav() {
 
   return (
     <nav className={styles.nav}>
-      {visibleNavigation.dashboard ? (
-        <div className={styles.navGroup}>
-          <AdminNavItem item={visibleNavigation.dashboard} activeHref={activeHref} />
-        </div>
-      ) : null}
       {visibleNavigation.sections.map((section) => (
         <section key={section.label} className={styles.navSection} aria-labelledby={`admin-nav-${section.label}`}>
           <p id={`admin-nav-${section.label}`} className={styles.sectionLabel}>
@@ -374,7 +369,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
               <div className={styles.brandRow}>
                 <Link href="/admin/dashboard" scroll={false} className={styles.brand}>
                   <span className={styles.brandMark}>VNC OS</span>
-                  <span className={styles.brandSub}>Design Authority</span>
+                  <span className={styles.brandSub}>Enterprise Operations</span>
                 </Link>
                 <AdminEnvironmentBadge />
               </div>

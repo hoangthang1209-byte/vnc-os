@@ -16,7 +16,7 @@ export async function GET() {
     const now = new Date();
     // Hard cap protects Neon and the UI. hasMore indicates there are additional tasks.
     const rows = await prisma.leadTask.findMany({
-      where: { completedAt: null, ...(access.ownerId ? { ownerId: access.ownerId } : {}) },
+      where: { completedAt: null, ...(access.ownerId ? { ownerId: access.ownerId, lead: { assignedEmployeeId: access.ownerId } } : {}) },
       select: {
         id: true, title: true, dueAt: true, ownerId: true,
         lead: { select: { id: true, fullName: true, companyName: true } },

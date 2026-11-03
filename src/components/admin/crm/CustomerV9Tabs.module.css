@@ -6,3 +6,14 @@
 .hiddenPanel { display:none !important; }
 .kicker { color:#d92f3a; font-weight:800; letter-spacing:.08em; font-size:10px; text-transform:uppercase; margin:0 0 6px; }
 @media(max-width:700px){ .tabs { position:static; flex-wrap:nowrap; overflow-x:auto; } .tab{ white-space:nowrap; padding:8px 10px; } }
+
+/* V9 Customer 360 is the default overview; legacy forms remain in operational tabs only. */
+.customerRoot { background:#f5f7fa; padding:0 0 18px; width:100%; min-width:0; }
+.topline { display:flex; justify-content:space-between; gap:12px; align-items:center; margin:0 0 15px; flex-wrap:wrap; }
+.backLink { color:#748397; text-decoration:none; font-size:12px; font-weight:700; }
+.backLink:hover { color:#d92f3a; }
+.customerCode { color:#8795a5; font:800 10px "Manrope","DM Sans",sans-serif; letter-spacing:.075em; }
+.legacyToolbar { display:flex; gap:5px; align-items:center; flex-wrap:wrap; padding:10px 12px; margin:0 0 14px; background:#fff; border:1px solid #e1e7ee; border-radius:9px; }
+.legacyToolbar>strong { margin-right:9px; color:#27384b; font:800 12px "Manrope","DM Sans",sans-serif; }
+.legacyToolbar .tab { padding:7px 10px; min-height:30px; }
+.legacyToolbar .active { border-color:#d92f3a; color:#d92f3a; background:#fff7f7; box-shadow:none; }

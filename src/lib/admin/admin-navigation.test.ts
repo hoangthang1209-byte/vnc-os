@@ -87,8 +87,8 @@ describe("VNC OS V9 navigation contract (#294)", () => {
 
 describe("existing document metadata compatibility", () => {
   it("does not duplicate the admin title", () => {
-    assert.equal(ADMIN_DOCUMENT_TITLE, "ATTD Admin");
-    assert.equal(ADMIN_TITLE_TEMPLATE, "%s | ATTD Admin");
+    assert.equal(ADMIN_DOCUMENT_TITLE, "VNC OS");
+    assert.equal(ADMIN_TITLE_TEMPLATE, "%s | VNC OS");
     assert.deepEqual(adminPageMetadata("Khách hàng"), { title: "Khách hàng" });
   });
 });

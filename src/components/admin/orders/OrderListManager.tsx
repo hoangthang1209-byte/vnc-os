@@ -22,6 +22,7 @@ import type {
   OrderListQuickFilter,
 } from "@/features/orders/order-list-dashboard.types";
 import { SlidersHorizontal } from "lucide-react";
+import V9OrderOperations from "./V9OrderOperations";
 import { useAdminListQuery } from "@/hooks/useAdminListQuery";
 
 function kpiDisplayLabel(label: string, key: OrderListKpiKey): string {
@@ -223,6 +224,8 @@ export default function OrderListManager() {
           ))}
         </div>
       )}
+
+      {data && <V9OrderOperations rows={orders} total={total} queryString={queryString} />}
 
       <div className="order-ops-controls">
         <div className="order-ops-toolbar">

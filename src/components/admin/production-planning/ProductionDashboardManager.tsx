@@ -7,6 +7,7 @@ import AdminErrorRecovery from "@/components/admin/feedback/AdminErrorRecovery";
 import AdminPageSkeleton from "@/components/admin/feedback/AdminPageSkeleton";
 import { formatOrderDate } from "@/features/orders/order-format";
 import type { ProductionDashboardResponse } from "@/features/production-planning/production-plan.types";
+import V9ProductionPulse from "./V9ProductionPulse";
 
 export default function ProductionDashboardManager() {
   const searchParams = useSearchParams();
@@ -50,6 +51,8 @@ export default function ProductionDashboardManager() {
           </Link>
         </div>
       </header>
+
+      <V9ProductionPulse data={data} />
 
       {legacySearch && (
         <div className="prod-dash__legacy-hint">

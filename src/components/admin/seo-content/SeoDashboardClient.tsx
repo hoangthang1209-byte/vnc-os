@@ -142,7 +142,7 @@ function SectionLoading({ label }: { label: string }) {
 export default function SeoDashboardClient() {
   const toast = useAdminToast();
   const toastRef = useRef(toast);
-  toastRef.current = toast;
+  useEffect(() => { toastRef.current = toast; }, [toast]);
   const { isSolo } = useWorkspaceMode();
 
   const [core, setCore] = useState<SectionLoadState<DashboardData>>({ status: "loading" });
@@ -215,7 +215,9 @@ export default function SeoDashboardClient() {
 
   useEffect(() => {
     const controller = new AbortController();
-    void load(controller.signal);
+    void Promise.resolve().then(() => {
+      if (!controller.signal.aborted) return load(controller.signal);
+    });
     return () => {
       controller.abort();
     };
@@ -258,14 +260,15 @@ export default function SeoDashboardClient() {
   }, []);
 
   const data = core.status === "ready" ? core.data : null;
-  const reviewRows =
-    reviews.status === "ready" ? reviews.data : reviews.status === "empty" ? [] : [];
-  const queues =
-    publishing.status === "ready"
-      ? publishing.data
-      : publishing.status === "empty"
-        ? {}
-        : null;
+  const reviewRows = useMemo(
+    () => reviews.status === "ready" ? reviews.data : [],
+    [reviews],
+  );
+  const queues = useMemo(
+    () => publishing.status === "ready" ? publishing.data
+      : publishing.status === "empty" ? {} as PublishingQueues : null,
+    [publishing],
+  );
 
   const openReviews = useMemo(
     () => reviewRows.filter((r) => ["NOT_STARTED", "IN_REVIEW", "CHANGES_REQUESTED"].includes(r.status)),

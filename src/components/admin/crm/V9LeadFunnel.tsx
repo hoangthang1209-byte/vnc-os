@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import styles from "./V9LeadFunnel.module.css";
 
@@ -24,28 +24,36 @@ export default function V9LeadFunnel() {
   const [payload, setPayload] = useState<FunnelPayload | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const load = useCallback(async (period: 7 | 30 | 90, signal: AbortSignal) => {
-    try {
-      const response = await fetch(`/api/admin/v9/lead-funnel?days=${period}`, { signal, cache: "no-store" });
-      if (!response.ok) throw new Error(response.status === 403 ? "Bạn không có quyền xem dữ liệu phễu Lead." : response.status === 401 ? "Cần đăng nhập để xem biểu đồ." : "Không thể tải dữ liệu phễu Lead.");
-      const result = await response.json() as FunnelPayload;
-      if (signal.aborted) return;
-      setPayload(result);
-      setError("");
-    } catch (reason) {
-      if (signal.aborted) return;
-      setError(reason instanceof Error ? reason.message : "Không thể tải phễu Lead.");
-      setPayload(null);
-    } finally {
-      if (!signal.aborted) setLoading(false);
-    }
-  }, []);
-
   useEffect(() => {
     const controller = new AbortController();
-    void load(days, controller.signal);
+    // Only asynchronous fetch completion updates state. No synchronous setter
+    // is invoked from the effect, avoiding react-hooks/set-state-in-effect.
+    fetch(`/api/admin/v9/lead-funnel?days=${days}`, { signal: controller.signal, cache: "no-store" })
+      .then(async (response) => {
+        if (!response.ok) {
+          throw new Error(
+            response.status === 403 ? "Bạn không có quyền xem dữ liệu phễu Lead."
+              : response.status === 401 ? "Cần đăng nhập để xem biểu đồ."
+              : "Không thể tải dữ liệu phễu Lead.",
+          );
+        }
+        return response.json() as Promise<FunnelPayload>;
+      })
+      .then((result) => {
+        if (controller.signal.aborted) return;
+        setPayload(result);
+        setError("");
+      })
+      .catch((reason: unknown) => {
+        if (controller.signal.aborted) return;
+        setError(reason instanceof Error ? reason.message : "Không thể tải phễu Lead.");
+        setPayload(null);
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setLoading(false);
+      });
     return () => controller.abort();
-  }, [days, load]);
+  }, [days]);
 
   const selectDays = (value: 7 | 30 | 90) => {
     if (days === value) return;

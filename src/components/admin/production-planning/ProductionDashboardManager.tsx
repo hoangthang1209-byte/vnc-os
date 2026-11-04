@@ -18,7 +18,7 @@ export default function ProductionDashboardManager() {
   const legacySearch = searchParams.get("search");
 
   useEffect(() => {
-    setLoading(true);
+    // Initial state is already loading; avoid synchronous setState in effect.
     void fetch("/api/production/dashboard")
       .then((r) => r.json())
       .then((body: ProductionDashboardResponse & { message?: string }) => {

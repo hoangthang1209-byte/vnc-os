@@ -13,10 +13,7 @@ import CrmCustomerAddressFields, {
 import CrmProductInterestForm, {
   CrmProductInterestList,
 } from "@/components/admin/crm/CrmProductInterestForm";
-import {
-  CustomerMasterTypeBadge,
-  CustomerStatusBadge,
-} from "@/components/admin/crm/CustomerBadges";
+
 import { useCustomerTypeOptions } from "@/components/admin/crm/useCustomerTypeOptions";
 import LeadStatusBadge from "@/components/admin/LeadStatusBadge";
 import CustomerAccountWorkspace from "@/components/admin/crm/CustomerAccountWorkspace";

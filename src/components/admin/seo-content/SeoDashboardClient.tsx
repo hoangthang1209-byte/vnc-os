@@ -7,6 +7,7 @@ import { useAdminToast } from "@/components/admin/AdminToastProvider";
 import { EmptyState, StatusBadge } from "@/components/admin/AdminUi";
 import { useWorkspaceMode } from "@/components/admin/content/WorkspaceModeContext";
 import SoloContentHome from "@/components/admin/seo-content/SoloContentHome";
+import V9EditorialPipeline from "./V9EditorialPipeline";
 import { TableLoading } from "@/components/ui/loading/ContextLoading";
 import {
   fetchDashboardJson,
@@ -367,6 +368,7 @@ export default function SeoDashboardClient() {
   return (
     <>
       <AdminPageTitle title="Content Dashboard" />
+      {data && !isSolo && <V9EditorialPipeline counts={data.counts} />}
       <div className="admin-panel">
         <div className="admin-section-header" style={{ alignItems: "flex-start" }}>
           <div>

@@ -16,6 +16,7 @@ export default function OrderProjectManager() {
   const [message,setMessage] = useState("");
   const [search,setSearch] = useState("");
   const [filter,setFilter] = useState<Filter>("all");
+  const [portfolioView,setPortfolioView] = useState<"table"|"cards">("table");
   const [customerSearch,setCustomerSearch] = useState("");
   const [customerOptions,setCustomerOptions] = useState<CustomerOption[]>([]);
   const [customerId,setCustomerId] = useState("");
@@ -119,10 +120,24 @@ export default function OrderProjectManager() {
 
     <section className={styles.panel} aria-label="Danh sách Project và Batch">
       <div className={styles.panelHead}><div><h2>Danh sách Project</h2><p>{visible.length} / {projects.length} dự án</p></div><input value={search} onChange={e=>setSearch(e.target.value)} className={styles.search} placeholder="Tìm dự án, khách hàng, batch..." aria-label="Tìm Project"/></div>
+      <div className={styles.viewSwitch} role="group" aria-label="Cách xem Project">
+        <button type="button" aria-pressed={portfolioView==="table"} className={portfolioView==="table"?styles.selected:""} onClick={()=>setPortfolioView("table")}>Bảng Portfolio</button>
+        <button type="button" aria-pressed={portfolioView==="cards"} className={portfolioView==="cards"?styles.selected:""} onClick={()=>setPortfolioView("cards")}>Thẻ Project</button>
+      </div>
       <div className={styles.filters} role="group" aria-label="Lọc Project">
         {([["all","Tất cả"],["active","Có đơn hàng"],["empty","Chưa có đơn hàng"]] as const).map(([key,label])=><button type="button" key={key} aria-pressed={filter===key} className={filter===key?styles.selected:""} onClick={()=>setFilter(key)}>{label}</button>)}
       </div>
       {loading?<p className={styles.empty} role="status">Đang tải danh sách dự án...</p>:visible.length===0?<p className={styles.empty}>Không có Project phù hợp.</p>:
+      portfolioView==="table"?<div className={styles.tableWrap}><table className={styles.table}>
+        <thead><tr><th>Project</th><th>Khách hàng</th><th>Batches</th><th>Đơn hàng</th><th>Thao tác</th></tr></thead>
+        <tbody>{visible.map(project=><tr key={project.id}>
+          <td><strong>{project.name}</strong><small>{project.code}</small></td>
+          <td>{project.customer.name}<small>{project.customer.code}</small></td>
+          <td>{project.batches.length}<small>{project.batches.map(b=>b.code).join(" · ")||"Chưa có Batch"}</small></td>
+          <td>{project.batches.reduce((n,b)=>n+b._count.orders,0).toLocaleString("vi-VN")}</td>
+          <td><button type="button" className={styles.secondary} onClick={()=>{setPortfolioView("cards");setBatchProjectId(project.id);}}>Xem Batch / Thêm</button></td>
+        </tr>)}</tbody>
+      </table></div>:
       <div className={styles.projectGrid}>{visible.map(project=><article className={styles.projectCard} key={project.id}>
         <div className={styles.projectTitle}><div><span className={styles.projectCode}>{project.code}</span><h3>{project.name}</h3><p>{project.customer.code} · {project.customer.name}</p></div><span className={styles.badge}>{project.batches.length} Batch</span></div>
         <div className={styles.batchList}>

@@ -189,6 +189,12 @@ export const adminNavigationSections: AdminNavigationSection[] = [
     icon: "📝",
     platforms: domainItems([
       {
+        label: "Content Studio · Multi-Site",
+        href: "/admin/content-studio",
+        status: "active",
+        requiredPermissions: ["canManageCms"],
+      },
+      {
         label: "Blog",
         href: "/admin/blog",
         status: "active",

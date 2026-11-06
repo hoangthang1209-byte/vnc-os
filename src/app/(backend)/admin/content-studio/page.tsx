@@ -27,8 +27,8 @@ export default async function ContentStudioPage({ searchParams }: { searchParams
   const selected: Site = params.site === "attd.vn" ? "attd.vn" : "vietnamclothing.vn";
   const current = siteData[selected];
   return (
-    <main style={{ padding: "24px clamp(16px,3vw,40px)", background: "#f7f9fb", color: "#142b35", minHeight: "100vh", fontFamily: "system-ui, sans-serif" }}>
-      <div style={{ maxWidth: 1220, margin: "0 auto" }}>
+    <main style={{ padding: "12px 0 28px", color: "#142b35", fontFamily: "inherit" }}>
+      <div style={{ width: "100%" }}>
         <p style={{ margin: 0, fontSize: 12, letterSpacing: ".12em", fontWeight: 750, color: "#697780" }}>VNC OS / CONTENT STUDIO</p>
         <h1 style={{ fontSize: "clamp(26px,3vw,36px)", margin: "10px 0 6px" }}>Multi-Site Content Studio</h1>
         <p style={{ margin: "0 0 20px", color: "#61717a", maxWidth: 760 }}>One Admin for two independent brands. This is an access-controlled module overview; editing and publishing are not enabled until database and site-scoped permission gates pass.</p>

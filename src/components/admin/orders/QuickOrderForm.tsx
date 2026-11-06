@@ -203,8 +203,13 @@ export default function QuickOrderForm() {
       setProductionEmployees((productionData as { employees?: EmployeeRecord[] }).employees ?? []);
     });
 
-    const draft = loadQuickOrderDraft();
-    if (draft) {
+    // Draft restore runs after mount; avoid synchronously setting React state
+    // inside the effect and suppress only the intentional one-time closure.
+    let cancelled = false;
+    void Promise.resolve().then(() => {
+      if (cancelled) return;
+      const draft = loadQuickOrderDraft();
+      if (!draft) return;
       const normalized = normalizeQuickOrderDraft(draft);
       setHeader(normalized.header);
       setSizeColumns(normalized.sizeColumns);
@@ -214,13 +219,16 @@ export default function QuickOrderForm() {
       setVatRate(String(normalized.vatRate ?? 8));
       if (normalized.header.customerId) {
         void fetch(`/api/crm/customers/${normalized.header.customerId}`)
-          .then((res) => res.json())
+          .then(res => res.json())
           .then((data: { customer?: CrmCustomerRecord }) => {
-            if (data.customer) applyCustomer(data.customer);
+            if (!cancelled && data.customer) applyCustomer(data.customer);
           });
       }
       setDraftToast("Đã khôi phục bản nháp chưa lưu.");
-    }
+    });
+    return () => { cancelled = true; };
+  // The persisted draft is restored only once per mount.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {

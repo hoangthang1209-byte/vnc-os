@@ -317,9 +317,9 @@ export default function OrderListManager() {
         </div>
       )}
 
-      {v9View === "table" && orders.length > 0 && (
+      {orders.length > 0 && (
         <>
-          <V9OrderTable rows={orders} queryString={queryString} canViewCrm={canViewCrm} refreshing={query.refreshing} />
+          {v9View === "table" && <V9OrderTable rows={orders} queryString={queryString} canViewCrm={canViewCrm} refreshing={query.refreshing} />}
 
           <footer className={`order-ops-pagination${totalPages <= 1 ? " order-ops-pagination--single" : ""}`}>
             <span className="order-ops-pagination__meta">

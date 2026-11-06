@@ -132,7 +132,7 @@ function deadlineToneClass(tone: OrderListDashboardRow["deliveryDeadlineTone"]) 
 }
 
 export default function OrderListManager() {
-  const { permissions } = useAdminPermissions();
+  const { permissions, mode } = useAdminPermissions();
   const { filters, update } = useListFilters();
   const [searchInput, setSearchInput] = useState(filters.search);
   const [advancedOpen, setAdvancedOpen] = useState(false);
@@ -201,7 +201,8 @@ export default function OrderListManager() {
         </button>)}
       </div>}
       {data && <V9OrderOperations rows={orders} total={total} queryString={queryString}
-        view={v9View} onViewChange={setV9View} />}
+        view={v9View} onViewChange={setV9View}
+        canCreateOrders={canCreateOrders} canViewProjects={mode === "owner"} />}
       <div className="order-ops-controls">
         <div className="order-ops-toolbar">
           <input

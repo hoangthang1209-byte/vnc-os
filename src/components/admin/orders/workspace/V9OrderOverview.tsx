@@ -43,8 +43,9 @@ export default function V9OrderOverview({order,canViewFinancials,canViewCrm,canV
           {canViewCrm&&order.customerId&&<Link href={`/admin/crm/customers/${encodeURIComponent(order.customerId)}`}><span>Khách hàng CRM</span><strong>{order.customer?.code||order.customerCode||"Xem hồ sơ"}</strong></Link>}
           {canViewFinancials&&order.quoteId&&<Link href={`/admin/quotes/${encodeURIComponent(order.quoteId)}`}><span>Báo giá</span><strong>{order.quote?.quoteNo||"Mở báo giá"}</strong></Link>}
           <button type="button" onClick={()=>onNavigateTab("info")}><span>Project / Batch</span><strong>Xem liên kết của đơn</strong></button>
-          {canViewProduction&&<button type="button" onClick={()=>onNavigateTab("products")}><span>Sản xuất & QC</span><strong>Xem từng dòng sản phẩm</strong></button>}
+          {canViewProduction&&<button type="button" onClick={()=>onNavigateTab("qc")}><span>Sản xuất & QC</span><strong>Xem từng dòng sản phẩm</strong></button>}
           <button type="button" onClick={()=>onNavigateTab("delivery")}><span>Giao hàng</span><strong>{order.deliveryTrackingCode||order.deliveryCarrierName||"Xem tình trạng giao"}</strong></button>
+          <button type="button" onClick={()=>onNavigateTab("documents")}><span>Chứng từ</span><strong>Hợp đồng · Invoice · Packing</strong></button>
           <button type="button" onClick={()=>onNavigateTab("activity")}><span>Lịch sử hoạt động</span><strong>{order.activities.length} sự kiện</strong></button>
         </div>
       </section>

@@ -9,7 +9,6 @@ import AdminErrorRecovery from "@/components/admin/feedback/AdminErrorRecovery";
 import AdminInlineLoader from "@/components/admin/feedback/AdminInlineLoader";
 import AdminPageSkeleton from "@/components/admin/feedback/AdminPageSkeleton";
 import AdminLoadingButton from "@/components/admin/feedback/AdminLoadingButton";
-import { formatOrderDate } from "@/features/orders/order-format";
 import {
   ORDER_PAYMENT_STATE_LABELS,
   ORDER_STATUS_LABELS,
@@ -17,12 +16,12 @@ import {
 } from "@/features/orders/order-labels";
 import type {
   OrderListDashboardResponse,
-  OrderListDashboardRow,
   OrderListKpiKey,
   OrderListQuickFilter,
 } from "@/features/orders/order-list-dashboard.types";
 import { SlidersHorizontal } from "lucide-react";
 import V9OrderOperations, { type OrderV9View } from "./V9OrderOperations";
+import V9OrderTable from "./V9OrderTable";
 import orderV9Styles from "./OrderListV9.module.css";
 import { useAdminListQuery } from "@/hooks/useAdminListQuery";
 
@@ -31,7 +30,7 @@ function kpiDisplayLabel(label: string, key: OrderListKpiKey): string {
   return label;
 }
 
-function WarningDisplay({ warnings }: { warnings: string[] }) {
+: { warnings: string[] }) {
   if (warnings.length === 0) return <span className="order-ops-muted">—</span>;
   const shown = warnings.slice(0, 2);
   const extra = warnings.length - 2;
@@ -112,24 +111,15 @@ function buildQueryString(filters: ReturnType<typeof useListFilters>["filters"])
   return params.toString();
 }
 
-function buildDetailHref(orderId: string, qs: string) {
-  const params = new URLSearchParams();
-  params.set("from", "list");
-  if (qs) params.set("qs", qs);
-  return `/admin/orders/${orderId}?${params.toString()}`;
-}
+
 
 function kpiToneClass(tone: string) {
   return `order-ops-kpi order-ops-kpi--${tone}`;
 }
 
-function progressToneClass(tone: OrderListDashboardRow["progressTone"]) {
-  return `order-ops-badge order-ops-badge--${tone}`;
-}
 
-function deadlineToneClass(tone: OrderListDashboardRow["deliveryDeadlineTone"]) {
-  return `order-ops-deadline order-ops-deadline--${tone}`;
-}
+
+
 
 export default function OrderListManager() {
   const { permissions, mode } = useAdminPermissions();
@@ -342,102 +332,7 @@ export default function OrderListManager() {
 
       {v9View === "table" && orders.length > 0 && (
         <>
-          <div className="order-ops-table-wrap">
-            {query.refreshing && <div className="order-ops-table-overlay"><AdminInlineLoader message="Đang tìm kiếm…" /></div>}
-            <table className="admin-table order-ops-table">
-              <thead>
-                <tr>
-                  <th>Mã đơn hàng</th>
-                  <th>Khách hàng</th>
-                  <th>Sản phẩm / Số lượng</th>
-                  <th>Deadline giao</th>
-                  <th title="Tiến độ ghi nhận từ các item, có thể khác trạng thái chung của đơn">Tiến độ item</th>
-                  <th>Người phụ trách</th>
-                  <th>Giao hàng</th>
-                  <th title="Một đơn có thể có nhiều cảnh báo cùng lúc">Việc cần xử lý</th>
-                  <th />
-                </tr>
-              </thead>
-              <tbody>
-                {orders.map((row) => (
-                  <tr key={row.id}>
-                    <td>
-                      <Link href={buildDetailHref(row.id, queryString)} className="order-ops-order-link">
-                        {row.orderNo}
-                      </Link>
-                      <div className="order-ops-sub">Tạo: {formatOrderDate(row.createdAt)}</div>
-                    </td>
-                    <td className="order-ops-cell-customer">
-                      {row.customerId && canViewCrm ? (
-                        <Link href={`/admin/crm/customers/${row.customerId}`} className="order-ops-customer-link">
-                          {row.customerCompanyName ?? row.contactName ?? "—"}
-                        </Link>
-                      ) : (
-                        <span className="order-ops-customer-name">
-                          {row.customerCompanyName ?? row.contactName ?? "—"}
-                        </span>
-                      )}
-                    </td>
-                    <td>
-                      <div className="order-ops-products">
-                        {row.productThumbnails.map((url) => (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img key={url} src={url} alt="" className="order-ops-product-thumb" />
-                        ))}
-                        <div>
-                          <div className="order-ops-product-count">{row.productCount} sản phẩm</div>
-                          <div className="order-ops-product-qty">
-                            {row.totalQuantity.toLocaleString("vi-VN")}
-                            {row.quantityUnit ? ` ${row.quantityUnit}` : " cái"}
-                          </div>
-                        </div>
-                      </div>
-                    </td>
-                    <td>
-                      <div className="order-ops-deadline-date">
-                        {row.deliveryExpectedAt ? formatOrderDate(row.deliveryExpectedAt) : "—"}
-                      </div>
-                      <div className={deadlineToneClass(row.deliveryDeadlineTone)}>
-                        {row.deliveryDeadlineRelative}
-                      </div>
-                    </td>
-                    <td>
-                      {row.progressPercent != null && (
-                        <div className="order-ops-progress" title={`${row.progressPercent}%`}>
-                          <div
-                            className="order-ops-progress__bar"
-                            style={{ width: `${row.progressPercent}%` }}
-                          />
-                        </div>
-                      )}
-                      <span className={`${progressToneClass(row.progressTone)} order-ops-progress-badge`}>
-                        {row.progressLabel}
-                      </span>
-                    </td>
-                    <td>
-                      <div className="order-ops-owner-name">{row.ownerName ?? "—"}</div>
-                      {row.ownerRole && <div className="order-ops-sub">{row.ownerRole}</div>}
-                    </td>
-                    <td>
-                      <div className="order-ops-delivery-method">{row.deliveryMethodLabel ?? "—"}</div>
-                      <div className="order-ops-sub">{row.deliveryStateLabel}</div>
-                    </td>
-                    <td>
-                      <WarningDisplay warnings={row.warnings} />
-                    </td>
-                    <td className="order-ops-cell-action">
-                      <Link
-                        href={buildDetailHref(row.id, queryString)}
-                        className="order-ops-row-link"
-                      >
-                        Mở
-                      </Link>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <V9OrderTable rows={orders} queryString={queryString} canViewCrm={canViewCrm} refreshing={query.refreshing} />
 
           <footer className={`order-ops-pagination${totalPages <= 1 ? " order-ops-pagination--single" : ""}`}>
             <span className="order-ops-pagination__meta">

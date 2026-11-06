@@ -21,9 +21,10 @@ export function visibleOrderPulse(rows: OrderListDashboardRow[]) {
   };
 }
 /** Dashboard values are intentionally scoped to the current server-authorized list page. */
-export default function V9OrderOperations({rows,total,queryString,view,onViewChange}:{
+export default function V9OrderOperations({rows,total,queryString,view,onViewChange,canCreateOrders,canViewProjects}:{
   rows:OrderListDashboardRow[];total:number;queryString:string;
   view:OrderV9View;onViewChange:(value:OrderV9View)=>void;
+  canCreateOrders:boolean;canViewProjects:boolean;
 }) {
   const [group,setGroup] = useState<Group>("all");
 
@@ -37,7 +38,7 @@ export default function V9OrderOperations({rows,total,queryString,view,onViewCha
   const byStatus = Array.from(new Set(filtered.map(row=>row.status)));
   const href = (id:string) => `/admin/orders/${id}?from=list&qs=${encodeURIComponent(queryString)}`;
   return <div className={styles.root} data-testid="v9-order-operations">
-    <div className={styles.banner}><div><strong>Order Operations</strong><p>Đơn hàng · Project / Batch · Sản xuất · QC · Giao hàng</p></div><div className={styles.bannerActions}><Link href="/admin/orders/new/quick">+ Nhập đơn nhanh</Link><Link href="/admin/orders/projects">Project / Batch</Link></div></div>
+    <div className={styles.banner}><div><strong>Order Operations</strong><p>Đơn hàng · Project / Batch · Sản xuất · QC · Giao hàng</p></div><div className={styles.bannerActions}>{canCreateOrders&&<Link href="/admin/orders/new/quick">+ Nhập đơn nhanh</Link>}{canViewProjects&&<Link href="/admin/orders/projects">Project / Batch</Link>}</div></div>
     <div className={styles.metrics} aria-label="Tổng quan vận hành của trang hiện tại">
       {[
         {label:"Đơn đang hiển thị",n:rows.length,note:`Trong tổng ${total.toLocaleString("vi-VN")} đơn theo bộ lọc`},

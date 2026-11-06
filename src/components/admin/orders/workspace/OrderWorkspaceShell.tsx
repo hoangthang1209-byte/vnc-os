@@ -9,6 +9,7 @@ import type { DeliveryMethodRecord } from "@/features/delivery/delivery-method.s
 import type { EmployeeRecord } from "@/features/employees/employee.service";
 import type { OrderDetailRecord } from "@/features/orders/order.types";
 import OrderWorkspaceHeader from "./OrderWorkspaceHeader";
+import OrderDocumentActions from "@/components/admin/orders/OrderDocumentActions";
 import OrderWorkspaceSummaryCards from "./OrderWorkspaceSummaryCards";
 import OrderExecutionControl from "./OrderExecutionControl";
 import V9OrderOverview from "./V9OrderOverview";
@@ -128,8 +129,8 @@ export default function OrderWorkspaceShell(props: OrderWorkspaceShellProps) {
   const tabStorageKey = orderWorkspaceTabStorageKey(orderId);
 
   const visibleTabs = useMemo(
-    () => ORDER_WORKSPACE_TABS.filter((tab) => !tab.financialOnly || canViewFinancials),
-    [canViewFinancials],
+    () => ORDER_WORKSPACE_TABS.filter((tab) => (!tab.financialOnly || canViewFinancials) && (!tab.productionOnly || canViewProduction)),
+    [canViewFinancials, canViewProduction],
   );
 
   const [activeTab, setActiveTab] = useState<OrderWorkspaceTab>(defaultTabForRole(roleCode));
@@ -245,8 +246,24 @@ export default function OrderWorkspaceShell(props: OrderWorkspaceShellProps) {
           </div>
         )}
 
-        {activeTab === "products" && (
-          <OrderItemProductionPanel orderId={orderId} orderStatus={order.status} />
+        {activeTab === "qc" && canViewProduction && (
+          <div className="order-workspace-v9-quality">
+            <h2>Sản xuất & kiểm tra chất lượng theo dòng hàng</h2>
+            <p className="admin-field-hint">Công đoạn và QC từ Order Core/Production API; không suy diễn sản lượng từ trạng thái đơn.</p>
+            <OrderItemProductionPanel orderId={orderId} orderStatus={order.status} />
+          </div>
+        )}
+
+        {activeTab === "documents" && (
+          <div className="order-workspace-v9-documents">
+            <h2>Chứng từ và tài liệu</h2>
+            <p className="admin-field-hint">Vui lòng xác minh mã đơn trên chứng từ. Các liên kết mở module thật, không khẳng định chứng từ đã được gắn với đơn.</p>
+            <div style={{display:"flex",gap:9,flexWrap:"wrap",paddingBlock:12}}>
+              {canViewProduction && <Link className="admin-btn admin-btn--secondary" href={`/admin/production?search=${encodeURIComponent(order.orderNo)}`}>Tài liệu sản xuất</Link>}
+              {canViewFinancials && <Link className="admin-btn admin-btn--secondary" href="/admin/documents/invoices">Invoice Center</Link>}
+            </div>
+            <OrderDocumentActions order={order} />
+          </div>
         )}
 
         {activeTab === "info" && (

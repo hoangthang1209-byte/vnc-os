@@ -13,6 +13,7 @@ import OrderDocumentActions from "@/components/admin/orders/OrderDocumentActions
 import OrderWorkspaceSummaryCards from "./OrderWorkspaceSummaryCards";
 import OrderExecutionControl from "./OrderExecutionControl";
 import V9OrderOverview from "./V9OrderOverview";
+import styles from "./OrderWorkspaceV9.module.css";
 import OrderBatchAssignment from "./OrderBatchAssignment";
 import OrderProductTable from "./OrderProductTable";
 import OrderProductionSummaryPanel from "./OrderProductionSummaryPanel";
@@ -163,8 +164,8 @@ export default function OrderWorkspaceShell(props: OrderWorkspaceShellProps) {
   );
 
   return (
-    <div className="order-workspace">
-      <nav className="order-workspace-breadcrumb" aria-label="Breadcrumb">
+    <div className={`order-workspace ${styles.root}`} data-testid="v9-order-detail-workspace">
+      <nav className={`order-workspace-breadcrumb ${styles.breadcrumb}`} aria-label="Breadcrumb">
         <Link href="/admin/orders">Đơn hàng</Link>
         <span aria-hidden>›</span>
         <span>Chi tiết đơn hàng</span>
@@ -208,7 +209,7 @@ export default function OrderWorkspaceShell(props: OrderWorkspaceShellProps) {
         </div>
       </details>
 
-      <div className="admin-crm-360-tabs order-workspace-tabs" role="tablist">
+      <div className={`admin-crm-360-tabs order-workspace-tabs ${styles.tabs}`} role="tablist">
         {visibleTabs.map((tab) => (
           <button
             key={tab.key}
@@ -223,7 +224,7 @@ export default function OrderWorkspaceShell(props: OrderWorkspaceShellProps) {
         ))}
       </div>
 
-      <div className="order-workspace-tab-panel">
+      <div className={`order-workspace-tab-panel ${styles.panel}`}>
         {activeTab === "products" && (
           <div className="order-workspace-products-layout">
             <OrderProductTable

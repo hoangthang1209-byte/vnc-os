@@ -11,6 +11,7 @@ import type { OrderDetailRecord } from "@/features/orders/order.types";
 import OrderWorkspaceHeader from "./OrderWorkspaceHeader";
 import OrderWorkspaceSummaryCards from "./OrderWorkspaceSummaryCards";
 import OrderExecutionControl from "./OrderExecutionControl";
+import V9OrderOverview from "./V9OrderOverview";
 import OrderBatchAssignment from "./OrderBatchAssignment";
 import OrderProductTable from "./OrderProductTable";
 import OrderProductionSummaryPanel from "./OrderProductionSummaryPanel";
@@ -183,7 +184,13 @@ export default function OrderWorkspaceShell(props: OrderWorkspaceShellProps) {
         onOpenCorrection={onOpenCorrection}
       />
 
-      <OrderExecutionControl order={order} onNavigateTab={navigateTab} canViewFinancials={canViewFinancials} />
+      <V9OrderOverview order={order} canViewFinancials={canViewFinancials}
+        canViewCrm={permissions.canViewCrm} canViewProduction={canViewProduction}
+        onNavigateTab={navigateTab} />
+      <details className="order-workspace-secondary-summary" style={{ marginBottom: 14 }}>
+        <summary style={{cursor:"pointer",padding:"12px 16px",border:"1px solid #e2e8f0",borderRadius:8,fontWeight:650,fontSize:12}}>Checklist kiểm soát đơn hàng và việc cần xử lý</summary>
+        <OrderExecutionControl order={order} onNavigateTab={navigateTab} canViewFinancials={canViewFinancials} />
+      </details>
 
       <details className="order-workspace-secondary-summary" style={{ margin: "12px 0 20px" }}>
         <summary style={{ cursor: "pointer", padding: "12px 16px", border: "1px solid #e2e8f0", borderRadius: 10, fontWeight: 600 }}>

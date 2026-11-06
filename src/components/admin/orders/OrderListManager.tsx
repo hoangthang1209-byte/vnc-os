@@ -23,6 +23,7 @@ import type {
 } from "@/features/orders/order-list-dashboard.types";
 import { SlidersHorizontal } from "lucide-react";
 import V9OrderOperations, { type OrderV9View } from "./V9OrderOperations";
+import orderV9Styles from "./OrderListV9.module.css";
 import { useAdminListQuery } from "@/hooks/useAdminListQuery";
 
 function kpiDisplayLabel(label: string, key: OrderListKpiKey): string {
@@ -178,13 +179,13 @@ export default function OrderListManager() {
 
   return (
     <div className="order-ops-dashboard">
-      <header className="v9-order-page-heading">
+      <header className={orderV9Styles.heading}>
         <div>
-          <p className="v9-order-eyebrow">VNC OS / SALES & OPERATIONS</p>
+          <p className={orderV9Styles.eyebrow}>VNC OS / SALES & OPERATIONS</p>
           <h1>Quản lý đơn hàng</h1>
           <p>Theo dõi tiến độ, sản xuất, QC, giao hàng và các việc cần xử lý.</p>
         </div>
-        <div className="v9-order-heading-actions">
+        <div className={orderV9Styles.actions}>
           {canViewCrm && <Link href="/admin/crm/customers" className="admin-btn admin-btn--secondary">Khách hàng</Link>}
           {canCreateOrders && <Link href="/admin/orders/new/quick" className="admin-btn admin-btn--secondary">Nhập đơn nhanh</Link>}
           {canCreateOrders && <Link href="/admin/orders/new" className="admin-btn admin-btn--primary">+ Tạo đơn hàng</Link>}

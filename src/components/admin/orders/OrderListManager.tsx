@@ -30,19 +30,6 @@ function kpiDisplayLabel(label: string, key: OrderListKpiKey): string {
   return label;
 }
 
-: { warnings: string[] }) {
-  if (warnings.length === 0) return <span className="order-ops-muted">—</span>;
-  const shown = warnings.slice(0, 2);
-  const extra = warnings.length - 2;
-  return (
-    <div className="order-ops-warnings">
-      {shown.map((w) => (
-        <span key={w} className="order-ops-warning-tag">{w}</span>
-      ))}
-      {extra > 0 && <span className="order-ops-warning-more">+{extra}</span>}
-    </div>
-  );
-}
 
 function useListFilters() {
   const searchParams = useSearchParams();

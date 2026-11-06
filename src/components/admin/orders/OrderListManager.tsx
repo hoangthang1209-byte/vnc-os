@@ -22,7 +22,7 @@ import type {
   OrderListQuickFilter,
 } from "@/features/orders/order-list-dashboard.types";
 import { SlidersHorizontal } from "lucide-react";
-import V9OrderOperations from "./V9OrderOperations";
+import V9OrderOperations, { type OrderV9View } from "./V9OrderOperations";
 import { useAdminListQuery } from "@/hooks/useAdminListQuery";
 
 function kpiDisplayLabel(label: string, key: OrderListKpiKey): string {
@@ -135,6 +135,7 @@ export default function OrderListManager() {
   const { filters, update } = useListFilters();
   const [searchInput, setSearchInput] = useState(filters.search);
   const [advancedOpen, setAdvancedOpen] = useState(false);
+  const [v9View, setV9View] = useState<OrderV9View>("table");
 
   useEffect(() => {
     const task = Promise.resolve().then(() => setSearchInput(filters.search));
@@ -177,56 +178,29 @@ export default function OrderListManager() {
 
   return (
     <div className="order-ops-dashboard">
-      {(canCreateOrders || canViewCrm) ? (
-        <header className="order-ops-header">
-          {canViewCrm ? (
-            <Link href="/admin/crm/customers" className="admin-btn admin-btn--secondary">
-              Khách hàng
-            </Link>
-          ) : <div />}
-          {canCreateOrders && (
-            <Link href="/admin/orders/new" className="admin-btn admin-btn--primary">
-              + Tạo đơn hàng
-            </Link>
-          )}
-        </header>
-      ) : null}
-
-      <section aria-label="Hướng dẫn xử lý đơn hàng" style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap", padding: "12px 16px", marginBottom: 12, background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 12 }}>
-        <div style={{ flex: "1 1 280px" }}>
-          <strong style={{ display: "block", fontSize: 14 }}>Bảng điều hành đơn hàng</strong>
-          <span style={{ color: "#64748b", fontSize: 12 }}>Chọn KPI hoặc bộ lọc để xử lý đơn cần ưu tiên. Cảnh báo có thể trùng nhau, không cộng dồn thành số đơn.</span>
+      <header className="v9-order-page-heading">
+        <div>
+          <p className="v9-order-eyebrow">VNC OS / SALES & OPERATIONS</p>
+          <h1>Quản lý đơn hàng</h1>
+          <p>Theo dõi tiến độ, sản xuất, QC, giao hàng và các việc cần xử lý.</p>
         </div>
-        <Link href="/admin/orders/projects" className="admin-btn admin-btn--secondary admin-btn--small">
-          Dự án / Batch
-        </Link>
-      </section>
-
-      {summary && (
-        <div className="order-ops-kpi-grid">
-          {summary.kpis.map((kpi) => (
-            <button
-              key={kpi.key}
-              type="button"
-              className={`${kpiToneClass(kpi.tone)}${filters.kpi === kpi.key ? " is-active" : ""}`}
-              onClick={() =>
-                update({
-                  kpi: filters.kpi === kpi.key ? "" : kpi.key,
-                  quickFilter: "all",
-                  mine: false,
-                  page: 1,
-                })
-              }
-            >
-              <span className="order-ops-kpi__label">{kpiDisplayLabel(kpi.label, kpi.key)}</span>
-              <span className="order-ops-kpi__count">{kpi.count}</span>
-            </button>
-          ))}
+        <div className="v9-order-heading-actions">
+          {canViewCrm && <Link href="/admin/crm/customers" className="admin-btn admin-btn--secondary">Khách hàng</Link>}
+          {canCreateOrders && <Link href="/admin/orders/new/quick" className="admin-btn admin-btn--secondary">Nhập đơn nhanh</Link>}
+          {canCreateOrders && <Link href="/admin/orders/new" className="admin-btn admin-btn--primary">+ Tạo đơn hàng</Link>}
         </div>
-      )}
-
-      {data && <V9OrderOperations rows={orders} total={total} queryString={queryString} />}
-
+      </header>
+      {summary && <div className="order-ops-kpi-grid" aria-label="Bộ lọc KPI toàn bộ đơn hàng theo phân quyền">
+        {summary.kpis.map(kpi => <button key={kpi.key} type="button"
+          className={`${kpiToneClass(kpi.tone)}${filters.kpi===kpi.key?" is-active":""}`}
+          aria-pressed={filters.kpi===kpi.key}
+          onClick={()=>update({kpi:filters.kpi===kpi.key?"":kpi.key,quickFilter:"all",mine:false,page:1})}>
+          <span className="order-ops-kpi__label">{kpiDisplayLabel(kpi.label,kpi.key)}</span>
+          <span className="order-ops-kpi__count">{kpi.count}</span>
+        </button>)}
+      </div>}
+      {data && <V9OrderOperations rows={orders} total={total} queryString={queryString}
+        view={v9View} onViewChange={setV9View} />}
       <div className="order-ops-controls">
         <div className="order-ops-toolbar">
           <input
@@ -364,7 +338,7 @@ export default function OrderListManager() {
         </div>
       )}
 
-      {orders.length > 0 && (
+      {v9View === "table" && orders.length > 0 && (
         <>
           <div className="order-ops-table-wrap">
             {query.refreshing && <div className="order-ops-table-overlay"><AdminInlineLoader message="Đang tìm kiếm…" /></div>}

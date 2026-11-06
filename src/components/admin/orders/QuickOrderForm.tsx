@@ -473,7 +473,7 @@ export default function QuickOrderForm() {
       {draftToast && <p className="admin-toast">{draftToast}</p>}
       {error && <p className="admin-error">{error}</p>}
 
-      <section id="v9-quick-customer" className={styles.section} aria-label="Thông tin khách hàng">
+      <section id="v9-quick-customer" className={`${styles.section} ${styles.customer}`} aria-label="Thông tin khách hàng">
         <h2 className={styles.sectionHead}><span>01</span> Khách hàng và thông tin liên hệ</h2>
       <OrderCustomerPartyFields
         values={partyValues}
@@ -493,7 +493,7 @@ export default function QuickOrderForm() {
       />
 
       </section>
-      <section id="v9-quick-information" className={styles.section} aria-label="Thông tin đơn hàng">
+      <section id="v9-quick-information" className={`${styles.section} ${styles.information}`} aria-label="Thông tin đơn hàng">
         <h2 className={styles.sectionHead}><span>02</span> Thông tin thương mại và vận hành</h2>
       <fieldset className="admin-catalog-fieldset" style={{ marginTop: 16 }}>
         <legend>Thông tin đơn hàng</legend>
@@ -574,7 +574,7 @@ export default function QuickOrderForm() {
       </fieldset>
 
       </section>
-      <section id="v9-quick-products" className={styles.section} aria-label="Bảng sản phẩm và size">
+      <section id="v9-quick-products" className={`${styles.section} ${styles.products}`} aria-label="Bảng sản phẩm và size">
         <h2 className={styles.sectionHead}><span>03</span> Sản phẩm · Size breakdown · Excel</h2>
       <div className="quick-order-toolbar">
         <button
@@ -711,7 +711,7 @@ export default function QuickOrderForm() {
       />
 
       </section>
-      <section id="v9-quick-total" className={styles.section} aria-label="Tổng kết và lưu đơn hàng">
+      <section id="v9-quick-total" className={`${styles.section} ${styles.total}`} aria-label="Tổng kết và lưu đơn hàng">
         <h2 className={styles.sectionHead}><span>04</span> Kiểm tra tổng tiền và lưu đơn</h2>
       <div className="quick-order-footer">
         <div className="quick-order-footer__summary">

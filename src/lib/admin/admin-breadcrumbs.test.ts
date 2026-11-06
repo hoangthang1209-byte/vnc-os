@@ -126,9 +126,9 @@ describe("admin breadcrumb lean IA metadata", () => {
 
   it("aligns lean navigation section labels", () => {
     const labels = adminNavigationSections.map((section) => section.label);
-    assert.ok(labels.includes("CONTENT & SEO"));
-    assert.ok(labels.includes("BÁN HÀNG"));
-    assert.ok(labels.includes("CẤU HÌNH"));
+    assert.ok(labels.includes("CONTENT & MARKETING"));
+    assert.ok(labels.includes("SALES & CRM"));
+    assert.ok(labels.includes("ADMINISTRATION"));
     assert.ok(!labels.includes("KNOWLEDGE & AI"));
     assert.ok(!labels.includes("ĐẠI LÝ & B2B"));
     assert.ok(!labels.includes("Tri thức"));

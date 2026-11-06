@@ -9,7 +9,6 @@ import AdminErrorRecovery from "@/components/admin/feedback/AdminErrorRecovery";
 import AdminInlineLoader from "@/components/admin/feedback/AdminInlineLoader";
 import AdminPageSkeleton from "@/components/admin/feedback/AdminPageSkeleton";
 import AdminLoadingButton from "@/components/admin/feedback/AdminLoadingButton";
-import { formatOrderDate } from "@/features/orders/order-format";
 import {
   ORDER_PAYMENT_STATE_LABELS,
   ORDER_STATUS_LABELS,
@@ -17,11 +16,13 @@ import {
 } from "@/features/orders/order-labels";
 import type {
   OrderListDashboardResponse,
-  OrderListDashboardRow,
   OrderListKpiKey,
   OrderListQuickFilter,
 } from "@/features/orders/order-list-dashboard.types";
 import { SlidersHorizontal } from "lucide-react";
+import V9OrderOperations, { type OrderV9View } from "./V9OrderOperations";
+import V9OrderTable from "./V9OrderTable";
+import orderV9Styles from "./OrderListV9.module.css";
 import { useAdminListQuery } from "@/hooks/useAdminListQuery";
 
 function kpiDisplayLabel(label: string, key: OrderListKpiKey): string {
@@ -29,19 +30,6 @@ function kpiDisplayLabel(label: string, key: OrderListKpiKey): string {
   return label;
 }
 
-function WarningDisplay({ warnings }: { warnings: string[] }) {
-  if (warnings.length === 0) return <span className="order-ops-muted">—</span>;
-  const shown = warnings.slice(0, 2);
-  const extra = warnings.length - 2;
-  return (
-    <div className="order-ops-warnings">
-      {shown.map((w) => (
-        <span key={w} className="order-ops-warning-tag">{w}</span>
-      ))}
-      {extra > 0 && <span className="order-ops-warning-more">+{extra}</span>}
-    </div>
-  );
-}
 
 function useListFilters() {
   const searchParams = useSearchParams();
@@ -110,30 +98,22 @@ function buildQueryString(filters: ReturnType<typeof useListFilters>["filters"])
   return params.toString();
 }
 
-function buildDetailHref(orderId: string, qs: string) {
-  const params = new URLSearchParams();
-  params.set("from", "list");
-  if (qs) params.set("qs", qs);
-  return `/admin/orders/${orderId}?${params.toString()}`;
-}
+
 
 function kpiToneClass(tone: string) {
   return `order-ops-kpi order-ops-kpi--${tone}`;
 }
 
-function progressToneClass(tone: OrderListDashboardRow["progressTone"]) {
-  return `order-ops-badge order-ops-badge--${tone}`;
-}
 
-function deadlineToneClass(tone: OrderListDashboardRow["deliveryDeadlineTone"]) {
-  return `order-ops-deadline order-ops-deadline--${tone}`;
-}
+
+
 
 export default function OrderListManager() {
-  const { permissions } = useAdminPermissions();
+  const { permissions, mode } = useAdminPermissions();
   const { filters, update } = useListFilters();
   const [searchInput, setSearchInput] = useState(filters.search);
   const [advancedOpen, setAdvancedOpen] = useState(false);
+  const [v9View, setV9View] = useState<OrderV9View>("table");
 
   useEffect(() => {
     const task = Promise.resolve().then(() => setSearchInput(filters.search));
@@ -176,54 +156,30 @@ export default function OrderListManager() {
 
   return (
     <div className="order-ops-dashboard">
-      {(canCreateOrders || canViewCrm) ? (
-        <header className="order-ops-header">
-          {canViewCrm ? (
-            <Link href="/admin/crm/customers" className="admin-btn admin-btn--secondary">
-              Khách hàng
-            </Link>
-          ) : <div />}
-          {canCreateOrders && (
-            <Link href="/admin/orders/new" className="admin-btn admin-btn--primary">
-              + Tạo đơn hàng
-            </Link>
-          )}
-        </header>
-      ) : null}
-
-      <section aria-label="Hướng dẫn xử lý đơn hàng" style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap", padding: "12px 16px", marginBottom: 12, background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 12 }}>
-        <div style={{ flex: "1 1 280px" }}>
-          <strong style={{ display: "block", fontSize: 14 }}>Bảng điều hành đơn hàng</strong>
-          <span style={{ color: "#64748b", fontSize: 12 }}>Chọn KPI hoặc bộ lọc để xử lý đơn cần ưu tiên. Cảnh báo có thể trùng nhau, không cộng dồn thành số đơn.</span>
+      <header className={orderV9Styles.heading}>
+        <div>
+          <p className={orderV9Styles.eyebrow}>VNC OS / SALES & OPERATIONS</p>
+          <h1>Quản lý đơn hàng</h1>
+          <p>Theo dõi tiến độ, sản xuất, QC, giao hàng và các việc cần xử lý.</p>
         </div>
-        <Link href="/admin/orders/projects" className="admin-btn admin-btn--secondary admin-btn--small">
-          Dự án / Batch
-        </Link>
-      </section>
-
-      {summary && (
-        <div className="order-ops-kpi-grid">
-          {summary.kpis.map((kpi) => (
-            <button
-              key={kpi.key}
-              type="button"
-              className={`${kpiToneClass(kpi.tone)}${filters.kpi === kpi.key ? " is-active" : ""}`}
-              onClick={() =>
-                update({
-                  kpi: filters.kpi === kpi.key ? "" : kpi.key,
-                  quickFilter: "all",
-                  mine: false,
-                  page: 1,
-                })
-              }
-            >
-              <span className="order-ops-kpi__label">{kpiDisplayLabel(kpi.label, kpi.key)}</span>
-              <span className="order-ops-kpi__count">{kpi.count}</span>
-            </button>
-          ))}
+        <div className={orderV9Styles.actions}>
+          {canViewCrm && <Link href="/admin/crm/customers" className="admin-btn admin-btn--secondary">Khách hàng</Link>}
+          {canCreateOrders && <Link href="/admin/orders/new/quick" className="admin-btn admin-btn--secondary">Nhập đơn nhanh</Link>}
+          {canCreateOrders && <Link href="/admin/orders/new" className="admin-btn admin-btn--primary">+ Tạo đơn hàng</Link>}
         </div>
-      )}
-
+      </header>
+      {summary && <div className="order-ops-kpi-grid" aria-label="Bộ lọc KPI toàn bộ đơn hàng theo phân quyền">
+        {summary.kpis.map(kpi => <button key={kpi.key} type="button"
+          className={`${kpiToneClass(kpi.tone)}${filters.kpi===kpi.key?" is-active":""}`}
+          aria-pressed={filters.kpi===kpi.key}
+          onClick={()=>update({kpi:filters.kpi===kpi.key?"":kpi.key,quickFilter:"all",mine:false,page:1})}>
+          <span className="order-ops-kpi__label">{kpiDisplayLabel(kpi.label,kpi.key)}</span>
+          <span className="order-ops-kpi__count">{kpi.count}</span>
+        </button>)}
+      </div>}
+      {data && <V9OrderOperations rows={orders} total={total} queryString={queryString}
+        view={v9View} onViewChange={setV9View}
+        canCreateOrders={canCreateOrders} canViewProjects={mode === "owner"} />}
       <div className="order-ops-controls">
         <div className="order-ops-toolbar">
           <input
@@ -363,102 +319,7 @@ export default function OrderListManager() {
 
       {orders.length > 0 && (
         <>
-          <div className="order-ops-table-wrap">
-            {query.refreshing && <div className="order-ops-table-overlay"><AdminInlineLoader message="Đang tìm kiếm…" /></div>}
-            <table className="admin-table order-ops-table">
-              <thead>
-                <tr>
-                  <th>Mã đơn hàng</th>
-                  <th>Khách hàng</th>
-                  <th>Sản phẩm / Số lượng</th>
-                  <th>Deadline giao</th>
-                  <th title="Tiến độ ghi nhận từ các item, có thể khác trạng thái chung của đơn">Tiến độ item</th>
-                  <th>Người phụ trách</th>
-                  <th>Giao hàng</th>
-                  <th title="Một đơn có thể có nhiều cảnh báo cùng lúc">Việc cần xử lý</th>
-                  <th />
-                </tr>
-              </thead>
-              <tbody>
-                {orders.map((row) => (
-                  <tr key={row.id}>
-                    <td>
-                      <Link href={buildDetailHref(row.id, queryString)} className="order-ops-order-link">
-                        {row.orderNo}
-                      </Link>
-                      <div className="order-ops-sub">Tạo: {formatOrderDate(row.createdAt)}</div>
-                    </td>
-                    <td className="order-ops-cell-customer">
-                      {row.customerId && canViewCrm ? (
-                        <Link href={`/admin/crm/customers/${row.customerId}`} className="order-ops-customer-link">
-                          {row.customerCompanyName ?? row.contactName ?? "—"}
-                        </Link>
-                      ) : (
-                        <span className="order-ops-customer-name">
-                          {row.customerCompanyName ?? row.contactName ?? "—"}
-                        </span>
-                      )}
-                    </td>
-                    <td>
-                      <div className="order-ops-products">
-                        {row.productThumbnails.map((url) => (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img key={url} src={url} alt="" className="order-ops-product-thumb" />
-                        ))}
-                        <div>
-                          <div className="order-ops-product-count">{row.productCount} sản phẩm</div>
-                          <div className="order-ops-product-qty">
-                            {row.totalQuantity.toLocaleString("vi-VN")}
-                            {row.quantityUnit ? ` ${row.quantityUnit}` : " cái"}
-                          </div>
-                        </div>
-                      </div>
-                    </td>
-                    <td>
-                      <div className="order-ops-deadline-date">
-                        {row.deliveryExpectedAt ? formatOrderDate(row.deliveryExpectedAt) : "—"}
-                      </div>
-                      <div className={deadlineToneClass(row.deliveryDeadlineTone)}>
-                        {row.deliveryDeadlineRelative}
-                      </div>
-                    </td>
-                    <td>
-                      {row.progressPercent != null && (
-                        <div className="order-ops-progress" title={`${row.progressPercent}%`}>
-                          <div
-                            className="order-ops-progress__bar"
-                            style={{ width: `${row.progressPercent}%` }}
-                          />
-                        </div>
-                      )}
-                      <span className={`${progressToneClass(row.progressTone)} order-ops-progress-badge`}>
-                        {row.progressLabel}
-                      </span>
-                    </td>
-                    <td>
-                      <div className="order-ops-owner-name">{row.ownerName ?? "—"}</div>
-                      {row.ownerRole && <div className="order-ops-sub">{row.ownerRole}</div>}
-                    </td>
-                    <td>
-                      <div className="order-ops-delivery-method">{row.deliveryMethodLabel ?? "—"}</div>
-                      <div className="order-ops-sub">{row.deliveryStateLabel}</div>
-                    </td>
-                    <td>
-                      <WarningDisplay warnings={row.warnings} />
-                    </td>
-                    <td className="order-ops-cell-action">
-                      <Link
-                        href={buildDetailHref(row.id, queryString)}
-                        className="order-ops-row-link"
-                      >
-                        Mở
-                      </Link>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          {v9View === "table" && <V9OrderTable rows={orders} queryString={queryString} canViewCrm={canViewCrm} refreshing={query.refreshing} />}
 
           <footer className={`order-ops-pagination${totalPages <= 1 ? " order-ops-pagination--single" : ""}`}>
             <span className="order-ops-pagination__meta">

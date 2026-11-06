@@ -9,6 +9,8 @@ import AdminEnvironmentBadge from "@/components/admin/AdminEnvironmentBadge";
 import AdminScrollRestoration from "@/components/admin/AdminScrollRestoration";
 import AdminCommandPalette from "@/components/admin/AdminCommandPalette";
 import AdminMultiWindowWorkspace from "@/components/admin/AdminMultiWindowWorkspace";
+import AdminConnectedRecords from "@/components/admin/AdminConnectedRecords";
+import V9ActionCenter from "@/components/admin/V9ActionCenter";
 import { AdminTitleProvider, useAdminTitle } from "@/components/admin/AdminTitleContext";
 import { useAdminPermissions, type AdminPermissionFlags } from "@/components/admin/AdminPermissionsContext";
 import { WorkspaceModeProvider, useWorkspaceMode } from "@/components/admin/content/WorkspaceModeContext";
@@ -120,11 +122,6 @@ function AdminShellNav() {
 
   return (
     <nav className={styles.nav}>
-      {visibleNavigation.dashboard ? (
-        <div className={styles.navGroup}>
-          <AdminNavItem item={visibleNavigation.dashboard} activeHref={activeHref} />
-        </div>
-      ) : null}
       {visibleNavigation.sections.map((section) => (
         <section key={section.label} className={styles.navSection} aria-labelledby={`admin-nav-${section.label}`}>
           <p id={`admin-nav-${section.label}`} className={styles.sectionLabel}>
@@ -306,6 +303,8 @@ function AdminShellMain({
           ) : null}
         </div>
         <div className={styles.headerActions}>
+          <V9ActionCenter />
+          <AdminConnectedRecords />
           <WorkspaceModeToggle />
           <AdminMultiWindowWorkspace />
         </div>
@@ -374,7 +373,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
               <div className={styles.brandRow}>
                 <Link href="/admin/dashboard" scroll={false} className={styles.brand}>
                   <span className={styles.brandMark}>VNC OS</span>
-                  <span className={styles.brandSub}>Design Authority</span>
+                  <span className={styles.brandSub}>Enterprise Operations</span>
                 </Link>
                 <AdminEnvironmentBadge />
               </div>

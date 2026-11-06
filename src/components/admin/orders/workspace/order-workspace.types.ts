@@ -1,13 +1,17 @@
 export type OrderWorkspaceTab =
   | "products"
+  | "qc"
+  | "documents"
   | "info"
   | "delivery"
   | "payment"
   | "activity"
   | "notes";
 
-export const ORDER_WORKSPACE_TABS: Array<{ key: OrderWorkspaceTab; label: string; financialOnly?: boolean }> = [
+export const ORDER_WORKSPACE_TABS: Array<{ key: OrderWorkspaceTab; label: string; financialOnly?: boolean; productionOnly?: boolean }> = [
   { key: "products", label: "Sản phẩm" },
+  { key: "qc", label: "Sản xuất / QC", productionOnly: true },
+  { key: "documents", label: "Tài liệu" },
   { key: "info", label: "Thông tin đơn" },
   { key: "delivery", label: "Giao hàng" },
   { key: "payment", label: "Thanh toán", financialOnly: true },

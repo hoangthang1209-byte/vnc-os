@@ -9,8 +9,11 @@ import type { DeliveryMethodRecord } from "@/features/delivery/delivery-method.s
 import type { EmployeeRecord } from "@/features/employees/employee.service";
 import type { OrderDetailRecord } from "@/features/orders/order.types";
 import OrderWorkspaceHeader from "./OrderWorkspaceHeader";
+import OrderDocumentActions from "@/components/admin/orders/OrderDocumentActions";
 import OrderWorkspaceSummaryCards from "./OrderWorkspaceSummaryCards";
 import OrderExecutionControl from "./OrderExecutionControl";
+import V9OrderOverview from "./V9OrderOverview";
+import styles from "./OrderWorkspaceV9.module.css";
 import OrderBatchAssignment from "./OrderBatchAssignment";
 import OrderProductTable from "./OrderProductTable";
 import OrderProductionSummaryPanel from "./OrderProductionSummaryPanel";
@@ -127,8 +130,8 @@ export default function OrderWorkspaceShell(props: OrderWorkspaceShellProps) {
   const tabStorageKey = orderWorkspaceTabStorageKey(orderId);
 
   const visibleTabs = useMemo(
-    () => ORDER_WORKSPACE_TABS.filter((tab) => !tab.financialOnly || canViewFinancials),
-    [canViewFinancials],
+    () => ORDER_WORKSPACE_TABS.filter((tab) => (!tab.financialOnly || canViewFinancials) && (!tab.productionOnly || canViewProduction)),
+    [canViewFinancials, canViewProduction],
   );
 
   const [activeTab, setActiveTab] = useState<OrderWorkspaceTab>(defaultTabForRole(roleCode));
@@ -161,8 +164,8 @@ export default function OrderWorkspaceShell(props: OrderWorkspaceShellProps) {
   );
 
   return (
-    <div className="order-workspace">
-      <nav className="order-workspace-breadcrumb" aria-label="Breadcrumb">
+    <div className={`order-workspace ${styles.root}`} data-testid="v9-order-detail-workspace">
+      <nav className={`order-workspace-breadcrumb ${styles.breadcrumb}`} aria-label="Breadcrumb">
         <Link href="/admin/orders">Đơn hàng</Link>
         <span aria-hidden>›</span>
         <span>Chi tiết đơn hàng</span>
@@ -183,7 +186,13 @@ export default function OrderWorkspaceShell(props: OrderWorkspaceShellProps) {
         onOpenCorrection={onOpenCorrection}
       />
 
-      <OrderExecutionControl order={order} onNavigateTab={navigateTab} canViewFinancials={canViewFinancials} />
+      <V9OrderOverview order={order} canViewFinancials={canViewFinancials}
+        canViewCrm={permissions.canViewCrm} canViewProduction={canViewProduction}
+        onNavigateTab={navigateTab} />
+      <details className="order-workspace-secondary-summary" style={{ marginBottom: 14 }}>
+        <summary style={{cursor:"pointer",padding:"12px 16px",border:"1px solid #e2e8f0",borderRadius:8,fontWeight:650,fontSize:12}}>Checklist kiểm soát đơn hàng và việc cần xử lý</summary>
+        <OrderExecutionControl order={order} onNavigateTab={navigateTab} canViewFinancials={canViewFinancials} />
+      </details>
 
       <details className="order-workspace-secondary-summary" style={{ margin: "12px 0 20px" }}>
         <summary style={{ cursor: "pointer", padding: "12px 16px", border: "1px solid #e2e8f0", borderRadius: 10, fontWeight: 600 }}>
@@ -200,7 +209,7 @@ export default function OrderWorkspaceShell(props: OrderWorkspaceShellProps) {
         </div>
       </details>
 
-      <div className="admin-crm-360-tabs order-workspace-tabs" role="tablist">
+      <div className={`admin-crm-360-tabs order-workspace-tabs ${styles.tabs}`} role="tablist">
         {visibleTabs.map((tab) => (
           <button
             key={tab.key}
@@ -215,7 +224,7 @@ export default function OrderWorkspaceShell(props: OrderWorkspaceShellProps) {
         ))}
       </div>
 
-      <div className="order-workspace-tab-panel">
+      <div className={`order-workspace-tab-panel ${styles.panel}`}>
         {activeTab === "products" && (
           <div className="order-workspace-products-layout">
             <OrderProductTable
@@ -238,8 +247,24 @@ export default function OrderWorkspaceShell(props: OrderWorkspaceShellProps) {
           </div>
         )}
 
-        {activeTab === "products" && (
-          <OrderItemProductionPanel orderId={orderId} orderStatus={order.status} />
+        {activeTab === "qc" && canViewProduction && (
+          <div className="order-workspace-v9-quality">
+            <h2>Sản xuất & kiểm tra chất lượng theo dòng hàng</h2>
+            <p className="admin-field-hint">Công đoạn và QC từ Order Core/Production API; không suy diễn sản lượng từ trạng thái đơn.</p>
+            <OrderItemProductionPanel orderId={orderId} orderStatus={order.status} />
+          </div>
+        )}
+
+        {activeTab === "documents" && (
+          <div className="order-workspace-v9-documents">
+            <h2>Chứng từ và tài liệu</h2>
+            <p className="admin-field-hint">Vui lòng xác minh mã đơn trên chứng từ. Các liên kết mở module thật, không khẳng định chứng từ đã được gắn với đơn.</p>
+            <div style={{display:"flex",gap:9,flexWrap:"wrap",paddingBlock:12}}>
+              {canViewProduction && <Link className="admin-btn admin-btn--secondary" href={`/admin/production?search=${encodeURIComponent(order.orderNo)}`}>Tài liệu sản xuất</Link>}
+              {canViewFinancials && <Link className="admin-btn admin-btn--secondary" href="/admin/documents/invoices">Invoice Center</Link>}
+            </div>
+            <OrderDocumentActions order={order} />
+          </div>
         )}
 
         {activeTab === "info" && (

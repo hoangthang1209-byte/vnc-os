@@ -481,6 +481,7 @@ export default function QuickOrderForm() {
       {draftToast && <p className="admin-toast">{draftToast}</p>}
       {error && <p className="admin-error">{error}</p>}
 
+      <div className={styles.bodyGrid}>
       <section id="v9-quick-customer" className={`${styles.section} ${styles.customer}`} aria-label="Thông tin khách hàng">
         <h2 className={styles.sectionHead}><span>01</span> Khách hàng và thông tin liên hệ</h2>
       <OrderCustomerPartyFields
@@ -796,6 +797,7 @@ export default function QuickOrderForm() {
         </div>
       </div>
       </section>
+      </div>
     </main>
   );
 }

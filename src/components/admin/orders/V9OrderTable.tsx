@@ -20,7 +20,7 @@ const href=(id:string,qs:string)=>{
 
 export default function V9OrderTable({rows,queryString,canViewCrm,refreshing}:Props) {
   return <section className={styles.root} aria-label="Danh sách đơn hàng V9" data-testid="v9-order-table">
-    <header className={styles.header}><div><h2>Order Portfolio</h2><p>Thông tin từ Order Core · {rows.length} dòng trên trang hiện tại</p></div>{refreshing&&<span role="status" className={styles.loading}>Đang cập nhật…</span>}</header>
+    {refreshing&&<p role="status" className={styles.loading}>Đang cập nhật dữ liệu…</p>}
     <div className={styles.scroll}>
       <table className={styles.table}>
         <thead><tr>

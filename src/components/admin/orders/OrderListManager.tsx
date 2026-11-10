@@ -218,7 +218,7 @@ export default function OrderListManager() {
             aria-expanded={advancedOpen}
           >
             <SlidersHorizontal size={14} aria-hidden />
-            <span>Bộ lọc</span>
+            <span>{advancedOpen ? "Thu gọn" : "Lọc thêm"}</span>
           </button>
           {query.refreshing && (
             <span className="order-ops-toolbar__refresh">
@@ -257,15 +257,12 @@ export default function OrderListManager() {
           </div>
         )}
 
-        {advancedOpen && (
-          <p className="order-ops-controls__hint admin-field-hint">
-            Dùng thẻ KPI hoặc chip nhanh để lọc theo tình trạng vận hành.
-          </p>
-        )}
-
         {summary && (
           <div className="order-ops-chips">
-            {summary.quickFilters.map((chip) => {
+            {summary.quickFilters.filter(chip =>
+              advancedOpen || ["all", "mine", "in_production", "awaiting_qc", "overdue"].includes(chip.key)
+              || chip.key === filters.quickFilter
+            ).map((chip) => {
               const isActive =
                 chip.key === "mine"
                   ? filters.mine

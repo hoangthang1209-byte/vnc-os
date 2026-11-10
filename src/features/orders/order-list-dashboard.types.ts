@@ -42,6 +42,14 @@ export type OrderListDashboardRow = {
   contactName: string | null;
   status: OrderStatus;
   productCount: number;
+  primaryProductName: string | null;
+  primarySku: string | null;
+  extraProductCount: number;
+  project: { id: string; code: string; name: string } | null;
+  batch: { id: string; code: string; name: string } | null;
+  customerPoNo: string | null;
+  executionStageProgress: string;
+  executionQcStatusLabel: string;
   totalQuantity: number;
   quantityUnit: string | null;
   productThumbnails: string[];
@@ -57,6 +65,7 @@ export type OrderListDashboardRow = {
   deliveryStateLabel: string;
   warnings: string[];
   productionUrgency: ProductionUrgency;
+  currency?: string;
   totalAmount?: number;
   paidAmount?: number;
   outstandingAmount?: number;

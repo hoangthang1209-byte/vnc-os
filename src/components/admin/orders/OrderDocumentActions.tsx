@@ -60,10 +60,11 @@ export default function OrderDocumentActions({ order }: Props) {
   const visibleDocuments = useMemo(
     () =>
       DOCUMENTS.filter((doc) => {
-        if (doc.type === "production") return true;
+        if (doc.type === "production") return permissions.canViewProduction;
+        if (doc.type === "delivery") return permissions.canViewFinancials && permissions.canViewDelivery;
         return permissions.canViewFinancials;
       }),
-    [permissions.canViewFinancials],
+    [permissions.canViewFinancials, permissions.canViewProduction, permissions.canViewDelivery],
   );
 
   const availability = useMemo(

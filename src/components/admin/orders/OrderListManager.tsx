@@ -100,9 +100,6 @@ function buildQueryString(filters: ReturnType<typeof useListFilters>["filters"])
 
 
 
-function kpiToneClass(tone: string) {
-  return `order-ops-kpi order-ops-kpi--${tone}`;
-}
 
 
 
@@ -156,30 +153,32 @@ export default function OrderListManager() {
 
   return (
     <div className="order-ops-dashboard">
-      <header className={orderV9Styles.heading}>
-        <div>
-          <p className={orderV9Styles.eyebrow}>VNC OS / SALES & OPERATIONS</p>
-          <h1>Quản lý đơn hàng</h1>
-          <p>Theo dõi tiến độ, sản xuất, QC, giao hàng và các việc cần xử lý.</p>
+      <div className={orderV9Styles.top}>
+        <div className={orderV9Styles.topDescription}>
+          <strong>Điều hành đơn hàng</strong>
+          <span>{total.toLocaleString("vi-VN")} đơn theo bộ lọc hiện tại · ưu tiên xử lý theo hạn giao và công đoạn</span>
         </div>
         <div className={orderV9Styles.actions}>
-          {canViewCrm && <Link href="/admin/crm/customers" className="admin-btn admin-btn--secondary">Khách hàng</Link>}
-          {canCreateOrders && <Link href="/admin/orders/new/quick" className="admin-btn admin-btn--secondary">Nhập đơn nhanh</Link>}
-          {canCreateOrders && <Link href="/admin/orders/new" className="admin-btn admin-btn--primary">+ Tạo đơn hàng</Link>}
+          {mode === "owner" && <Link href="/admin/orders/projects" className="admin-btn admin-btn--secondary">Project / Batch</Link>}
+          {canCreateOrders && <Link href="/admin/orders/new/quick" className="admin-btn admin-btn--secondary">Nhập nhanh</Link>}
+          {canCreateOrders && <Link href="/admin/orders/new" className="admin-btn admin-btn--primary">+ Tạo đơn</Link>}
         </div>
-      </header>
-      {summary && <div className="order-ops-kpi-grid" aria-label="Bộ lọc KPI toàn bộ đơn hàng theo phân quyền">
-        {summary.kpis.map(kpi => <button key={kpi.key} type="button"
-          className={`${kpiToneClass(kpi.tone)}${filters.kpi===kpi.key?" is-active":""}`}
-          aria-pressed={filters.kpi===kpi.key}
-          onClick={()=>update({kpi:filters.kpi===kpi.key?"":kpi.key,quickFilter:"all",mine:false,page:1})}>
-          <span className="order-ops-kpi__label">{kpiDisplayLabel(kpi.label,kpi.key)}</span>
-          <span className="order-ops-kpi__count">{kpi.count}</span>
-        </button>)}
+      </div>
+      {summary && <div className={orderV9Styles.kpiStrip} aria-label="Bộ lọc KPI theo toàn bộ đơn được phân quyền">
+        {summary.kpis.filter(kpi => ["in_production", "awaiting_qc", "overdue", "needs_action"].includes(kpi.key)).map(kpi =>
+          <button key={kpi.key} type="button"
+            className={`${orderV9Styles.kpi}${filters.kpi === kpi.key ? ` ${orderV9Styles.kpiActive}` : ""}`}
+            aria-pressed={filters.kpi === kpi.key}
+            onClick={() => update({kpi: filters.kpi === kpi.key ? "" : kpi.key, quickFilter: "all", mine: false, page: 1})}>
+            <span>{kpiDisplayLabel(kpi.label,kpi.key)}</span>
+            <strong>{kpi.count.toLocaleString("vi-VN")}</strong>
+          </button>)}
       </div>}
-      {data && <V9OrderOperations rows={orders} total={total} queryString={queryString}
-        view={v9View} onViewChange={setV9View}
-        canCreateOrders={canCreateOrders} canViewProjects={mode === "owner"} />}
+      <section className={orderV9Styles.workspace} aria-label="Order Portfolio">
+        <div className={orderV9Styles.workspaceHead}>
+          <div><h2>Danh sách đơn hàng</h2><p>Tìm kiếm, ưu tiên xử lý và theo dõi đơn trong cùng một không gian</p></div>
+          {query.refreshing && <span role="status" className={orderV9Styles.refreshLabel}>Đang cập nhật…</span>}
+        </div>
       <div className="order-ops-controls">
         <div className="order-ops-toolbar">
           <input
@@ -300,6 +299,9 @@ export default function OrderListManager() {
         )}
       </div>
 
+      {data && <V9OrderOperations rows={orders} queryString={queryString}
+        view={v9View} onViewChange={setV9View} />}
+
       {query.error && (
         <AdminErrorRecovery
           message="Không thể tải danh sách đơn hàng. Vui lòng thử lại."
@@ -352,6 +354,7 @@ export default function OrderListManager() {
           </footer>
         </>
       )}
+      </section>
     </div>
   );
 }

@@ -85,7 +85,7 @@ export type OrderWorkspaceShellProps = {
 };
 
 export default function OrderWorkspaceShell(props: OrderWorkspaceShellProps) {
-  const { permissions, roleCode } = useAdminPermissions();
+  const { permissions, roleCode, loading: permissionsLoading } = useAdminPermissions();
   const canViewFinancials = permissions.canViewFinancials;
   const canViewProduction = permissions.canViewProduction;
   const canViewDelivery = permissions.canViewDelivery;
@@ -161,6 +161,8 @@ export default function OrderWorkspaceShell(props: OrderWorkspaceShellProps) {
     },
     [tabStorageKey, visibleTabs],
   );
+
+  if (permissionsLoading) return <div role="status" className="admin-panel">Đang kiểm tra quyền xem đơn hàng…</div>;
 
   return (
     <div className={`order-workspace ${styles.root}`} data-testid="v9-order-detail-workspace">

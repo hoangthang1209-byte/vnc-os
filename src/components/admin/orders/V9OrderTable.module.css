@@ -4,3 +4,25 @@
 .root .loading{display:block;padding:5px 14px;margin:0}
 .table thead th{padding-block:11px}
 .table td{padding-block:11px}
+
+/* V9.1 Portfolio operational columns */
+.table{min-width:1250px}
+.table th,.table td{max-width:220px}
+.table th:nth-child(4),.table td:nth-child(4){min-width:185px}
+.table td small{line-height:1.45}
+.itemIdentity,.project,.execution,.priority{display:grid;gap:4px;min-width:0}
+.itemIdentity strong,.project strong,.execution strong,.priority strong{font-size:11px;overflow-wrap:anywhere}
+.itemIdentity small,.project small,.execution small,.priority small{font-size:10px;color:#8292a3;line-height:1.4;margin:0}
+.muted{font-size:10px;color:#8c9aa8}
+.customerPlain{display:block;margin-top:6px;color:#4e627b;font-size:11px}
+.priority strong{font-size:10px}
+.priority .danger{color:#c23b47}
+.priority .warning{color:#a36c25}
+.execution .progressHeader{display:grid;gap:3px;margin-top:3px}
+.execution .progressHeader span{font-size:9px;color:#8a98a9}
+.execution .track{width:100%;margin:0;min-width:0}
+.mobileMeta{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:12px 0}
+.mobileMeta>div{background:#f8fafc;border:1px solid #edf1f4;border-radius:7px;padding:9px}
+.mobileAmount{font-weight:700;color:#304e6a}
+.mobileCard>.execution{margin-block:10px}
+.mobileCard>.priority{margin-block:10px}

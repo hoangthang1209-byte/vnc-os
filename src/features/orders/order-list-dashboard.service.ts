@@ -43,6 +43,7 @@ const ACTIVE_STATUSES: OrderStatus[] = [
 type OrderRow = Prisma.OrderGetPayload<{
   include: {
     items: { include: { variants: true } };
+    batch: { select: { id: true; code: true; name: true; project: { select: { id: true; code: true; name: true } } } };
     payments: true;
     deliveryOwner: { select: { fullName: true } };
     deliveryMethodRef: { select: { requiresCarrier: true } };
@@ -458,6 +459,18 @@ function mapDashboardRow(enriched: EnrichedOrder, now: Date, canViewFinancials: 
     contactName: row.contactName,
     status: row.status,
     productCount: row.items.length,
+    primaryProductName: sortedItems[0]?.productNameSnapshot ?? null,
+    primarySku: sortedItems[0]?.skuSnapshot ?? null,
+    extraProductCount: Math.max(0, row.items.length - 1),
+    project: row.batch?.project
+      ? { id: row.batch.project.id, code: row.batch.project.code, name: row.batch.project.name }
+      : null,
+    batch: row.batch
+      ? { id: row.batch.id, code: row.batch.code, name: row.batch.name }
+      : null,
+    customerPoNo: row.customerPoNo ?? null,
+    executionStageProgress: enriched.execution.stageProgressLabel,
+    executionQcStatusLabel: enriched.execution.qcStatusLabel,
     totalQuantity,
     quantityUnit: sortedItems[0]?.unit ?? null,
     productThumbnails: thumbnails,
@@ -478,6 +491,7 @@ function mapDashboardRow(enriched: EnrichedOrder, now: Date, canViewFinancials: 
   if (!canViewFinancials) return base;
   return {
     ...base,
+    currency: row.currency,
     totalAmount: row.totalAmount.toNumber(),
     paidAmount: financials.paidAmount,
     outstandingAmount: financials.outstandingAmount,
@@ -538,6 +552,7 @@ const orderInclude = {
     orderBy: { sortOrder: "asc" as const },
     include: { variants: { orderBy: { sortOrder: "asc" as const } } },
   },
+  batch: { select: { id: true, code: true, name: true, project: { select: { id: true, code: true, name: true } } } },
   payments: true,
   deliveryOwner: { select: { fullName: true } },
   deliveryMethodRef: { select: { requiresCarrier: true } },

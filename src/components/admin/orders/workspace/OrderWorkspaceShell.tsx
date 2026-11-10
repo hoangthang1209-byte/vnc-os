@@ -26,7 +26,8 @@ import OrderWorkspaceNotesTab from "./OrderWorkspaceNotesTab";
 import OrderWorkspaceLowerSections from "./OrderWorkspaceLowerSections";
 import { useOrderWorkspaceData } from "./useOrderWorkspaceData";
 import {
-  ORDER_WORKSPACE_TABS,
+  visibleOrderWorkspaceTabs,
+  authorizedDefaultOrderTab,
   orderWorkspaceTabStorageKey,
   type OrderWorkspaceTab,
 } from "./order-workspace.types";
@@ -83,15 +84,11 @@ export type OrderWorkspaceShellProps = {
   onOpenVoidPayment: (paymentId: string) => void;
 };
 
-function defaultTabForRole(roleCode: string | null): OrderWorkspaceTab {
-  if (roleCode === "DELIVERY") return "delivery";
-  return "products";
-}
-
 export default function OrderWorkspaceShell(props: OrderWorkspaceShellProps) {
   const { permissions, roleCode } = useAdminPermissions();
   const canViewFinancials = permissions.canViewFinancials;
   const canViewProduction = permissions.canViewProduction;
+  const canViewDelivery = permissions.canViewDelivery;
 
   const {
     orderId,
@@ -130,14 +127,16 @@ export default function OrderWorkspaceShell(props: OrderWorkspaceShellProps) {
   const tabStorageKey = orderWorkspaceTabStorageKey(orderId);
 
   const visibleTabs = useMemo(
-    () => ORDER_WORKSPACE_TABS.filter((tab) => (!tab.financialOnly || canViewFinancials) && (!tab.productionOnly || canViewProduction)),
-    [canViewFinancials, canViewProduction],
+    () => visibleOrderWorkspaceTabs({ canViewFinancials, canViewProduction, canViewDelivery }),
+    [canViewFinancials, canViewProduction, canViewDelivery],
   );
 
-  const [activeTab, setActiveTab] = useState<OrderWorkspaceTab>(defaultTabForRole(roleCode));
+  const [activeTab, setActiveTab] = useState<OrderWorkspaceTab>(
+    () => authorizedDefaultOrderTab(roleCode, visibleTabs),
+  );
 
   useEffect(() => {
-    let nextTab = defaultTabForRole(roleCode);
+    let nextTab = authorizedDefaultOrderTab(roleCode, visibleTabs);
     try {
       const stored = sessionStorage.getItem(tabStorageKey) as OrderWorkspaceTab | null;
       if (stored && visibleTabs.some((t) => t.key === stored)) {
@@ -188,6 +187,7 @@ export default function OrderWorkspaceShell(props: OrderWorkspaceShellProps) {
 
       <V9OrderOverview order={order} canViewFinancials={canViewFinancials}
         canViewCrm={permissions.canViewCrm} canViewProduction={canViewProduction}
+        canViewDelivery={canViewDelivery}
         onNavigateTab={navigateTab} />
       <details className="order-workspace-secondary-summary" style={{ marginBottom: 14 }}>
         <summary style={{cursor:"pointer",padding:"12px 16px",border:"1px solid #e2e8f0",borderRadius:8,fontWeight:650,fontSize:12}}>Checklist kiểm soát đơn hàng và việc cần xử lý</summary>
@@ -286,7 +286,7 @@ export default function OrderWorkspaceShell(props: OrderWorkspaceShellProps) {
           />
         )}
 
-        {activeTab === "delivery" && (
+        {activeTab === "delivery" && canViewDelivery && (
           <OrderWorkspaceDeliveryTab
             orderId={orderId}
             order={order}

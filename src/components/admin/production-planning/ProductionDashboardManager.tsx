@@ -37,9 +37,9 @@ export default function ProductionDashboardManager() {
 
   return (
     <div className="prod-dash">
-      <header className="prod-dash__header">
+      <header className="prod-dash__header" aria-label="Điều hành sản xuất">
         <div>
-          <h1 className="prod-dash__title">Tổng quan sản xuất</h1>
+          <h1 className="prod-dash__title">Điều hành sản xuất</h1>
           <p className="prod-dash__subtitle">Theo dõi công việc, hạn chót và tải sản xuất hôm nay</p>
         </div>
         <div className="prod-dash__nav">
@@ -63,32 +63,9 @@ export default function ProductionDashboardManager() {
         </div>
       )}
 
-      <div className="prod-dash__sections">
-        {data.sections.map((s) => (
-          <Link key={s.key} href={s.href} className="prod-dash__section-card">
-            <span className="prod-dash__section-count">{s.count}</span>
-            <span className="prod-dash__section-label">{s.label}</span>
-          </Link>
-        ))}
-      </div>
-
-      {data.ownerWorkload.length > 0 && (
-        <section className="prod-dash__panel">
-          <h2>Tải theo người phụ trách</h2>
-          <ul className="prod-dash__workload">
-            {data.ownerWorkload.map((w) => (
-              <li key={w.ownerId}>
-                <span>{w.ownerName}</span>
-                <strong>{w.count} việc</strong>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
-
       <div className="prod-dash__columns">
         <section className="prod-dash__panel">
-          <h2>Việc của tôi</h2>
+          <h2>Việc của tôi <span className="prod-dash__section-count">({data.myJobs.length})</span></h2>
           {data.myJobs.length === 0 ? (
             <p className="prod-plan-muted">Không có việc được giao.</p>
           ) : (
@@ -108,7 +85,7 @@ export default function ProductionDashboardManager() {
         </section>
 
         <section className="prod-dash__panel">
-          <h2>Hạn sắp tới</h2>
+          <h2>Hạn sắp tới <span className="prod-dash__section-count">({data.upcomingDeadlines.length})</span></h2>
           {data.upcomingDeadlines.length === 0 ? (
             <p className="prod-plan-muted">Không có hạn sắp tới.</p>
           ) : (

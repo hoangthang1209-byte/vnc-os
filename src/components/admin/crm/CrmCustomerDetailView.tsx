@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import styles from "./CustomerV9Tabs.module.css";
 import Link from "next/link";
 import type { CustomerRepresentativeSalutation, CustomerStatus } from "@prisma/client";
 import CrmActivityTimeline from "@/components/admin/crm/CrmActivityTimeline";
@@ -12,13 +13,11 @@ import CrmCustomerAddressFields, {
 import CrmProductInterestForm, {
   CrmProductInterestList,
 } from "@/components/admin/crm/CrmProductInterestForm";
-import {
-  CustomerMasterTypeBadge,
-  CustomerStatusBadge,
-} from "@/components/admin/crm/CustomerBadges";
+
 import { useCustomerTypeOptions } from "@/components/admin/crm/useCustomerTypeOptions";
 import LeadStatusBadge from "@/components/admin/LeadStatusBadge";
 import CustomerAccountWorkspace from "@/components/admin/crm/CustomerAccountWorkspace";
+import V9CustomerOverview from "@/components/admin/crm/V9CustomerOverview";
 import {
   CUSTOMER_STATUS_LABELS,
   REPRESENTATIVE_SALUTATION_LABELS,
@@ -58,6 +57,7 @@ export default function CrmCustomerDetailView({
   initialCustomer: CrmCustomerRecord;
   overview: CustomerAccountOverview;
 }) {
+  const [activeV9Tab, setActiveV9Tab] = useState<"overview" | "profile" | "contacts" | "activity" | "advanced">("overview");
   const mutate = useAdminMutation();
   const { types: customerTypes, loading: typesLoading } = useCustomerTypeOptions(true);
   const [customer, setCustomer] = useState(initialCustomer);
@@ -193,31 +193,41 @@ export default function CrmCustomerDetailView({
   });
 
   return (
-    <div className="admin-panel">
-      <div className="admin-crm-detail-header">
-        <div>
-          <p className="admin-crm-detail-code">Mã khách hàng: {customer.code}</p>
-          <h2>{customer.name}</h2>
-          <div className="admin-crm-detail-badges">
-            <CustomerMasterTypeBadge label={customer.customerType?.name} />
-            <CustomerStatusBadge status={customer.status} />
-          </div>
-        </div>
-        <Link href="/admin/crm/customers" className="admin-btn admin-btn--secondary">
-          ← Danh sách khách hàng
-        </Link>
+    <div className={styles.customerRoot}>
+      <div className={styles.topline}>
+        <Link href="/admin/crm/customers" className={styles.backLink}>← Danh sách khách hàng</Link>
+        <span className={styles.customerCode}>CUSTOMER ACCOUNT · {customer.code}</span>
+      </div>
+      {message && <p className={`admin-message admin-message--${message.type}`} role="alert">{message.text}</p>}
+      {activeV9Tab === "overview" ? (
+        <V9CustomerOverview
+          customer={customer}
+          overview={overview}
+          onEdit={() => setActiveV9Tab("profile")}
+          onContact={() => setActiveV9Tab("contacts")}
+          onActivity={() => setActiveV9Tab("activity")}
+        />
+      ) : null}
+      <div className={styles.legacyToolbar}>
+        <strong>Workspace khách hàng</strong>
+        {([
+          ["overview", "Tổng quan"],
+          ["profile", "Chỉnh sửa hồ sơ"],
+          ["contacts", "Quản lý liên hệ"],
+          ["activity", "Lead & nhật ký"],
+          ["advanced", "Nghiệp vụ mở rộng"],
+        ] as const).map(([tab, label]) => (
+          <button type="button" key={tab} aria-pressed={activeV9Tab === tab}
+            className={`${styles.tab} ${activeV9Tab === tab ? styles.active : ""}`}
+            onClick={() => setActiveV9Tab(tab)}>{label}</button>
+        ))}
+      </div>
+      <div className={activeV9Tab === "advanced" ? undefined : styles.hiddenPanel}>
+        <CustomerAccountWorkspace overview={overview} />
       </div>
 
-      {message && (
-        <p className={`admin-message admin-message--${message.type}`} role="alert">
-          {message.text}
-        </p>
-      )}
-
-      <CustomerAccountWorkspace overview={overview} />
-
       <div className="admin-crm-detail-grid">
-        <section className="admin-section-card">
+        <section className={`admin-section-card ${activeV9Tab === "contacts" ? "" : styles.hiddenPanel}`}>
           <div className="admin-section-header">
             <h3>Người liên hệ</h3>
             <button
@@ -280,7 +290,7 @@ export default function CrmCustomerDetailView({
           </div>
         </section>
 
-        <section className="admin-section-card">
+        <section className={`admin-section-card ${activeV9Tab === "profile" ? "" : styles.hiddenPanel}`}>
           <h3>A. Thông tin doanh nghiệp</h3>
           <div className="admin-form admin-form--compact admin-form-grid">
             <label>
@@ -329,7 +339,7 @@ export default function CrmCustomerDetailView({
           </div>
         </section>
 
-        <section className="admin-section-card">
+        <section className={`admin-section-card ${activeV9Tab === "profile" ? "" : styles.hiddenPanel}`}>
           <h3>Phân loại khách hàng</h3>
           <div className="admin-form admin-form--compact admin-form-grid">
             <label>
@@ -351,7 +361,7 @@ export default function CrmCustomerDetailView({
           </div>
         </section>
 
-        <section className="admin-section-card">
+        <section className={`admin-section-card ${activeV9Tab === "profile" ? "" : styles.hiddenPanel}`}>
           <h3>Người đại diện / người ký</h3>
           <p className="admin-field-hint">
             Dùng cho hợp đồng, báo giá hoặc chứng từ khi người ký khác với liên hệ làm việc hằng ngày.
@@ -401,7 +411,7 @@ export default function CrmCustomerDetailView({
           </div>
         </section>
 
-        <section className="admin-section-card">
+        <section className={`admin-section-card ${activeV9Tab === "profile" ? "" : styles.hiddenPanel}`}>
           <h3>B. Địa chỉ</h3>
           <CrmCustomerAddressFields
             values={addressValues}
@@ -410,7 +420,7 @@ export default function CrmCustomerDetailView({
           {addressPreview && <p className="admin-field-hint">Xem trước: {addressPreview}</p>}
         </section>
 
-        <section className="admin-section-card">
+        <section className={`admin-section-card ${activeV9Tab === "profile" ? "" : styles.hiddenPanel}`}>
           <h3>D. Ghi chú</h3>
           <div className="admin-form admin-form--compact">
             <label>
@@ -428,7 +438,7 @@ export default function CrmCustomerDetailView({
           </div>
         </section>
 
-        <section className="admin-section-card">
+        <section className={`admin-section-card ${activeV9Tab === "activity" ? "" : styles.hiddenPanel}`}>
           <h3>Lead liên quan</h3>
           {customer.leads?.length ? (
             <ul className="admin-crm-related-list">
@@ -445,20 +455,20 @@ export default function CrmCustomerDetailView({
           )}
         </section>
 
-        <section className="admin-section-card">
+        <section className={`admin-section-card ${activeV9Tab === "activity" ? "" : styles.hiddenPanel}`}>
           <h3>Nhu cầu sản phẩm</h3>
           <CrmProductInterestForm customerId={customer.id} onCreated={() => void refreshCustomer()} />
           <CrmProductInterestList interests={customer.productInterests ?? []} />
         </section>
 
-        <section className="admin-section-card">
+        <section className={`admin-section-card ${activeV9Tab === "activity" ? "" : styles.hiddenPanel}`}>
           <h3>Hoạt động</h3>
           <CrmAddActivityForm customerId={customer.id} onCreated={() => void refreshCustomer()} />
           <CrmActivityTimeline activities={customer.activities ?? []} />
         </section>
       </div>
 
-      <div className="admin-form-actions">
+      <div className={activeV9Tab === "profile" ? "admin-form-actions" : styles.hiddenPanel}>
         <AdminLoadingButton
           type="button"
           variant="primary"

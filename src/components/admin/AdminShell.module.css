@@ -454,3 +454,52 @@
  .shellCompact .navLink { font-size:11px; min-height:32px; padding:7px; }
 }
 @media(max-width:900px) { .desktopCollapseToggle { display:none; } }
+
+
+/*
+ * Admin UX V9 HTML parity: shell visual foundation.
+ * Source design SHA256: 8d3722dd2b2a8684a73d110a2c194e5972a8d5f2744e3cb1de1271dda7322e4c
+ * This overrides chrome only. Per-module UX is migrated in subsequent PRs.
+ */
+.shell {
+  --v9-navy: #142236;
+  --v9-navy-2: #1f344f;
+  --v9-red: #d92f3a;
+  --v9-ink: #202d3d;
+  --v9-muted: #748397;
+  --v9-line: #e1e7ee;
+  --v9-bg: #f5f7fa;
+  --v9-card: #ffffff;
+  background: var(--v9-bg);
+  color: var(--v9-ink);
+  font-family: "DM Sans", Arial, sans-serif;
+  font-size: 13px;
+}
+.sidebar { width: 246px; flex-basis:246px; background: var(--v9-navy); color: #b5c4d5; border-right: 1px solid #ffffff17; padding: 12px 9px; }
+.sidebarTop { background: var(--v9-navy); margin: -12px -9px 12px; padding: 15px 12px; border-bottom-color:#ffffff17; }
+.brandMark { font: 800 16px/1.2 "Manrope", "DM Sans", Arial, sans-serif; letter-spacing: -.035em; }
+.brandSub { font-size: 10px; letter-spacing: .035em; text-transform: none; font-weight: 500; color:#93a4b9; }
+.nav { gap: 3px; }
+.navSection { padding: 12px 0 2px; border-top: 0; }
+.sectionLabel { font-size: 10px; color: #7890a9; letter-spacing: .09em; margin-bottom: 7px; padding: 0 10px; font-weight:700; }
+.sectionIcon { color: #8ea1b6; }
+.navGroup { gap: 1px; margin-bottom: 3px; }
+.navLink { min-height: 33px; font-size: 12px; border-radius: 7px; color: #bac9d8; padding: 7px 11px; font-weight:500; }
+.navLink:hover { color: #fff; background: rgba(255,255,255,.08); }
+.navLinkActive { background: var(--v9-navy-2); color: #fff; box-shadow: inset 3px 0 0 var(--v9-red); font-weight:700; }
+.main { background: var(--v9-bg); }
+.header { background: #fff; padding: 16px 23px; border-bottom: 1px solid var(--v9-line); box-shadow:none; align-items:center; }
+.breadcrumbs { color: var(--v9-muted); font-size:11px; margin-bottom: 6px; font-weight:600; letter-spacing:0; }
+.title { font: 800 clamp(19px,2.2vw,24px)/1.25 "Manrope","DM Sans",sans-serif; color:var(--v9-ink); letter-spacing:-.035em; }
+.description { color:var(--v9-muted); font-size:12px; }
+.content { width:100%; max-width:none; padding:22px 24px 42px; }
+.main[data-vnc-workspace="customers"],.main[data-vnc-workspace="orders"] { background:var(--v9-bg); color:var(--v9-ink); }
+.main[data-vnc-workspace="customers"] .header,.main[data-vnc-workspace="orders"] .header { padding:16px 23px; border-color:var(--v9-line); }
+.main[data-vnc-workspace="customers"] .title,.main[data-vnc-workspace="orders"] .title { font-size:24px; }
+.main[data-vnc-workspace="customers"] .content,.main[data-vnc-workspace="orders"] .content { padding:22px 24px 42px; }
+@media(max-width:900px) {
+ .sidebar { width:min(86vw,320px); }
+ .header { padding: 13px 15px; }
+ .content,.main[data-vnc-workspace="customers"] .content,.main[data-vnc-workspace="orders"] .content { padding: 14px 12px 28px; }
+ .main[data-vnc-workspace="customers"] .header,.main[data-vnc-workspace="orders"] .header { padding:13px 15px; }
+}

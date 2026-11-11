@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import V9SupplierOverview from "@/components/admin/production-master/V9SupplierOverview";
 
 type Supplier = { id: string; code: string; name: string; category?: string; phone?: string | null; isActive?: boolean; verificationStatus?: string; supplierType?: string; capabilities?: string | null; factoryAddress?: string | null };
 type Rfq = { id: string; title: string; status: string; supplier: { name: string }; quotedPrice: string | number | null; moq: number | null; leadTimeDays: number | null };
@@ -71,6 +72,7 @@ export default function SupplierSrmPage() {
   const filteredSuppliers = suppliers.filter(s =>
     [s.name,s.code,s.phone ?? "",s.capabilities ?? ""].join(" ").toLocaleLowerCase("vi").includes(entrySearch.trim().toLocaleLowerCase("vi")));
   return <main className="mx-auto max-w-6xl space-y-8 p-6">
+    <V9SupplierOverview suppliers={suppliers} rfqs={rfqs} scores={scores} />
     <h1 className="text-2xl font-semibold">Quản lý nhà cung cấp · SRM</h1>
     <p className="text-sm text-gray-500">Bắt đầu bằng việc nhập hồ sơ xưởng. Các hồ sơ mới luôn được lưu ở trạng thái chưa xác minh; chỉ phê duyệt sau khi kiểm tra thực tế.</p>
     <section className="space-y-4 rounded-xl border bg-white p-5">

@@ -1,0 +1,11 @@
+.root { position: relative; flex-shrink: 0; }
+.trigger { display: inline-flex; align-items:center; gap: 6px; min-height: 32px; padding: 6px 10px; background: #fff; border: 1px solid #d7dfe8; border-radius: 8px; font: inherit; font-size: 12px; font-weight: 600; color: #334155; cursor: pointer; white-space: nowrap; }
+.trigger:hover { border-color: #94a3b8; background: #f8fafc; }
+.trigger:focus-visible, .item:focus-visible { outline: 2px solid #2563eb; outline-offset: 2px; }
+.popover { position: absolute; right: 0; top: calc(100% + 8px); z-index: 40; width: min(300px, 80vw); padding: 12px; border-radius: 12px; background: #fff; border: 1px solid #e2e8f0; box-shadow: 0 14px 35px rgba(15,23,42,.15); }
+.heading { margin: 0 0 8px; font-size: 12px; font-weight: 700; color: #334155; }
+.items { display:grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap:6px; }
+.item { display:block; padding:9px 8px; border-radius:7px; background:#f8fafc; border:1px solid #edf2f7; color:#0f172a; text-decoration:none; font-size:12px; }
+.item:hover { background:#edf4ff; }
+.note { color:#64748b; font-size:11px; line-height:1.45; margin:10px 0 0; }
+@media (max-width: 600px) { .trigger span { display:none; } .popover { right:-35px; } }

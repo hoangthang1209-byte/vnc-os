@@ -48,6 +48,7 @@ import { useAdminToast } from "@/components/admin/AdminToastProvider";
 import { parseAdminJsonResponse } from "@/lib/admin/adminMutation";
 import AdminLoadingButton from "@/components/admin/feedback/AdminLoadingButton";
 import "@/styles/quick-order-grid.css";
+import styles from "./QuickOrderV9.module.css";
 
 type ProductStockVariant = {
   colorId: string | null;
@@ -202,8 +203,13 @@ export default function QuickOrderForm() {
       setProductionEmployees((productionData as { employees?: EmployeeRecord[] }).employees ?? []);
     });
 
-    const draft = loadQuickOrderDraft();
-    if (draft) {
+    // Draft restore runs after mount; avoid synchronously setting React state
+    // inside the effect and suppress only the intentional one-time closure.
+    let cancelled = false;
+    void Promise.resolve().then(() => {
+      if (cancelled) return;
+      const draft = loadQuickOrderDraft();
+      if (!draft) return;
       const normalized = normalizeQuickOrderDraft(draft);
       setHeader(normalized.header);
       setSizeColumns(normalized.sizeColumns);
@@ -213,13 +219,16 @@ export default function QuickOrderForm() {
       setVatRate(String(normalized.vatRate ?? 8));
       if (normalized.header.customerId) {
         void fetch(`/api/crm/customers/${normalized.header.customerId}`)
-          .then((res) => res.json())
+          .then(res => res.json())
           .then((data: { customer?: CrmCustomerRecord }) => {
-            if (data.customer) applyCustomer(data.customer);
+            if (!cancelled && data.customer) applyCustomer(data.customer);
           });
       }
       setDraftToast("Đã khôi phục bản nháp chưa lưu.");
-    }
+    });
+    return () => { cancelled = true; };
+  // The persisted draft is restored only once per mount.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -452,15 +461,29 @@ export default function QuickOrderForm() {
   }
 
   return (
-    <div className="quick-order-page">
+    <main className={`quick-order-page ${styles.root}`} data-testid="v9-quick-order">
       <div className="quick-order-page__top">
         <AdminBackLink href="/admin/orders" label="Quay lại danh sách đơn hàng" />
         <p className="quick-order-page__warning">Nhập đơn nhanh phù hợp nhất trên máy tính.</p>
       </div>
 
+      <div className={styles.hero}>
+        <div><p className={styles.eyebrow}>ORDERS / V9 QUICK ENTRY</p><h1>Nhập đơn nhanh</h1><p>Nhập theo bảng size, import Excel, kiểm tra tổng tiền và tạo đơn vào Order Core.</p></div>
+        <Link href="/admin/orders" className={styles.back}>Danh sách đơn hàng</Link>
+      </div>
+      <nav className={styles.steps} aria-label="Các bước nhập đơn">
+        <a href="#v9-quick-customer">01 · Khách hàng</a>
+        <a href="#v9-quick-information">02 · Thông tin đơn</a>
+        <a href="#v9-quick-products">03 · Sản phẩm & size</a>
+        <a href="#v9-quick-total">04 · Tổng kết</a>
+      </nav>
+
       {draftToast && <p className="admin-toast">{draftToast}</p>}
       {error && <p className="admin-error">{error}</p>}
 
+      <div className={styles.bodyGrid}>
+      <section id="v9-quick-customer" className={`${styles.section} ${styles.customer}`} aria-label="Thông tin khách hàng">
+        <h2 className={styles.sectionHead}><span>01</span> Khách hàng và thông tin liên hệ</h2>
       <OrderCustomerPartyFields
         values={partyValues}
         selectedCustomer={selectedCustomer}
@@ -478,6 +501,9 @@ export default function QuickOrderForm() {
         onChange={(patch) => setPartyValues((prev) => ({ ...prev, ...patch }))}
       />
 
+      </section>
+      <section id="v9-quick-information" className={`${styles.section} ${styles.information}`} aria-label="Thông tin đơn hàng">
+        <h2 className={styles.sectionHead}><span>02</span> Thông tin thương mại và vận hành</h2>
       <fieldset className="admin-catalog-fieldset" style={{ marginTop: 16 }}>
         <legend>Thông tin đơn hàng</legend>
         <div className="admin-seo-brief-form-grid">
@@ -556,6 +582,9 @@ export default function QuickOrderForm() {
         </div>
       </fieldset>
 
+      </section>
+      <section id="v9-quick-products" className={`${styles.section} ${styles.products}`} aria-label="Bảng sản phẩm và size">
+        <h2 className={styles.sectionHead}><span>03</span> Sản phẩm · Size breakdown · Excel</h2>
       <div className="quick-order-toolbar">
         <button
           type="button"
@@ -690,6 +719,9 @@ export default function QuickOrderForm() {
         }}
       />
 
+      </section>
+      <section id="v9-quick-total" className={`${styles.section} ${styles.total}`} aria-label="Tổng kết và lưu đơn hàng">
+        <h2 className={styles.sectionHead}><span>04</span> Kiểm tra tổng tiền và lưu đơn</h2>
       <div className="quick-order-footer">
         <div className="quick-order-footer__summary">
           <p>Tổng số dòng sản phẩm: {computedItems.length}</p>
@@ -764,6 +796,8 @@ export default function QuickOrderForm() {
           </Link>
         </div>
       </div>
-    </div>
+      </section>
+      </div>
+    </main>
   );
 }

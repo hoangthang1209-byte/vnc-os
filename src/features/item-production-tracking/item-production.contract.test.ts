@@ -33,7 +33,7 @@ describe("IA M1 item production tracking contracts", () => {
 
   it("timeline page uses AdminPageTitle without local h1", () => {
     const page = read("src/app/(backend)/admin/manufacturing/production-timeline/page.tsx");
-    assert.match(page, /AdminPageTitle title="Tiến độ sản xuất"/);
+    assert.match(page, /AdminPageTitle title="Lịch & tiến độ"/);
     assert.doesNotMatch(page, /<h1\b/);
     assert.match(
       read("src/components/admin/item-production/ItemProductionTimelineManager.tsx"),

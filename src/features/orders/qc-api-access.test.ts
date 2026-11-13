@@ -1,3 +1,4 @@
+import { qcOrderScopeWhere } from "./qc-api-access";
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import type { AdminSessionUser } from "@/features/auth/admin-session.types";
@@ -35,5 +36,37 @@ describe("QC route authorization", () => {
     const worker = employee([["orders.view", "ASSIGNED"], ["qc.update", "ASSIGNED"]]);
     assert.equal(qcPermissionStatus(worker, "read"), null);
     assert.equal(qcPermissionStatus(worker, "write"), null);
+  });
+});
+
+
+// Scope regressions cover owner, legacy v1 roles, and narrower explicit QC writes.
+describe("QC order-scope authorization", () => {
+  it("keeps owner unrestricted", () => {
+    assert.deepEqual(qcOrderScopeWhere(createOwnerSession(), "write"), {});
+  });
+  it("fails closed for legacy staff without an employee identity", () => {
+    const legacy: AdminSessionUser = { ...createAnonymousSession(), authenticated: true, mode: "legacy", legacyEmployeeRole: "PRODUCTION" };
+    assert.deepEqual(qcOrderScopeWhere(legacy, "write"), { id: "__no_access__" });
+  });
+  it("allows legacy production only on assigned orders", () => {
+    const legacy: AdminSessionUser = { ...createAnonymousSession(), authenticated: true, mode: "legacy", legacyEmployeeRole: "PRODUCTION", employeeId: "worker-1" };
+    assert.deepEqual(qcOrderScopeWhere(legacy, "write"), { OR: [
+      { salesEmployeeId: "worker-1" },
+      { productionOwnerId: "worker-1" },
+      { deliveryOwnerId: "worker-1" },
+    ] });
+  });
+  it("denies ungranted legacy QC writes", () => {
+    const legacy: AdminSessionUser = { ...createAnonymousSession(), authenticated: true, mode: "legacy", legacyEmployeeRole: "SALES", employeeId: "sales-1" };
+    assert.deepEqual(qcOrderScopeWhere(legacy, "write"), { id: "__no_access__" });
+  });
+  it("intersects explicitly granted read and QC write scopes", () => {
+    const worker = employee([["orders.view", "ALL"], ["qc.update", "ASSIGNED"]]);
+    assert.deepEqual(qcOrderScopeWhere(worker, "write"), { AND: [{}, { OR: [
+      { productionOwnerId: "staff-1" },
+      { deliveryOwnerId: "staff-1" },
+      { salesEmployeeId: "staff-1" },
+    ] }] });
   });
 });

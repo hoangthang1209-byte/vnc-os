@@ -396,6 +396,7 @@ export default function PatternDetailManager({ patternId }: { patternId: string 
     message?: string;
   } | null>(null);
   const [measurementSaving, setMeasurementSaving] = useState(false);
+  const [statusUpdating, setStatusUpdating] = useState(false);
   const [measurementEditing, setMeasurementEditing] = useState(false);
   const [measurementBaseline, setMeasurementBaseline] = useState<MeasurementDraftRow | null>(null);
   const [categories, setCategories] = useState<ProductCategoryPickerItem[]>([]);
@@ -652,13 +653,26 @@ export default function PatternDetailManager({ patternId }: { patternId: string 
     window.location.href = PATTERN_ADMIN_LIST_PATH;
   }
 
-  async function approve() {
+  async function changeStatus(nextStatus: PatternStatus) {
+    if (!pattern || nextStatus === pattern.status || statusUpdating) return;
     if (!confirmLeaveIfDirty()) return;
-    const res = await fetch(`/api/patterns/${patternId}/approve`, { method: "POST" });
-    if (res.ok) void load();
-    else {
-      const data = (await res.json()) as { message?: string };
-      setError(data.message ?? "Không thể duyệt");
+    const labels: Record<PatternStatus, string> = { DRAFT: "Bản nháp", APPROVED: "Đã duyệt", ARCHIVED: "Lưu trữ" };
+    if (!window.confirm(`Chuyển rập ${pattern.code} sang "${labels[nextStatus]}"? ${nextStatus === "DRAFT" ? "Rập sẽ được mở khóa để chỉnh sửa." : "Nội dung kỹ thuật sẽ bị khóa chỉnh sửa."}`)) return;
+    setStatusUpdating(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/patterns/${patternId}/status`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: nextStatus }),
+      });
+      const result = (await res.json().catch(() => ({}))) as { message?: string };
+      if (!res.ok) throw new Error(result.message ?? "Không thể đổi trạng thái rập.");
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Không thể đổi trạng thái rập.");
+    } finally {
+      setStatusUpdating(false);
     }
   }
 
@@ -671,12 +685,6 @@ export default function PatternDetailManager({ patternId }: { patternId: string 
       return;
     }
     await load();
-  }
-
-  async function archive() {
-    if (!confirmLeaveIfDirty()) return;
-    const res = await fetch(`/api/patterns/${patternId}/archive`, { method: "POST" });
-    if (res.ok) void load();
   }
 
   async function uploadFile(file: File, title?: string): Promise<void> {
@@ -791,6 +799,18 @@ export default function PatternDetailManager({ patternId }: { patternId: string 
                 </p>
                 <div className="pattern-workspace__badges">
                   <PatternStatusBadge status={pattern.status} />
+                   <select
+                     className="admin-select"
+                     aria-label="Chỉnh trạng thái rập"
+                     title="Chỉnh trạng thái rập"
+                     value={pattern.status}
+                     disabled={statusUpdating}
+                     onChange={(event) => void changeStatus(event.target.value as PatternStatus)}
+                   >
+                     <option value="DRAFT">Bản nháp — cho phép chỉnh sửa</option>
+                     <option value="APPROVED">Đã duyệt — khóa kỹ thuật</option>
+                     <option value="ARCHIVED">Lưu trữ — khóa kỹ thuật</option>
+                   </select>
                   <span className="pattern-workspace__badge pattern-workspace__badge--version">
                     v{draft.version || pattern.version}
                   </span>
@@ -816,11 +836,6 @@ export default function PatternDetailManager({ patternId }: { patternId: string 
               >
                 Quay lại
               </Link>
-              {pattern.status === "DRAFT" && (
-                <button type="button" className="admin-btn admin-btn--xs" onClick={() => void approve()}>
-                  Duyệt rập
-                </button>
-              )}
               {pattern.status === "APPROVED" && (
                 <button
                   type="button"
@@ -828,11 +843,6 @@ export default function PatternDetailManager({ patternId }: { patternId: string 
                   onClick={() => void createNewVersion()}
                 >
                   Tạo phiên bản mới
-                </button>
-              )}
-              {pattern.status !== "ARCHIVED" && (
-                <button type="button" className="admin-btn admin-btn--xs" onClick={() => void archive()}>
-                  Lưu trữ
                 </button>
               )}
               {(!readOnly || draft.code.trim().toUpperCase() !== pattern.code) && (

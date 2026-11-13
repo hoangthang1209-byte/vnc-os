@@ -6,7 +6,11 @@ import {
 } from "@/features/orders/qc-inspection.service";
 import { ProductionExecutionValidationError } from "@/features/orders/production-quantity";
 import type { QcInspectionStatus } from "@prisma/client";
-import { requireAdminPermission } from "@/lib/permissions/require-admin-permission";
+import { getAdminSessionFromRequest } from "@/lib/admin-auth/get-admin-session";
+import { can } from "@/features/auth/admin-permissions";
+import { buildScopedOrderWhere } from "@/features/auth/order-scope";
+import { prisma } from "@/lib/prisma";
+import type { AdminSessionUser } from "@/features/auth/admin-session.types";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -24,8 +28,34 @@ function parseOptionalString(value: unknown): string | null | undefined {
   return typeof value === "string" ? value : undefined;
 }
 
+async function checkQcAccess(
+  req: NextRequest,
+  orderId: string,
+  access: "read" | "write",
+): Promise<{ denied: NextResponse } | { session: AdminSessionUser }> {
+  const session = getAdminSessionFromRequest(req);
+  if (!session.authenticated) {
+    return { denied: NextResponse.json({ message: "Unauthorized" }, { status: 401 }) };
+  }
+  const requiredPermission = access === "write" ? "qc.update" : "orders.view";
+  if (!can(session, requiredPermission)) {
+    return { denied: NextResponse.json({ message: "Forbidden" }, { status: 403 }) };
+  }
+  // Even permissioned employees must be scoped to an order they can access.
+  const found = await prisma.order.findFirst({
+    where: { AND: [{ id: orderId }, buildScopedOrderWhere(session, "orders.view")] },
+    select: { id: true },
+  });
+  if (!found) {
+    return { denied: NextResponse.json({ message: "Không tìm thấy đơn hàng hoặc không có quyền truy cập" }, { status: 404 }) };
+  }
+  return { session };
+}
+
 export async function GET(req: NextRequest, context: RouteContext) {
   const { id } = await context.params;
+  const access = await checkQcAccess(req, id, "read");
+  if ("denied" in access) return access.denied;
   const orderItemId = req.nextUrl.searchParams.get("orderItemId");
   try {
     const qc = await getQcInspection(id, orderItemId || null);
@@ -37,14 +67,9 @@ export async function GET(req: NextRequest, context: RouteContext) {
 }
 
 export async function POST(req: NextRequest, context: RouteContext) {
-  const permission = await requireAdminPermission({
-    platform: "commercial",
-    action: "update",
-    request: req,
-  });
-  if (!permission.ok) return permission.response;
-
   const { id } = await context.params;
+  const access = await checkQcAccess(req, id, "write");
+  if ("denied" in access) return access.denied;
   let body: unknown = {};
   try {
     body = await req.json();
@@ -72,14 +97,9 @@ export async function POST(req: NextRequest, context: RouteContext) {
 }
 
 export async function PATCH(req: NextRequest, context: RouteContext) {
-  const permission = await requireAdminPermission({
-    platform: "commercial",
-    action: "update",
-    request: req,
-  });
-  if (!permission.ok) return permission.response;
-
   const { id } = await context.params;
+  const access = await checkQcAccess(req, id, "write");
+  if ("denied" in access) return access.denied;
   let body: unknown;
   try {
     body = await req.json();

@@ -8,12 +8,9 @@ import styles from "./V9ProductionPulse.module.css";
 export default function V9ProductionPulse({data}: {data:ProductionDashboardResponse}) {
   const workloadMax = Math.max(1,...data.ownerWorkload.map(item=>item.count));
   const sectionsMax = Math.max(1,...data.sections.map(item=>item.count));
-  return <div className={styles.root} data-testid="v9-production-overview">
-    <div className={styles.banner}><div><strong>Production Operations</strong><p>Theo dõi lệnh sản xuất, QC và hạn giao với dữ liệu phân quyền hiện tại</p></div>
-      <nav aria-label="Liên kết nghiệp vụ sản xuất"><Link href="/admin/production/plan">Kế hoạch</Link><Link href="/admin/production/board">Bảng tiến độ</Link><Link href="/admin/production-suppliers">Nhà cung cấp</Link></nav>
-    </div>
+  return <div className={styles.root} data-testid="v9-production-overview" aria-label="Tổng quan sản xuất từ API">
     <div className={styles.metrics}>
-      {data.sections.slice(0,4).map(item=><Link href={item.href} className={styles.metric} key={item.key}><span>{item.label}</span><b>{item.count.toLocaleString("vi-VN")}</b><small>Nhấn để xem danh sách</small></Link>)}
+      {data.sections.slice(0,4).map(item=><Link href={item.href} className={styles.metric} key={item.key}><span>{item.label}</span><b>{item.count.toLocaleString("vi-VN")}</b><small>Mở danh sách công việc</small></Link>)}
     </div>
     <div className={styles.grid}>
       <section className={styles.panel}><h2>Phân bổ công việc sản xuất</h2><p className={styles.caption}>Theo các nhóm việc do Production API cung cấp</p>

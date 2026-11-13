@@ -70,3 +70,69 @@ describe("QC order-scope authorization", () => {
     ] }] });
   });
 });
+
+describe("QC access scope matrix", () => {
+  it("rejects all anonymous order queries even if asked for a known ID", () => {
+    assert.deepEqual(qcOrderScopeWhere(createAnonymousSession(), "read"), { id: "__no_access__" });
+    assert.deepEqual(qcOrderScopeWhere(createAnonymousSession(), "write"), { id: "__no_access__" });
+  });
+  it("does not let QC permission alone bypass orders.view", () => {
+    const noOrderRead = employee([["qc.update", "ALL"]]);
+    assert.equal(qcPermissionStatus(noOrderRead, "write"), 403);
+    assert.deepEqual(qcOrderScopeWhere(noOrderRead, "write"), { id: "__no_access__" });
+  });
+  it("restricts ASSIGNED reads to current employee relations", () => {
+    const worker = employee([["orders.view", "ASSIGNED"]]);
+    assert.deepEqual(qcOrderScopeWhere(worker, "read"), { OR: [
+      { productionOwnerId: "staff-1" },
+      { deliveryOwnerId: "staff-1" },
+      { salesEmployeeId: "staff-1" },
+    ] });
+  });
+  it("prevents a wider qc.update grant from expanding order visibility", () => {
+    const worker = employee([["orders.view", "ASSIGNED"], ["qc.update", "ALL"]]);
+    assert.deepEqual(qcOrderScopeWhere(worker, "write"), { AND: [
+      { OR: [
+        { productionOwnerId: "staff-1" },
+        { deliveryOwnerId: "staff-1" },
+        { salesEmployeeId: "staff-1" },
+      ] },
+      {},
+    ] });
+  });
+  it("rejects legacy delivery QC mutation even when assigned", () => {
+    const legacy: AdminSessionUser = {
+      ...createAnonymousSession(), authenticated: true, mode: "legacy",
+      legacyEmployeeRole: "DELIVERY", employeeId: "delivery-1",
+    };
+    assert.equal(qcPermissionStatus(legacy, "write"), 403);
+    assert.deepEqual(qcOrderScopeWhere(legacy, "write"), { id: "__no_access__" });
+  });
+  it("restricts legacy sales to own orders for reading", () => {
+    const legacy: AdminSessionUser = {
+      ...createAnonymousSession(), authenticated: true, mode: "legacy",
+      legacyEmployeeRole: "SALES", employeeId: "sales-1",
+    };
+    assert.deepEqual(qcOrderScopeWhere(legacy, "read"), { salesEmployeeId: "sales-1" });
+  });
+});
+
+describe("QC evidence routes use the order-scoped authorization gate", () => {
+  it("rejects accidental reintroduction of generic commercial permission stub", async () => {
+    const { readFileSync } = await import("node:fs");
+    const base = "src/app/api/orders/[id]/qc/evidence";
+    for (const route of [`${base}/route.ts`, `${base}/[evidenceId]/route.ts`]) {
+      const contents = readFileSync(route, "utf8");
+      assert.match(contents, /checkQcOrderAccess\(req, id, "write"\)/);
+      assert.doesNotMatch(contents, /requireAdminPermission/);
+    }
+  });
+  it("shares a 404 scoped order query before evidence mutations", async () => {
+    const { readFileSync } = await import("node:fs");
+    const shared = readFileSync("src/features/orders/qc-route-access.ts", "utf8");
+    assert.match(shared, /qcPermissionStatus\(session, action\)/);
+    assert.match(shared, /prisma\.order\.findFirst/);
+    assert.match(shared, /qcOrderScopeWhere\(session, action\)/);
+    assert.match(shared, /status: 404/);
+  });
+});

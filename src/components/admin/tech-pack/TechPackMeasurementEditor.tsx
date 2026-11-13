@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type Clipboar
 import AdminLoadingButton from "@/components/admin/feedback/AdminLoadingButton";
 
 export type MeasurementRow = {
+  serverId?: string;
   clientKey: string;
   pointOfMeasure: string;
   description: string;
@@ -42,6 +43,7 @@ function sortSizes(sizes: string[]): string[] {
 function toRows(items: ServerMeasurement[]): MeasurementRow[] {
   return items.map((m) => ({
     clientKey: m.id,
+    serverId: m.id,
     pointOfMeasure: m.pointOfMeasure,
     description: m.description ?? "",
     baseSize: m.baseSize ?? "",
@@ -63,6 +65,7 @@ type Props = {
   showBaseSize?: boolean;
   emptyText?: string;
   onSave: (rows: Array<{
+    id?: string;
     pointOfMeasure: string;
     description: string | null;
     baseSize: string | null;
@@ -76,6 +79,7 @@ type Props = {
   showSaveButton?: boolean;
   compactToolbar?: boolean;
   onDraftChange?: (rows: Array<{
+    id?: string;
     pointOfMeasure: string;
     description: string | null;
     baseSize: string | null;
@@ -246,6 +250,7 @@ export default function TechPackMeasurementEditor({
     return rows
       .filter((r) => r.pointOfMeasure.trim())
       .map((r, index) => ({
+        id: r.serverId,
         pointOfMeasure: r.pointOfMeasure.trim(),
         description: r.description.trim() || null,
         baseSize: r.baseSize.trim() || null,

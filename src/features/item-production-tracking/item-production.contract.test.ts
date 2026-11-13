@@ -9,7 +9,7 @@ function read(path: string) {
 describe("IA M1 item production tracking contracts", () => {
   it("registers timeline route, nav, breadcrumb, and permissions", () => {
     assert.match(read("src/lib/admin/admin-navigation.ts"), /production-timeline/);
-    assert.match(read("src/lib/admin/admin-navigation.ts"), /Tiến độ sản xuất/);
+    assert.match(read("src/lib/admin/admin-navigation.ts"), /Lịch & tiến độ/);
     assert.match(read("src/lib/admin/admin-breadcrumbs.ts"), /production-timeline/);
     assert.match(read("src/features/auth/admin-permission-catalog.ts"), /manufacturing\.production\.view/);
     assert.match(read("src/features/auth/admin-permission-catalog.ts"), /manufacturing\.production\.update/);

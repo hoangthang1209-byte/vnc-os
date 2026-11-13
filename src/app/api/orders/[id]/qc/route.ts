@@ -7,7 +7,7 @@ import {
 import { ProductionExecutionValidationError } from "@/features/orders/production-quantity";
 import type { QcInspectionStatus } from "@prisma/client";
 import { getAdminSessionFromRequest } from "@/lib/admin-auth/get-admin-session";
-import { can } from "@/features/auth/admin-permissions";
+import { qcPermissionStatus } from "@/features/orders/qc-api-access";
 import { buildScopedOrderWhere } from "@/features/auth/order-scope";
 import { prisma } from "@/lib/prisma";
 import type { AdminSessionUser } from "@/features/auth/admin-session.types";
@@ -34,12 +34,12 @@ async function checkQcAccess(
   access: "read" | "write",
 ): Promise<{ denied: NextResponse } | { session: AdminSessionUser }> {
   const session = getAdminSessionFromRequest(req);
-  if (!session.authenticated) {
-    return { denied: NextResponse.json({ message: "Unauthorized" }, { status: 401 }) };
-  }
-  const requiredPermission = access === "write" ? "qc.update" : "orders.view";
-  if (!can(session, requiredPermission)) {
-    return { denied: NextResponse.json({ message: "Forbidden" }, { status: 403 }) };
+  const deniedStatus = qcPermissionStatus(session, access);
+  if (deniedStatus) {
+    return { denied: NextResponse.json(
+      { message: deniedStatus === 401 ? "Unauthorized" : "Forbidden" },
+      { status: deniedStatus },
+    ) };
   }
   // Even permissioned employees must be scoped to an order they can access.
   const found = await prisma.order.findFirst({

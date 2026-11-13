@@ -105,8 +105,12 @@ def main() -> None:
     })
     agent = result.get("agent", {})
     run = result.get("run", {})
-    if not agent.get("id") or not run.get("id"):
-        raise RuntimeError("Cursor API returned no agent/run id")
+    if (not isinstance(agent, dict) or not isinstance(run, dict)
+            or not isinstance(agent.get("id"), str)
+            or agent["id"] != agent_id
+            or not isinstance(run.get("id"), str)
+            or not run["id"].strip()):
+        raise RuntimeError("Cursor API returned no matching agent/valid run id")
     print(json.dumps({
         "agentId": agent["id"],
         "runId": run["id"],

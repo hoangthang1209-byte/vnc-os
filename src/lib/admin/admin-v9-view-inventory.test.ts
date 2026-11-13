@@ -26,7 +26,7 @@ describe("V9 Final 44-view acceptance inventory", () => {
     for (const view of ADMIN_V9_VIEW_INVENTORY) {
       assert.equal(view.acceptance, "not-verified");
       assert.ok(view.title.trim());
-      if (view.candidateRoute !== null) assert.match(view.candidateRoute, /^\\/admin\\//);
+      if (view.candidateRoute !== null) assert.ok(view.candidateRoute.startsWith("/admin/"));
     }
   });
   it("requires both viewports and production verification", () => {

@@ -7,8 +7,7 @@ import {
 import { ProductionExecutionValidationError } from "@/features/orders/production-quantity";
 import type { QcInspectionStatus } from "@prisma/client";
 import { getAdminSessionFromRequest } from "@/lib/admin-auth/get-admin-session";
-import { qcPermissionStatus } from "@/features/orders/qc-api-access";
-import { buildScopedOrderWhere } from "@/features/auth/order-scope";
+import { qcPermissionStatus, qcOrderScopeWhere } from "@/features/orders/qc-api-access";
 import { prisma } from "@/lib/prisma";
 import type { AdminSessionUser } from "@/features/auth/admin-session.types";
 
@@ -43,7 +42,7 @@ async function checkQcAccess(
   }
   // Even permissioned employees must be scoped to an order they can access.
   const found = await prisma.order.findFirst({
-    where: { AND: [{ id: orderId }, buildScopedOrderWhere(session, "orders.view")] },
+    where: { AND: [{ id: orderId }, qcOrderScopeWhere(session, access)] },
     select: { id: true },
   });
   if (!found) {

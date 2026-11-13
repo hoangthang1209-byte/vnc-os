@@ -35,13 +35,13 @@ function JobRow({job}:{job:ProductionPlanJobRow}) {
 
 /** Lists are scoped and capped by the Production Dashboard API. Never report these as global totals. */
 export default function V9ProductionActionQueue({data}:{data:ProductionDashboardResponse}) {
-  const [mode,setMode] = useState<Mode>("mine");
+  const [mode,setMode] = useState<Mode>(() => data.defaultMine ? "mine" : "deadlines");
   const jobs = mode === "mine" ? data.myJobs : data.upcomingDeadlines;
   const sorted = [...jobs].sort((a,b)=>{
     const rank = (x:ProductionPlanJobRow) => x.riskTone==="red"?0:x.riskTone==="orange"?1:x.riskTone==="yellow"?2:3;
     return rank(a)-rank(b) || (a.internalDeadline??"9999").localeCompare(b.internalDeadline??"9999");
   });
-  return <section className={styles.root} aria-label="Production action queue" data-testid="v9-production-queue">
+  return <section className={styles.root} aria-label="Danh sách công việc cần xử lý" data-testid="v9-production-queue">
     <header className={styles.header}>
       <div><h2>Danh sách công việc cần xử lý</h2><p>Dựa trên công việc được phân quyền; ưu tiên cảnh báo và hạn nội bộ</p></div>
       <Link href="/admin/production/plan" className={styles.openPlan}>Mở kế hoạch sản xuất</Link>

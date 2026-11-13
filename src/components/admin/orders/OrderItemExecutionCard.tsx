@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import type { ProductionStageStatus } from "@prisma/client";
 import type { OrderItemExecutionBundle } from "@/features/orders/production-execution.service";
 import type { ProductionStageRecord } from "@/features/orders/production-stage.service";
@@ -431,13 +432,41 @@ export default function OrderItemExecutionCard({
 
           {showQc && (
           <section className="order-item-execution-card__qc">
-            <h4 className="admin-subtitle">Kiểm tra chất lượng</h4>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+              <h4 className="admin-subtitle">Kiểm tra chất lượng</h4>
+              {!isLegacySharedData && item.orderItemId && (
+                <Link
+                  className="admin-btn admin-btn--secondary admin-btn--small"
+                  href={`/admin/production/jobs/${encodeURIComponent(item.orderItemId)}`}
+                >
+                  Mở công việc sản xuất
+                </Link>
+              )}
+            </div>
             {!qc ? (
               <button type="button" className="admin-btn admin-btn--primary admin-btn--small" onClick={() => void startQc()}>
                 Bắt đầu kiểm tra QC
               </button>
             ) : (
               <div className="admin-form-grid">
+                <div className="admin-field admin-field--full" aria-label="Kết quả QC đã ghi nhận">
+                  <strong>Kết quả QC đã ghi nhận</strong>
+                  <dl style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 12, marginTop: 10 }}>
+                    {([
+                      ["Đã kiểm", qc.inspectedQuantity],
+                      ["Đạt", qc.passedQuantity],
+                      ["Lỗi", qc.defectQuantity],
+                      ["Làm lại", qc.reworkQuantity],
+                      ["Hủy", qc.scrapQuantity],
+                    ] as const).map(([label, value]) => (
+                      <div key={label}>
+                        <dt className="admin-field-hint">{label}</dt>
+                        <dd style={{ margin: "4px 0 0", fontWeight: 700 }}>{value}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                  <p className="admin-field-hint">Số liệu đã lưu; thay đổi bên dưới chỉ có hiệu lực sau khi cập nhật QC.</p>
+                </div>
                 <p className="admin-field-hint">
                   Trạng thái: <strong>{QC_INSPECTION_STATUS_LABELS[qc.status]}</strong>
                   {qc.inspectedAt && ` · ${formatOrderDateTime(qc.inspectedAt)}`}

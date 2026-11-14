@@ -1,5 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
+import { existsSync } from "node:fs";
+import path from "node:path";
 import { ADMIN_V9_VIEW_INVENTORY, ADMIN_V9_ACCEPTANCE_GATE_NAMES } from "./admin-v9-view-inventory";
 
 const groups = {
@@ -29,6 +31,15 @@ describe("V9 Final 44-view acceptance inventory", () => {
       if (view.candidateRoute !== null) assert.ok(view.candidateRoute.startsWith("/admin/"));
     }
   });
+  it("all listed candidate routes exist in the Next.js app tree", () => {
+    for (const view of ADMIN_V9_VIEW_INVENTORY) {
+      if (!view.candidateRoute) continue;
+      const relative = view.candidateRoute.replace(/^\\/admin\\//, "");
+      const pagePath = path.join("src/app/(backend)/admin", relative, "page.tsx");
+      assert.ok(existsSync(pagePath), `Missing candidate Next.js route for ${view.id}: ${pagePath}`);
+    }
+  });
+
   it("requires both viewports and production verification", () => {
     for (const gate of ["authenticated-desktop", "authenticated-mobile", "rbac-role-matrix", "verified-production"]) {
       assert.ok(ADMIN_V9_ACCEPTANCE_GATE_NAMES.includes(gate as (typeof ADMIN_V9_ACCEPTANCE_GATE_NAMES)[number]));

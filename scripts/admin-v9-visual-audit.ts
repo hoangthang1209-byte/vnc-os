@@ -20,8 +20,11 @@ if (!baseUrl || !authFile || !outputDir) {
   throw new Error("V9_BASE_URL, V9_STORAGE_STATE_FILE and V9_OUTPUT_DIR are required; no anonymous or implicit production captures");
 }
 const parsedUrl = new URL(baseUrl);
-if (parsedUrl.protocol !== "https:" || !/^(?:[a-z0-9-]+\\.)*(?:vercel\\.app|vietnamclothing\\.vn)$/.test(parsedUrl.hostname)) {
-  throw new Error("V9_BASE_URL must be a trusted HTTPS VNC OS or Vercel Preview host");
+const trustedHost = parsedUrl.hostname === "os.vietnamclothing.vn" ||
+  (parsedUrl.hostname.startsWith("attd-") &&
+   parsedUrl.hostname.endsWith("-hoangthang1209-3040s-projects.vercel.app"));
+if (parsedUrl.protocol !== "https:" || !trustedHost) {
+  throw new Error("V9_BASE_URL must be the exact VNC OS production host or a VNC project preview hostname");
 }
 if (!existsSync(authFile)) throw new Error("Authorized Playwright session state not found");
 if (resolve(outputDir) === resolve(process.cwd()) || resolve(outputDir).startsWith(resolve(process.cwd()) + "/")) {
@@ -38,6 +41,13 @@ try {
       viewport: { width: vp.width, height: vp.height },
       storageState: authFile,
       serviceWorkers: "block",
+    });
+    await context.route("**/*", route => {
+      const request = route.request();
+      if (request.isNavigationRequest() && new URL(request.url()).hostname !== parsedUrl.hostname) {
+        return route.abort();
+      }
+      return route.continue();
     });
     const page = await context.newPage();
     for (const view of views) {

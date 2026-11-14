@@ -24,7 +24,13 @@ export default function V9CustomerOverview({
   onContact: () => void;
   onActivity: () => void;
 }) {
-  const [section, setSection] = useState<Section>("orders");
+  const [section, setSection] = useState<Section>(() =>
+    overview.capabilities.includeOrders
+      ? "orders"
+      : overview.capabilities.includeQuotes
+        ? "quotes"
+        : "contacts"
+  );
   const { capabilities, kpis } = overview;
   const initials = customer.name.trim().split(/\s+/).slice(0, 2).map((x) => x[0] || "").join("").toUpperCase();
   const primaryContact = customer.contacts?.find((item) => item.isPrimary) || customer.contacts?.[0];

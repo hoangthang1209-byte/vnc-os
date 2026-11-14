@@ -10,6 +10,12 @@ describe("Customer 360 workspace navigation", () => {
     assert.ok(tabs > -1);
     assert.ok(overview > tabs, "overview must be after the workspace navigation");
   });
+  it("selects a visible initial commercial tab for limited permissions", () => {
+    const overview = readFileSync("src/components/admin/crm/V9CustomerOverview.tsx", "utf8");
+    assert.ok(overview.includes('overview.capabilities.includeOrders'));
+    assert.ok(overview.includes('overview.capabilities.includeQuotes'));
+    assert.match(overview, /: "contacts"/);
+  });
   it("preserves existing contacts, profile, advanced sections and save workflow", () => {
     for (const hook of ['setActiveV9Tab("profile")', 'setActiveV9Tab("contacts")', 'setActiveV9Tab("activity")', 'async function saveCustomer()', 'CustomerAccountWorkspace overview={overview}']) {
       assert.ok(content.includes(hook), `missing existing behavior ${hook}`);

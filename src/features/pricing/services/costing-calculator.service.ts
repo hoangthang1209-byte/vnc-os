@@ -422,6 +422,19 @@ export async function updateCostingCalculation(
     marginRate = commercials.marginRate;
   }
 
+  const vatAmount = roundMoney((revenue * result.vatRate) / 100);
+  const finalQuotePrice = roundMoney(revenue + vatAmount);
+  const updatedSnapshot = {
+    ...costingSnapshot,
+    effectiveSellingPricePerUnit: unitPrice,
+    effectiveRevenueBeforeVat: revenue,
+    effectiveGrossProfit: profit,
+    effectiveMarginRate: marginRate,
+    effectiveVatAmount: vatAmount,
+    effectiveFinalQuotePrice: finalQuotePrice,
+    sellingPriceManuallyOverridden: useManualSell,
+  };
+
   await prisma.$transaction(async (tx) => {
     await tx.pricingCalculationItem.update({
       where: { id: calcItem.id },
@@ -439,7 +452,7 @@ export async function updateCostingCalculation(
         costEstimate: result.totalCost,
         marginAmount: profit,
         marginRate,
-        pricingSnapshot: costingSnapshot as unknown as Prisma.InputJsonValue,
+        pricingSnapshot: updatedSnapshot as unknown as Prisma.InputJsonValue,
         manualOverride: calcItem.manualOverride,
         manualUnitPrice: calcItem.manualUnitPrice,
         manualOverrideReason: calcItem.manualOverrideReason,
@@ -450,11 +463,15 @@ export async function updateCostingCalculation(
       where: { id: calculationId },
       data: {
         subtotal: revenue,
-        totalAmount: result.finalQuotePrice,
+        vatRate: result.vatRate,
+        vatAmount,
+        totalAmount: calc.manualOverride && calc.manualTotalAmount != null
+          ? calc.manualTotalAmount
+          : finalQuotePrice,
         manualOverride: calc.manualOverride,
         manualTotalAmount: calc.manualTotalAmount,
         inputSnapshot: { calculator: "costing", ...input } as Prisma.InputJsonValue,
-        resultSnapshot: { calculator: "costing", ...costingSnapshot } as unknown as Prisma.InputJsonValue,
+        resultSnapshot: { calculator: "costing", ...updatedSnapshot } as unknown as Prisma.InputJsonValue,
       },
     });
   });

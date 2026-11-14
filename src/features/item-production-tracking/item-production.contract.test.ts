@@ -9,7 +9,7 @@ function read(path: string) {
 describe("IA M1 item production tracking contracts", () => {
   it("registers timeline route, nav, breadcrumb, and permissions", () => {
     assert.match(read("src/lib/admin/admin-navigation.ts"), /production-timeline/);
-    assert.match(read("src/lib/admin/admin-navigation.ts"), /Tiến độ sản xuất/);
+    assert.match(read("src/lib/admin/admin-navigation.ts"), /Lịch & tiến độ/);
     assert.match(read("src/lib/admin/admin-breadcrumbs.ts"), /production-timeline/);
     assert.match(read("src/features/auth/admin-permission-catalog.ts"), /manufacturing\.production\.view/);
     assert.match(read("src/features/auth/admin-permission-catalog.ts"), /manufacturing\.production\.update/);
@@ -33,7 +33,7 @@ describe("IA M1 item production tracking contracts", () => {
 
   it("timeline page uses AdminPageTitle without local h1", () => {
     const page = read("src/app/(backend)/admin/manufacturing/production-timeline/page.tsx");
-    assert.match(page, /AdminPageTitle title="Tiến độ sản xuất"/);
+    assert.match(page, /AdminPageTitle title="Lịch & tiến độ"/);
     assert.doesNotMatch(page, /<h1\b/);
     assert.match(
       read("src/components/admin/item-production/ItemProductionTimelineManager.tsx"),

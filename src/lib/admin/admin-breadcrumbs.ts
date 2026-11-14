@@ -373,8 +373,8 @@ const breadcrumbRules: AdminBreadcrumbRule[] = [
   {
     path: "/admin/manufacturing/production-timeline",
     meta: {
-      breadcrumbs: ["SẢN XUẤT", "Tiến độ sản xuất"],
-      title: "Tiến độ sản xuất",
+      breadcrumbs: ["SẢN XUẤT", "Lịch & tiến độ"],
+      title: "Lịch & tiến độ",
       description: "Theo dõi tiến độ sản xuất theo từng item đơn hàng, công đoạn và rủi ro giao hàng.",
     },
   },

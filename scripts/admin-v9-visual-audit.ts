@@ -11,6 +11,7 @@ import { existsSync } from "node:fs";
 import { resolve, join } from "node:path";
 import { ADMIN_V9_VIEW_INVENTORY } from "../src/lib/admin/admin-v9-view-inventory";
 
+async function main() {
 const baseUrl = process.env.V9_BASE_URL;
 const authFile = process.env.V9_STORAGE_STATE_FILE;
 const outputDir = process.env.V9_OUTPUT_DIR;
@@ -23,7 +24,7 @@ if (parsedUrl.protocol !== "https:" || !/^(?:[a-z0-9-]+\\.)*(?:vercel\\.app|viet
   throw new Error("V9_BASE_URL must be a trusted HTTPS VNC OS or Vercel Preview host");
 }
 if (!existsSync(authFile)) throw new Error("Authorized Playwright session state not found");
-if (resolve(outputDir).startsWith(resolve(process.cwd()) + "/")) {
+if (resolve(outputDir) === resolve(process.cwd()) || resolve(outputDir).startsWith(resolve(process.cwd()) + "/")) {
   throw new Error("Capture directory must be outside the repo to avoid committing private client data");
 }
 const views = ADMIN_V9_VIEW_INVENTORY.filter(v => v.candidateRoute);
@@ -65,3 +66,7 @@ await writeFile(join(outputDir, "report.json"), JSON.stringify({
   results: output,
 }, null, 2), { mode: 0o600 });
 if (output.some(x => x.result !== "captured-not-yet-accepted")) process.exitCode = 1;
+
+}
+
+void main().catch(error => { console.error(error); process.exitCode = 1; });

@@ -89,18 +89,31 @@ export default function MultisiteStudio(){
     setNotice(isEdit?"New DRAFT revision saved for "+site+". It is not published.":"Draft created for "+site+". It is not published.");
     await refresh(site);
   }catch(e){setError(e instanceof Error?e.message:"Unable to save draft");}finally{setLoading(false);}};
-  return <main style={{maxWidth:1150,margin:"0 auto",padding:"38px 22px",fontFamily:"system-ui,sans-serif",color:"#1c302b"}}>
-    <p style={{fontSize:12,letterSpacing:".12em",fontWeight:800}}>VNC OS / MULTISITE CONTENT STUDIO</p>
-    <h1 style={{fontSize:"clamp(28px,4vw,48px)",margin:"10px 0"}}>One CMS. Two independent brands.</h1>
-    <p>Manage drafts, request independent review, approve with separate CMS permission, and publish approved revisions. Content remains site-scoped; public integration and migration require separate release checks.</p>
-    <label style={{display:"block",fontWeight:700,margin:"24px 0 12px"}}>Website
+  const publishedCount=pages.filter(p=>Boolean(p.publishedRevisionId)).length;
+  const draftCount=pages.length-publishedCount;
+  return <main style={{maxWidth:1440,margin:"0 auto",padding:"clamp(16px,2.5vw,32px)",fontFamily:"var(--font-geist-sans),Inter,system-ui,sans-serif",color:"#182c38",minWidth:0}}>
+    <nav aria-label="Breadcrumb" style={{fontSize:12,color:"#71808a",marginBottom:13}}>VNC OS <span aria-hidden="true"> / </span> Marketing & CMS <span aria-hidden="true"> / </span> Content Studio</nav>
+    <header style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:16,flexWrap:"wrap",marginBottom:22}}>
+      <div><p style={{fontSize:11,letterSpacing:".12em",fontWeight:750,color:"#74838c",margin:"0 0 8px"}}>ADMIN V9 · CONTENT OPERATIONS</p>
+      <h1 style={{fontSize:"clamp(25px,3vw,35px)",fontWeight:760,letterSpacing:"-.035em",lineHeight:1.18,margin:"0 0 7px"}}>Content Studio</h1>
+      <p style={{margin:0,color:"#647480",fontSize:13,maxWidth:750,lineHeight:1.6}}>Quản lý nội dung đa website từ một không gian làm việc. Mọi thay đổi đều qua Draft → Review → Approval trước khi Publish.</p></div>
+      <div style={{display:"flex",alignItems:"center",gap:8,background:"#fff",border:"1px solid #e1e7eb",borderRadius:11,padding:"9px 13px",fontSize:12,fontWeight:650,color:"#476576"}}><span aria-hidden="true" style={{height:8,width:8,background:"#c79536",borderRadius:99}}/> Staging · Approval required</div>
+    </header>
+    <section aria-label="CMS overview" style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(170px,1fr))",gap:12,marginBottom:18}}>
+      {([{label:"Pages in selected site",value:pages.length,helper:"Site-scoped records"},{label:"Not yet published",value:draftCount,helper:"Requires review"},{label:"Published pages",value:publishedCount,helper:"Published revision present"},{label:"Active workspace",value:site==="attd.vn"?"ATTD":"VNC",helper:"Isolated per website"}] as const).map(k=><div key={k.label} style={{background:"#fff",border:"1px solid #e0e7eb",borderRadius:13,padding:"16px 18px",minWidth:0}}><div style={{fontSize:12,color:"#647480",marginBottom:10}}>{k.label}</div><div style={{fontSize:25,fontWeight:770,letterSpacing:"-.04em"}}>{k.value}</div><div style={{fontSize:11,color:"#8a98a0",marginTop:5}}>{k.helper}</div></div>)}
+    </section>
+    <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:12,margin:"18px 0 16px",padding:"13px 16px",background:"#eef3f5",border:"1px solid #dfe8ed",borderRadius:12}}>
+      <div><strong style={{fontSize:13}}>Publishing governance</strong><div style={{fontSize:12,color:"#62747f",marginTop:4}}>Bản nháp không được hiển thị công khai; quyền duyệt độc lập và quyền hình ảnh phải được xác minh.</div></div>
+      <span style={{fontSize:11,fontWeight:750,color:"#496471",background:"#fff",padding:"6px 10px",borderRadius:8}}>DRAFT → REVIEW → APPROVE → PUBLISH</span>
+    </div>
+    <label style={{display:"block",fontSize:13,fontWeight:700,margin:"14px 0 14px"}}>Website workspace
       <select value={site} onChange={e=>{setSite(e.target.value as SiteId);setTitle("");setSlug("/");setBlocks([{type:"hero",data:{headline:"",subtitle:""}}]);setEditing(null);setNotice("");setError("");}} style={field}>
         {sites.map(s=><option key={s.id} value={s.id}>{s.name} · {s.locale}</option>)}
       </select>
     </label>
-    <div style={{display:"grid",gridTemplateColumns:"minmax(0,1fr) minmax(0,1.5fr)",gap:22}}>
-      <section style={panel}><h2>Draft inventory</h2>{loading?<p>Loading…</p>:pages.length?pages.map(p=><div key={p.id} style={{padding:"12px 0",borderBottom:"1px solid #dce3dc"}}><strong>{p.title}</strong><div style={{fontSize:13}}>{p.slug} · {p.publishedRevisionId?"Published revision exists":"DRAFT / NOT PUBLISHED"}</div><button type="button" disabled={loading} onClick={()=>void edit(p)} style={{...button,marginTop:8}}>Edit draft</button></div>):<p>No pages yet for {site}. Start with a demo draft.</p>}<p style={{fontSize:12,color:"#65766e"}}>This list is filtered by the selected site ID on the server.</p></section>
-      <section style={panel}><h2>{editing?"Edit page draft":"New page draft"}</h2>{editing?<button type="button" onClick={()=>{setSelectedRevision(null);setEditing(null);setSlug("/");setTitle("");setBlocks([{type:"hero",data:{headline:"",subtitle:""}}]);setNotice("");}} style={button}>Create another page</button>:null}<button type="button" onClick={seed} style={button}>Load demo content for this site</button>
+    <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(min(100%,350px),1fr))",gap:14}}>
+      <section style={panel}><h2 style={{margin:"0 0 8px",fontSize:17}}>Pages & revisions</h2>{loading?<p>Loading…</p>:pages.length?pages.map(p=><div key={p.id} style={{padding:"12px 0",borderBottom:"1px solid #dce3dc"}}><strong>{p.title}</strong><div style={{fontSize:13}}>{p.slug} · {p.publishedRevisionId?"Published revision exists":"DRAFT / NOT PUBLISHED"}</div><button type="button" disabled={loading} onClick={()=>void edit(p)} style={{...button,marginTop:8}}>Edit draft</button></div>):<p>No pages yet for {site}. Start with a demo draft.</p>}<p style={{fontSize:12,color:"#65766e"}}>This list is filtered by the selected site ID on the server.</p></section>
+      <section style={panel}><h2 style={{margin:"0 0 8px",fontSize:17}}>{editing?"Edit page draft":"New page draft"}</h2>{editing?<button type="button" onClick={()=>{setSelectedRevision(null);setEditing(null);setSlug("/");setTitle("");setBlocks([{type:"hero",data:{headline:"",subtitle:""}}]);setNotice("");}} style={button}>Create another page</button>:null}<button type="button" onClick={seed} style={button}>Load demo content for this site</button>
         <label style={label}>Page path<input value={slug} disabled={Boolean(editing)} onChange={e=>setSlug(e.target.value)} style={field} placeholder="/category-page"/></label>
         <label style={label}>Page title<input value={title} onChange={e=>setTitle(e.target.value)} style={field}/></label>
         {blocks.map((block,index)=><div key={index} style={{border:"1px solid #ced8ce",borderRadius:9,padding:14,marginTop:14}}>
@@ -117,7 +130,7 @@ export default function MultisiteStudio(){
     {site==="vietnamclothing.vn"?<StudioProductEditor />:null}
   </main>;
 }
-const panel:React.CSSProperties={padding:22,border:"1px solid #d2dcd4",borderRadius:12,background:"#f9faf7"};
-const field:React.CSSProperties={width:"100%",display:"block",padding:12,marginTop:6,border:"1px solid #bac6bc",borderRadius:8,font:"inherit",background:"#fff"};
+const panel:React.CSSProperties={padding:"clamp(16px,2vw,24px)",border:"1px solid #e0e7eb",borderRadius:14,background:"#fff",boxShadow:"0 2px 12px rgba(15,39,60,.025)",minWidth:0};
+const field:React.CSSProperties={width:"100%",display:"block",padding:11,marginTop:6,border:"1px solid #cdd8dd",borderRadius:9,font:"inherit",fontSize:13,background:"#fff",color:"#233a46"};
 const label:React.CSSProperties={display:"block",fontWeight:650,marginTop:13,fontSize:14};
-const button:React.CSSProperties={padding:"10px 14px",border:"1px solid #b7c5ba",borderRadius:8,cursor:"pointer",fontWeight:700,background:"#e7eee5",color:"#163a2c"};
+const button:React.CSSProperties={padding:"10px 13px",border:"1px solid #d5e0e5",borderRadius:9,cursor:"pointer",fontSize:12,fontWeight:700,background:"#f4f7f8",color:"#294557"};

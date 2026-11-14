@@ -13,7 +13,7 @@ type Page = {id:string;slug:string;title:string;publishedRevisionId:string|null}
 const init:ProductFields={slug:"",category:"apparel",categoryId:"APP-01",title:"",summary:"",description:"",titleVi:"",summaryVi:"",descriptionVi:"",imageMediaAssetId:"",imageUrl:"",imageAlt:"",publicApproved:false,mediaRightsApproved:false};
 const categories=["entertainment","promotional","corporate","sourcing","apparel"];
 const path="/api/admin/content-studio/pages";
-const style:React.CSSProperties={width:"100%",padding:10,border:"1px solid #becbc0",borderRadius:7,marginTop:5};
+const style:React.CSSProperties={width:"100%",padding:11,border:"1px solid #cfdae0",borderRadius:9,marginTop:6,background:"#fff",color:"#273e49",fontSize:13};
 export default function StudioProductEditor(){
  const [value,setValue]=useState<ProductFields>(init);
  const [pages,setPages]=useState<Page[]>([]);
@@ -80,9 +80,20 @@ export default function StudioProductEditor(){
   }catch(e){setError(e instanceof Error?e.message:"Action failed");}finally{setBusy(false);}
  };
  const field=(key:keyof ProductFields,label:string,long=false)=><label style={{display:"block",fontSize:13,fontWeight:600,marginBottom:10}}>{label}{long?<textarea rows={3} style={style} value={String(value[key])} onChange={e=>update(key,e.target.value)}/>:<input style={style} value={String(value[key])} disabled={key==="slug"&&!!pageId} onChange={e=>update(key,e.target.value)}/>}</label>;
- return <section style={{border:"1px solid #d5dfd8",borderRadius:12,padding:20,marginTop:26,background:"#fff"}}>
-  <h2>Product Publishing · VietnamClothing.vn (EN/VN)</h2>
-  <p style={{fontSize:13}}>Products are site-scoped Content Studio revisions. Do not attest image rights without verifying the original asset and permission to publish.</p>
+ return <section aria-label="VNC Product Management" style={{border:"1px solid #e0e7eb",borderRadius:14,padding:"clamp(16px,2.5vw,26px)",marginTop:18,background:"#fff",boxShadow:"0 2px 12px rgba(15,39,60,.025)",minWidth:0}}>
+  <header style={{display:"flex",gap:12,alignItems:"flex-start",justifyContent:"space-between",flexWrap:"wrap",marginBottom:18}}>
+    <div><p style={{fontSize:11,letterSpacing:".11em",color:"#758792",fontWeight:750,margin:"0 0 7px"}}>PRODUCT CATALOG · VNC OS ADMIN V9</p>
+      <h2 style={{fontSize:22,letterSpacing:"-.025em",margin:"0 0 6px"}}>Product Management</h2>
+      <p style={{fontSize:13,color:"#60727d",margin:0,lineHeight:1.5}}>Bilingual product records · 10 parent / 66 subcategories · source evidence & publication rights</p></div>
+    <div style={{fontSize:11,fontWeight:750,color:"#5e6877",background:"#eef3f6",padding:"8px 12px",borderRadius:9}}>EN / VN · Review-gated</div>
+  </header>
+  <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(155px,1fr))",gap:10,marginBottom:20}}>
+    <div style={{padding:"13px 15px",border:"1px solid #e2e9ed",borderRadius:11,background:"#fbfcfd"}}><div style={{fontSize:11,color:"#697d88"}}>Existing records</div><strong style={{fontSize:23}}>{pages.length}</strong></div>
+    <div style={{padding:"13px 15px",border:"1px solid #e2e9ed",borderRadius:11,background:"#fbfcfd"}}><div style={{fontSize:11,color:"#697d88"}}>V1 product concepts</div><strong style={{fontSize:23}}>{VNC_PRODUCT_IDEAS_V1.length}</strong></div>
+    <div style={{padding:"13px 15px",border:"1px solid #e2e9ed",borderRadius:11,background:"#fbfcfd"}}><div style={{fontSize:11,color:"#697d88"}}>Verified media available</div><strong style={{fontSize:23}}>{approvedAssets.length}</strong></div>
+    <div style={{padding:"13px 15px",border:"1px solid #e2e9ed",borderRadius:11,background:"#fbfcfd"}}><div style={{fontSize:11,color:"#697d88"}}>Current revision</div><strong style={{fontSize:17}}>{revision?.status||"Not selected"}</strong></div>
+  </div>
+  <p style={{fontSize:12,color:"#6f7d89",margin:"0 0 18px"}}>Only independently approved, rights-cleared revisions may be published. Existing Draft data is never published automatically.</p>
   {!pageId?<label style={{fontSize:13,fontWeight:600,display:"block",marginBottom:12}}>VNC V1 product ideas — unapproved intake
    <select style={style} defaultValue="" onChange={e=>loadConcept(e.target.value)}><option value="">Choose one of 55 draft concepts</option>{VNC_PRODUCT_IDEAS_V1.map(p=><option key={p.id} value={p.id}>{p.id} · {p.nameVi} · {p.priority}</option>)}</select>
   </label>:null}
@@ -91,7 +102,7 @@ export default function StudioProductEditor(){
     <option value="">Create a new product</option>{pages.map(p=><option key={p.id} value={p.id}>{p.title} · {p.slug}</option>)}
    </select>
   </label>
-  <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(260px,1fr))",gap:20,marginTop:20}}>
+  <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(min(100%,280px),1fr))",gap:20,marginTop:20}}>
     <div><h3>English</h3>{field("slug","Product slug")}{field("title","Product name")}{field("summary","Short description",true)}{field("description","Detailed description",true)}</div>
     <div><h3>Tiếng Việt</h3>{field("titleVi","Tên sản phẩm")}{field("summaryVi","Mô tả ngắn",true)}{field("descriptionVi","Mô tả chi tiết",true)}
       <label style={{fontSize:13,fontWeight:600}}>Category<select style={style} value={value.category} onChange={e=>update("category",e.target.value)}>{categories.map(c=><option key={c}>{c}</option>)}</select></label>
@@ -104,7 +115,7 @@ export default function StudioProductEditor(){
     </select>
   </label>
   {approvedAssets.length===0?<p role="status" style={{fontSize:12,color:"#925c25"}}>No Media Library images have verified public-use rights yet; this blocks product approval and publish.</p>:null}
-  <p style={{fontSize:12}}>Use only verified HTTPS media URLs from your approved media collection. Direct Media Library picker is not integrated yet.</p>
+  <p style={{fontSize:12,color:"#687a86"}}>Choose an approved Media Library asset. Direct arbitrary media URLs cannot satisfy the publish gate.</p>
   <p style={{fontSize:12}}>Asset URL: {value.imageUrl||"None"}</p>{field("imageAlt","Image alt text")}
   <label style={{display:"block",marginTop:10}}><input type="checkbox" checked={value.mediaRightsApproved} onChange={e=>update("mediaRightsApproved",e.target.checked)}/> Media source and publication rights verified</label>
   <label style={{display:"block",marginTop:8}}><input type="checkbox" checked={value.publicApproved} onChange={e=>update("publicApproved",e.target.checked)}/> Product facts and public listing approved for review</label>

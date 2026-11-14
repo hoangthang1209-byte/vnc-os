@@ -117,6 +117,16 @@ describe("QC access scope matrix", () => {
   });
 });
 
+describe("QC main route shares the evidence authorization gate", () => {
+  it("uses one access helper for GET, POST and PATCH", async () => {
+    const { readFileSync } = await import("node:fs");
+    const contents = readFileSync("src/app/api/orders/[id]/qc/route.ts", "utf8");
+    assert.match(contents, /import \{ checkQcOrderAccess \} from/);
+    assert.equal((contents.match(/checkQcOrderAccess\(req, id, /g) ?? []).length, 3);
+    assert.doesNotMatch(contents, /function checkQcAccess\(/);
+  });
+});
+
 describe("QC evidence routes use the order-scoped authorization gate", () => {
   it("rejects accidental reintroduction of generic commercial permission stub", async () => {
     const { readFileSync } = await import("node:fs");

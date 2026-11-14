@@ -4,7 +4,7 @@ import { randomUUID } from "node:crypto";
 import { prisma } from "@/lib/prisma";
 import { createProductPriceTier } from "@/features/pricing/services/product-tier.service";
 import { calculatePricing } from "@/features/pricing/services/pricing-engine.service";
-import { saveCostingCalculation } from "@/features/pricing/services/costing-calculator.service";
+import { saveCostingCalculation, updateCostingCalculation } from "@/features/pricing/services/costing-calculator.service";
 
 const s = randomUUID().slice(0, 8);
 let categoryId = "";
@@ -144,4 +144,44 @@ describe("Pricing P1 service integration", () => {
     assert.equal(snapshot?.quantityBreaks?.[0]?.quantity, 100);
     assert.notEqual(snapshot?.quantityBreaks?.[0]?.totalCostPerUnit, 999999999);
   });
+  it("keeps costing totals and VAT consistent after manual selling price and cost edits", async () => {
+    const original = await saveCostingCalculation({
+      customProductName: `Manual pricing ${s}`,
+      quantity: 10,
+      fabricCostPerUnit: 50000,
+      overheadRate: 0,
+      targetMarginRate: 30,
+      vatRate: 8,
+    });
+    calculationIds.push(original.calculationId);
+    const item = await prisma.pricingCalculationItem.findFirstOrThrow({
+      where: { pricingCalculationId: original.calculationId },
+    });
+    await prisma.pricingCalculationItem.update({
+      where: { id: item.id },
+      data: { manualOverride: true, manualUnitPrice: 100000, manualOverrideReason: "Approved by sales" },
+    });
+
+    await updateCostingCalculation(original.calculationId, {
+      customProductName: `Manual pricing ${s}`,
+      quantity: 10,
+      fabricCostPerUnit: 60000,
+      overheadRate: 0,
+      targetMarginRate: 30,
+      vatRate: 8,
+    });
+    const updated = await prisma.pricingCalculation.findUniqueOrThrow({
+      where: { id: original.calculationId },
+      include: { items: true },
+    });
+    assert.equal(updated.subtotal.toNumber(), 1000000);
+    assert.equal(updated.vatAmount.toNumber(), 80000);
+    assert.equal(updated.totalAmount.toNumber(), 1080000);
+    assert.equal(updated.items[0]?.unitPrice.toNumber(), 100000);
+    assert.equal(updated.items[0]?.marginAmount?.toNumber(), 400000);
+    const snapshot = updated.resultSnapshot as { effectiveFinalQuotePrice?: number; effectiveMarginRate?: number };
+    assert.equal(snapshot.effectiveFinalQuotePrice, 1080000);
+    assert.equal(snapshot.effectiveMarginRate, 40);
+  });
+
 });

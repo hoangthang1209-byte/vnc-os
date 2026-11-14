@@ -34,7 +34,7 @@ describe("V9 Final 44-view acceptance inventory", () => {
   it("all listed candidate routes exist in the Next.js app tree", () => {
     for (const view of ADMIN_V9_VIEW_INVENTORY) {
       if (!view.candidateRoute) continue;
-      const relative = view.candidateRoute.replace(/^\\/admin\\//, "");
+      const relative = view.candidateRoute.slice("/admin/".length);
       const pagePath = path.join("src/app/(backend)/admin", relative, "page.tsx");
       assert.ok(existsSync(pagePath), `Missing candidate Next.js route for ${view.id}: ${pagePath}`);
     }

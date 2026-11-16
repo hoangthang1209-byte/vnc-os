@@ -60,6 +60,7 @@ export default function CustomInvoiceManager(){
  const [extraCharge,setExtraCharge]=useState("0");
  const [tax,setTax]=useState("0");
  const [pdfId,setPdfId]=useState("");
+ const [editingDraftId,setEditingDraftId]=useState("");
  const [issued,setIssued]=useState(false);
  const [invoices,setInvoices]=useState<SavedInvoice[]>([]);
  const [message,setMessage]=useState("");
@@ -107,10 +108,39 @@ export default function CustomInvoiceManager(){
   if(swift.trim()&&!/^[A-Za-z]{6}[A-Za-z0-9]{2}([A-Za-z0-9]{3})?$/.test(swift.trim())){setMessage("SWIFT/BIC gồm 8 hoặc 11 ký tự, khác với số tài khoản. Nếu không có hãy để trống.");return;}
   setBusy(true);setMessage("Đang lưu bản nháp...");
   try{
-   const r=await fetch("/api/admin/documents/invoices",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({preparedByEmployeeId:preparedByEmployeeId||null,customerId:customerId||null,orderId:orderId||null,legalEntityId:legalEntityId||null,bankAccountId:bankAccountId||null,recipientName,recipientAddress,recipientEmail,recipientCcEmails,issuerName,issuerAddress,issuerTaxId,currency,issueDate,dueDate,lines,beneficiary,bank,bankAccount,accountAddress,bankAddress,branch,swift,notes,discount,extraCharge,tax})});
+   const r=await fetch(editingDraftId?"/api/admin/documents/invoices/"+encodeURIComponent(editingDraftId):"/api/admin/documents/invoices",{method:editingDraftId?"PATCH":"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({preparedByEmployeeId:preparedByEmployeeId||null,customerId:customerId||null,orderId:orderId||null,legalEntityId:legalEntityId||null,bankAccountId:bankAccountId||null,recipientName,recipientAddress,recipientEmail,recipientCcEmails,issuerName,issuerAddress,issuerTaxId,currency,issueDate,dueDate,lines,beneficiary,bank,bankAccount,accountAddress,bankAddress,branch,swift,notes,discount,extraCharge,tax})});
    const data=await r.json();if(!r.ok)throw new Error(data.error||"Không thể lưu bản nháp");
-   setInvoiceNo(data.invoiceNo);setPdfId(data.id);setIssued(false);setMessage("Đã lưu bản nháp "+data.invoiceNo+".");await refresh();
+   setInvoiceNo(data.invoiceNo);setPdfId(data.id);setEditingDraftId(data.id);setIssued(false);setMessage("Đã lưu bản nháp "+data.invoiceNo+".");await refresh();
   }catch(error){setMessage(error instanceof Error?error.message:"Lưu không thành công");}
+  finally{setBusy(false);}
+ }
+ async function duplicateInvoice(id:string){
+  if(busy)return;
+  setBusy(true);setMessage("Đang nhân bản Invoice...");
+  try{
+   const response=await fetch("/api/admin/documents/invoices/"+encodeURIComponent(id)+"/duplicate",{method:"POST"});
+   const data=await response.json();
+   if(!response.ok)throw new Error(data.error||"Không thể nhân bản Invoice.");
+   const v=data.invoice;
+   setInvoiceNo(data.invoiceNo);setEditingDraftId(data.id);setPdfId(data.id);setIssued(false);
+   setRecipientName(v.recipientName);setRecipientAddress(v.recipientAddress);
+   setRecipientEmail(v.recipientEmail);setRecipientCcEmails(v.recipientCcEmails);
+   setCustomerId(v.customerId);setOrderId(v.orderId);
+   setPreparedByName(v.preparedByName);setPreparedByEmployeeId(v.preparedByEmployeeId);
+   setAssignedFromOrder(Boolean(v.orderId&&v.preparedByName));
+   setLegalEntityId(v.legalEntityId);setBankAccountId(v.bankAccountId);
+   setIssuerName(v.issuerName);setIssuerAddress(v.issuerAddress);setIssuerTaxId(v.issuerTaxId);
+   setBeneficiary(v.beneficiary);setBank(v.bank);setBankAccount(v.bankAccount);
+   setAccountAddress(v.accountAddress);setBankAddress(v.bankAddress);setBranch(v.branch);setSwift(v.swift);
+   setCurrency(v.currency);setIssueDate(v.issueDate);setDueDate(v.dueDate);
+   setLines(v.lines);setDiscount(v.adjustments?.discount??"0");
+   setExtraCharge(v.adjustments?.extraCharge??"0");setTax(v.adjustments?.tax??"0");
+   setNotes(v.notes);
+   setSendAfterIssue(false);
+   await refresh();
+   window.scrollTo({top:0,behavior:"smooth"});
+   setMessage("Đã nhân bản "+data.sourceInvoiceNo+" thành bản nháp "+data.invoiceNo+". Chỉnh sửa và bấm Lưu bản nháp trước khi phát hành.");
+  }catch(error){setMessage(error instanceof Error?error.message:"Không thể nhân bản Invoice.");}
   finally{setBusy(false);}
  }
  async function loadDelivery(id:string){
@@ -256,7 +286,7 @@ export default function CustomInvoiceManager(){
      </div></div>
     </div>
     <div className={s.actions}>
-     <button className={s.primary} type="button" disabled={busy||!permissions.canCreateCustomInvoice} onClick={()=>void save()}>{busy?"Đang xử lý...":"Lưu bản nháp"}</button>
+     <button className={s.primary} type="button" disabled={busy||!permissions.canCreateCustomInvoice} onClick={()=>void save()}>{busy?"Đang xử lý...":editingDraftId?"Lưu thay đổi bản nháp":"Lưu bản nháp"}</button>
      {pdfId&&!issued&&permissions.canIssueCustomInvoice&&<label className={s.invoiceEmailToggle}><input type="checkbox" checked={sendAfterIssue} onChange={e=>setSendAfterIssue(e.target.checked)} disabled={busy||!emailServiceReady}/> Gửi PDF cho khách ngay sau phát hành{!emailServiceReady?" (chưa cấu hình email)":""}</label>}
      {pdfId&&!issued&&permissions.canIssueCustomInvoice&&<button className={s.secondary} type="button" disabled={busy} onClick={()=>void issue(pdfId)}>{sendAfterIssue?"Phát hành & gửi email (To + CC)":"Phát hành Invoice"}</button>}
      {pdfId&&issued&&<a className={s.secondary} href={"/api/admin/documents/invoices/"+encodeURIComponent(pdfId)+"/pdf"}>Tải PDF</a>}
@@ -320,6 +350,7 @@ export default function CustomInvoiceManager(){
       </div>
       <div className={s.listActions}>
        <span className={inv.status==="ISSUED"?s.state+" "+s.stateIssued:s.state}>{inv.status==="ISSUED"?"Đã phát hành":"Bản nháp"}</span>
+       {permissions.canCreateCustomInvoice&&<button type="button" className={s.link} disabled={busy} onClick={()=>void duplicateInvoice(inv.id)}>Nhân bản</button>}
        {inv.status==="DRAFT"&&<a className={s.link} href={"/api/admin/documents/invoices/"+encodeURIComponent(inv.id)+"/draft-pdf"}>Tải bản nháp</a>}{inv.status==="DRAFT"&&permissions.canIssueCustomInvoice&&<button type="button" className={s.link} onClick={()=>void issue(inv.id,false)}>Phát hành</button>}
        {inv.status==="ISSUED"&&<a className={s.link} href={"/api/admin/documents/invoices/"+encodeURIComponent(inv.id)+"/pdf"}>Tải PDF</a>}
        {inv.status==="ISSUED"&&permissions.canIssueCustomInvoice&&<button type="button" className={s.link} disabled={busy||!emailServiceReady} onClick={()=>void retryEmail(inv.id)}>{inv.emailedAt?"Gửi lại email":"Gửi email"}</button>}

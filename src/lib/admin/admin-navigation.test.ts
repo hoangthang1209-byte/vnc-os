@@ -50,6 +50,19 @@ describe("VNC OS V9 navigation contract (#294)", () => {
     );
   });
 
+  it("separates production operations from scheduling without duplicate destinations", () => {
+    const operations = adminNavigationSections.find((section) => section.label === "ORDERS & OPERATIONS");
+    assert.ok(operations);
+    const nav = operations.platforms.flatMap((platform) => platform.items);
+    const production = nav.find((item) => item.href === "/admin/production");
+    const timeline = nav.find((item) => item.href === "/admin/manufacturing/production-timeline");
+    assert.equal(production?.label, "Điều hành sản xuất");
+    assert.equal(timeline?.label, "Lịch & tiến độ");
+    assert.equal(production?.requiredPermissions?.[0], "canViewProduction");
+    assert.equal(timeline?.requiredPermissions?.[0], "canViewProduction");
+    assert.ok(nav.indexOf(production!) < nav.indexOf(timeline!));
+  });
+
   it("exposes no dead routes or placeholder links", () => {
     for (const item of items()) {
       assert.equal(item.status, "active");

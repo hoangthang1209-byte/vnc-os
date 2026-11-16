@@ -55,8 +55,9 @@ export const adminNavigationSections: AdminNavigationSection[] = [
     { label:"Đơn hàng", href:"/admin/orders", status:"active", requiredPermissions:["canViewOrders"] },
     { label:"Tạo đơn nhanh", href:"/admin/orders/new/quick", status:"active", requiredPermissions:["canCreateOrders"] },
     { label:"Dự án & Batch", href:"/admin/orders/projects", status:"active", requiredPermissions:["canManageUsers"] },
-    { label:"Tiến độ sản xuất", href:"/admin/manufacturing/production-timeline", status:"active", requiredPermissions:["canViewProduction"] },
+    // Operational landing is the action queue; timeline is a focused planning view.
     { label:"Điều hành sản xuất", href:"/admin/production", status:"active", requiredPermissions:["canViewProduction"] },
+    { label:"Lịch & tiến độ", href:"/admin/manufacturing/production-timeline", status:"active", requiredPermissions:["canViewProduction"] },
     { label:"Giao hàng", href:"/admin/delivery", status:"active", requiredPermissions:["canViewDelivery"] },
   ]) },
   { label:"TECHNICAL & SOURCING", icon:"▧", platforms: domainItems([

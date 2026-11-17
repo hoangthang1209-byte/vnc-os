@@ -19,6 +19,18 @@ export async function POST(request:NextRequest,context:{params:Promise<{id:strin
       const invoice=await tx.customPaymentInvoice.findUnique({where:{id}});
       if(!invoice)return null;
       if(invoice.status!=="DRAFT")return {error:"Invoice has already been issued"};
+      // Link and supersede the source only on the replacement's successful issue.
+      let sourceInvoiceNo:string|null=null;
+      if(invoice.replacesInvoiceId){
+        const source=await tx.customPaymentInvoice.findUnique({where:{id:invoice.replacesInvoiceId}});
+        if(!source || source.status!=="ISSUED" || source.replacedByInvoiceId){
+          return {error:"Invoice nguồn không còn đủ điều kiện thay thế."};
+        }
+        if(!invoice.replacementReason || invoice.replacementReason.trim().length<10){
+          return {error:"Missing replacement reason"};
+        }
+        sourceInvoiceNo=source.invoiceNo;
+      }
       if(!invoice.recipientName.trim() || !invoice.issuerName.trim())return {error:"Issuer and recipient required"};
       const bank=invoice.bankDetails as Record<string,unknown>|null;
       if(!bank || typeof bank.beneficiary!=="string" || !bank.beneficiary.trim() ||
@@ -52,10 +64,22 @@ export async function POST(request:NextRequest,context:{params:Promise<{id:strin
         lines:invoice.lines,adjustments:invoice.adjustments,
         issueDate:invoice.issueDate.toISOString(),dueDate:invoice.dueDate?.toISOString()??null,
         notes:invoice.notes,
+        replacesInvoiceId:invoice.replacesInvoiceId,
+        replacementReason:invoice.replacementReason,
+        replacesInvoiceNo:sourceInvoiceNo,
       } as Prisma.InputJsonValue;
+      if(invoice.replacesInvoiceId){
+        const superseded=await tx.customPaymentInvoice.updateMany({
+          where:{id:invoice.replacesInvoiceId,status:"ISSUED",replacedByInvoiceId:null},
+          data:{status:"SUPERSEDED",replacedByInvoiceId:id,replacedAt:new Date()}
+        });
+        if(superseded.count!==1)return {error:"Invoice nguồn đã được thay thế bởi yêu cầu khác."};
+      }
       const changed=await tx.customPaymentInvoice.updateMany({where:{id,status:"DRAFT"},data:{status:"ISSUED",issuedAt:new Date(),issuedSnapshot:snapshot}});
-      if(changed.count!==1)return {error:"Invoice has already been issued"};
-      return {id,invoiceNo:invoice.invoiceNo,status:"ISSUED"};
+      // Throwing here (rather than returning an error) ensures source status rolls back.
+      if(changed.count!==1)throw new Error("Invoice issuance conflict");
+
+      return {id,invoiceNo:invoice.invoiceNo,status:"ISSUED",replacesInvoiceId:invoice.replacesInvoiceId};
     });
     if(!result)return NextResponse.json({error:"Not found"},{status:404});
     if("error" in result)return NextResponse.json(result,{status:409});

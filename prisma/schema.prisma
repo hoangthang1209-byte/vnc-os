@@ -6618,6 +6618,9 @@ model CustomPaymentInvoice {
   recipientEmail String? @db.Text
   recipientCcEmails String? @db.Text
   recipientAddress String? @db.Text
+  deliveryRecipientName String?
+  deliveryRecipientPhone String?
+  deliveryRecipientAddress String? @db.Text
   issuerName    String
   issuerAddress String? @db.Text
   issuerTaxId   String?

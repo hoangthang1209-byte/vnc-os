@@ -109,7 +109,7 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
       });
     }, { maxWait: 5000, timeout: 15000 });
     logAdminAuditEvent({
-      action: "custom_invoice_duplicated", userId: session.userId, employeeId: session.employeeId,
+      action: replacement ? "custom_invoice_replacement_draft_created" : "custom_invoice_duplicated", userId: session.userId, employeeId: session.employeeId,
       route: request.nextUrl.pathname,
       detail: { sourceInvoiceId: source.id, sourceInvoiceNo: source.invoiceNo,
         newInvoiceId: duplicate.id, newInvoiceNo: duplicate.invoiceNo },

@@ -83,7 +83,7 @@ export async function POST(request:NextRequest,context:{params:Promise<{id:strin
     });
     if(!result)return NextResponse.json({error:"Not found"},{status:404});
     if("error" in result)return NextResponse.json(result,{status:409});
-    logAdminAuditEvent({action:"custom_invoice_issued",userId:session.userId,employeeId:session.employeeId,route:request.nextUrl.pathname,detail:{id:result.id,invoiceNo:result.invoiceNo}});
+    logAdminAuditEvent({action:result.replacesInvoiceId?"custom_invoice_replacement_issued":"custom_invoice_issued",userId:session.userId,employeeId:session.employeeId,route:request.nextUrl.pathname,detail:{id:result.id,invoiceNo:result.invoiceNo,replacesInvoiceId:result.replacesInvoiceId}});
     return NextResponse.json(result);
   }catch(error) {
     if(typeof error==="object"&&error&&"code" in error&&error.code==="P2021")return NextResponse.json({error:"Cấu hình công ty VNC chưa được migrate. Vui lòng liên hệ quản trị hệ thống."},{status:503});

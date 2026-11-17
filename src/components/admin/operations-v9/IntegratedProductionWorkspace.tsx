@@ -13,6 +13,11 @@ type Job = {
 };
 type Order = {id:string;orderNo:string;customer:string;status:string;due:string|null;
   items:{id:string;sku:string;name:string;quantity:number;image:string|null}[]};
+type Documents = {
+  techPacks:{id:string;itemId:string;code:string;title:string;version:number;status:string;bom:string;artwork:string;qc:string}[];
+  files:{id:string;itemId:string;type:string;title:string;version:number;status:string}[];
+  qc:{id:string;itemId:string;status:string;inspected:number;passed:number;defective:number}[];
+};
 type Factory = { id: string; code: string; name: string; category: string;
   capabilities: string; address: string; contact: string; phone: string };
 type Mode = "orders" | "sku" | "factory" | "stage";
@@ -27,11 +32,12 @@ const groupKey = (j: Job, m: Mode) =>
   m === "orders" ? j.orderNo :
   m === "sku" ? j.orderNo + " / " + j.sku :
   m === "factory" ? (j.factoryId ?? "unassigned") : j.stage;
-export default function IntegratedProductionWorkspace({jobs,factories,orders}: {
-  jobs: Job[]; factories: Factory[]; orders:Order[];
+export default function IntegratedProductionWorkspace({jobs,factories,orders,documents}: {
+  jobs: Job[]; factories: Factory[]; orders:Order[]; documents:Documents;
 }) {
   const [mode,setMode] = useState<Mode>("orders");
   const [openOrder,setOpenOrder] = useState<string|null>(null);
+  const [docTab,setDocTab] = useState<"Tech Pack"|"Artwork"|"BOM"|"QC"|"Files">("Tech Pack");
   const [search,setSearch] = useState("");
   const [selected,setSelected] = useState<string | null>(null);
   const [expanded,setExpanded] = useState<string[]>([]);
@@ -192,7 +198,27 @@ export default function IntegratedProductionWorkspace({jobs,factories,orders}: {
             <Link className="px-3 py-2 rounded border" href="/admin/manufacturing/production-timeline">Cập nhật job</Link>
             {selectedJob.factoryId&&<button className="px-3 py-2 rounded border" onClick={()=>{setFactoryDetail(selectedJob.factoryId);setSelected(null)}}>Factory 360</button>}
           </div>
-          <p className="text-xs text-slate-500">Tài liệu kỹ thuật được quản lý qua module Tech Pack / Rập / QC hiện hữu; chưa tạo bản sao tài liệu.</p>
+          <div className="border-t pt-3 space-y-3">
+            <p className="font-semibold">Tài liệu sản xuất theo SKU</p>
+            <div className="flex gap-1 flex-wrap">
+              {(["Tech Pack","Artwork","BOM","QC","Files"] as const).map(tab=>
+                <button key={tab} className={"px-2 py-1 rounded text-xs border "+(docTab===tab?"bg-slate-900 text-white":"bg-white")}
+                  onClick={()=>setDocTab(tab)}>{tab}</button>)}
+            </div>
+            {docTab==="Tech Pack"&&<div className="space-y-2">{documents.techPacks.filter(t=>t.itemId===selectedJob.orderItemId).map(t=>
+              <div className="p-2 rounded bg-slate-50" key={t.id}>{t.code} · {t.title} · v{t.version} · {t.status}</div>)}
+              {!documents.techPacks.some(t=>t.itemId===selectedJob.orderItemId)&&<p className="text-slate-500">Chưa có Tech Pack liên kết.</p>}</div>}
+            {docTab==="Artwork"&&<div className="space-y-2">
+              {documents.techPacks.filter(t=>t.itemId===selectedJob.orderItemId&&t.artwork).map(t=><p className="bg-slate-50 p-2 rounded" key={t.id}>{t.artwork}</p>)}
+              {documents.files.filter(t=>t.itemId===selectedJob.orderItemId&&/ART|PRINT|EMBROID/i.test(t.type)).map(t=><p className="bg-slate-50 p-2 rounded" key={t.id}>{t.title} · {t.type} · v{t.version}</p>)}
+            </div>}
+            {docTab==="BOM"&&<div className="space-y-2">{documents.techPacks.filter(t=>t.itemId===selectedJob.orderItemId).map(t=><p key={t.id} className="bg-slate-50 rounded p-2">{t.bom||"Chưa có ghi chú BOM"}</p>)}</div>}
+            {docTab==="QC"&&<div className="space-y-2">{documents.qc.filter(t=>t.itemId===selectedJob.orderItemId).map(t=>
+              <p key={t.id} className="bg-slate-50 rounded p-2">{t.status} · kiểm {t.inspected} · đạt {t.passed} · lỗi {t.defective}</p>)}
+              {documents.techPacks.filter(t=>t.itemId===selectedJob.orderItemId&&t.qc).map(t=><p key={t.id}>{t.qc}</p>)}</div>}
+            {docTab==="Files"&&<div className="space-y-2">{documents.files.filter(t=>t.itemId===selectedJob.orderItemId).map(t=>
+              <p key={t.id} className="bg-slate-50 rounded p-2">{t.title} · {t.type} · v{t.version} · {t.status}</p>)}</div>}
+          </div>
           <div className="flex gap-2"><Link href="/admin/tech-pack" className="underline">Tech Pack</Link><Link href="/admin/pattern" className="underline">Pattern</Link></div>
         </div>}
         {factory&&<div className="space-y-4 text-sm">

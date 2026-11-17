@@ -521,7 +521,6 @@ model Contact {
   productionApprovals   OrderItemProductionApproval[]
 
   @@index([customerId])
-  @@index([replacedAt])
 }
 
 model CRMActivity {
@@ -6655,6 +6654,7 @@ model CustomPaymentInvoice {
   @@index([status, createdAt])
   @@index([recipientName])
   @@index([customerId])
+  @@index([replacedAt])
 }
 
 /** Signed, deduplicated Resend notifications for every invoice recipient.

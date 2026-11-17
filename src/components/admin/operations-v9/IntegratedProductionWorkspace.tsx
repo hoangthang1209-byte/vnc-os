@@ -11,6 +11,8 @@ type Job = {
   factoryId: string | null; start: string | null; end: string | null;
   done: number; accepted: number; planned: number;
 };
+type Order = {id:string;orderNo:string;customer:string;status:string;due:string|null;
+  items:{id:string;sku:string;name:string;quantity:number;image:string|null}[]};
 type Factory = { id: string; code: string; name: string; category: string;
   capabilities: string; address: string; contact: string; phone: string };
 type Mode = "orders" | "sku" | "factory" | "stage";
@@ -25,10 +27,11 @@ const groupKey = (j: Job, m: Mode) =>
   m === "orders" ? j.orderNo :
   m === "sku" ? j.orderNo + " / " + j.sku :
   m === "factory" ? (j.factoryId ?? "unassigned") : j.stage;
-export default function IntegratedProductionWorkspace({jobs,factories}: {
-  jobs: Job[]; factories: Factory[];
+export default function IntegratedProductionWorkspace({jobs,factories,orders}: {
+  jobs: Job[]; factories: Factory[]; orders:Order[];
 }) {
   const [mode,setMode] = useState<Mode>("orders");
+  const [openOrder,setOpenOrder] = useState<string|null>(null);
   const [search,setSearch] = useState("");
   const [selected,setSelected] = useState<string | null>(null);
   const [expanded,setExpanded] = useState<string[]>([]);
@@ -82,6 +85,30 @@ export default function IntegratedProductionWorkspace({jobs,factories}: {
         <div key={String(k)} className="bg-white border rounded-xl p-4"><p className="text-xs text-slate-500">{k}</p>
           <p className="text-2xl font-semibold mt-1">{v}</p></div>)}
     </div>
+    <section className="bg-white border rounded-xl p-4 space-y-3">
+      <div className="flex justify-between items-center gap-3">
+        <h2 className="font-semibold">Order Portfolio · Dữ liệu thật</h2>
+        <span className="text-xs text-slate-500">Tối đa 200 đơn mới nhất</span>
+      </div>
+      <div className="overflow-x-auto"><table className="w-full text-sm text-left">
+        <thead className="text-xs text-slate-500 border-b"><tr>
+          <th className="py-2">Đơn hàng</th><th>Khách hàng</th><th>SKU</th><th>Hạn giao</th><th>Trạng thái</th><th></th>
+        </tr></thead>
+        <tbody>{orders.filter(o=>(o.orderNo+" "+o.customer+" "+o.items.map(i=>i.sku).join(" ")).toLowerCase().includes(search.toLowerCase())).map(o=>
+          <tr key={o.id} className="border-b align-top">
+            <td className="py-2"><button className="font-semibold hover:underline" onClick={()=>setOpenOrder(openOrder===o.id?null:o.id)}>{o.orderNo}</button>
+              {openOrder===o.id&&<div className="mt-2 w-64 space-y-2">{o.items.map(i=>
+                <div key={i.id} className="flex items-center gap-2 text-xs">
+                  {i.image?<img className="w-9 h-9 object-cover rounded border" alt="" src={i.image}/>:<span className="w-9 h-9 rounded border bg-slate-100 grid place-items-center">SKU</span>}
+                  <div><span className="font-medium">{i.sku}</span><p>{i.name} · {i.quantity.toLocaleString("vi-VN")} pcs</p></div>
+                </div>)}</div>}
+            </td>
+            <td className="py-2">{o.customer||"—"}</td>
+            <td>{o.items.length}</td><td>{dateText(o.due)}</td><td>{o.status}</td>
+            <td><button className="text-blue-700 text-xs underline" onClick={()=>{setMode("sku");setSearch(o.orderNo);setExpanded([])}}>Gantt theo SKU</button></td>
+          </tr>)}</tbody>
+      </table></div>
+    </section>
     <div className="bg-white border rounded-xl p-3 md:p-4 space-y-4">
       <div className="flex flex-wrap gap-3 items-center justify-between">
         <div className="flex flex-wrap gap-1">

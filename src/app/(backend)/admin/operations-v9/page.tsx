@@ -51,6 +51,28 @@ export default async function OperationsV9Page() {
           quantity: true, designImageUrl: true } } },
     }),
   ]);
+  const itemIds = [...new Set(orders.flatMap(o=>o.items.map(i=>i.id)))];
+  const [techPacks, productionFiles, qcInspections] = itemIds.length ? await Promise.all([
+    prisma.techPack.findMany({ where: { orderItemId: { in: itemIds } },
+      select: { id:true, orderItemId:true, code:true, title:true, version:true, status:true,
+        bomNotes:true, printMethodNotes:true, embroideryNotes:true, qcNotes:true } }),
+    prisma.orderProductionFile.findMany({ where: { orderItemId: { in: itemIds } },
+      select: { id:true, orderItemId:true, type:true, title:true, version:true, status:true } }),
+    prisma.orderQcInspection.findMany({ where: { orderItemId: { in: itemIds } },
+      select: { id:true, orderItemId:true, status:true, passedQuantity:true,
+        defectQuantity:true, inspectedQuantity:true } }),
+  ]) : [[],[],[]];
+  const documents = {
+    techPacks: techPacks.map(t=>({id:t.id,itemId:t.orderItemId??"",code:t.code,
+      title:t.title??t.code,version:t.version,status:String(t.status),
+      bom:t.bomNotes??"",artwork:[t.printMethodNotes,t.embroideryNotes].filter(Boolean).join(" · "),
+      qc:t.qcNotes??""})),
+    files:productionFiles.map(t=>({id:t.id,itemId:t.orderItemId??"",type:String(t.type),
+      title:t.title??String(t.type),version:t.version,status:String(t.status)})),
+    qc:qcInspections.map(t=>({id:t.id,itemId:t.orderItemId??"",status:String(t.status),
+      inspected:Number(t.inspectedQuantity),passed:Number(t.passedQuantity),
+      defective:Number(t.defectQuantity)})),
+  };
   const jobs = trackings.flatMap((t) => {
     const base = {
       trackingId: t.id, orderId: t.orderItem.order.id,
@@ -79,7 +101,7 @@ export default async function OperationsV9Page() {
     }));
     return grouped.map((job) => ({ ...base, ...job }));
   });
-  return <IntegratedProductionWorkspace jobs={jobs} orders={orders.map(o => ({
+  return <IntegratedProductionWorkspace jobs={jobs} documents={documents} orders={orders.map(o => ({
     id:o.id, orderNo:o.orderNo, customer:o.customerCompanyName??"", status:String(o.status),
     due:(o.deliveryExpectedAt??o.productionDueDate)?.toISOString()??null,
     items:o.items.map(i=>({id:i.id,sku:i.skuSnapshot??i.productNameSnapshot??i.id,name:i.productNameSnapshot??"",quantity:i.quantity,image:i.designImageUrl??null}))

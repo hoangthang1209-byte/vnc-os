@@ -12,7 +12,7 @@ import { VNC_LOGO_PNG_DATA_URI } from "@/features/documents/vnc-invoice-brand";
 import { isValidInvoiceNumericInput } from "@/features/documents/custom-invoice-calculation";
 import {parseInvoiceRecipients} from "@/features/documents/invoice-email";
 type Line={description:string;quantity:string;unit:string;unitPrice:string};
-type SavedInvoice={id:string;invoiceNo:string;status:string;recipientName:string;currency:string;total:string;createdAt:string;createdByDisplayName:string;createdByMode:string;preparedByName:string|null;emailedAt:string|null;emailedTo:string|null;emailSendCount:number;emailDeliveryStatus:string|null;emailDeliveryUpdatedAt:string|null};
+type SavedInvoice={id:string;invoiceNo:string;status:string;recipientName:string;currency:string;total:string;createdAt:string;createdByDisplayName:string;createdByMode:string;preparedByName:string|null;emailedAt:string|null;emailedTo:string|null;emailSendCount:number;emailDeliveryStatus:string|null;emailDeliveryUpdatedAt:string|null;replacesInvoiceId:string|null;replacementReason:string|null;replacedByInvoiceId:string|null;replacedAt:string|null};
 type DeliveryDetails={invoiceNo:string;sent:boolean;emailedAt:string|null;status:string;sendCount:number;recipients:string|null;summary:null|{delivered:number;failed:number;pending:number;byRecipient:{email:string;status:string}[]};events:{eventType:string;recipient:string|null;occurredAt:string;detail:string|null}[]};
 const deliveryStatusText=(value:string|null|undefined):string=>({
  SENT:"Sent · Đã được dịch vụ tiếp nhận",DELIVERED:"Delivered · Máy chủ nhận đã chấp nhận",
@@ -114,11 +114,11 @@ export default function CustomInvoiceManager(){
   }catch(error){setMessage(error instanceof Error?error.message:"Lưu không thành công");}
   finally{setBusy(false);}
  }
- async function duplicateInvoice(id:string){
+ async function duplicateInvoice(id:string,replacementReason?:string){
   if(busy)return;
   setBusy(true);setMessage("Đang nhân bản Invoice...");
   try{
-   const response=await fetch("/api/admin/documents/invoices/"+encodeURIComponent(id)+"/duplicate",{method:"POST"});
+   const response=await fetch("/api/admin/documents/invoices/"+encodeURIComponent(id)+"/duplicate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(replacementReason?{replacementReason}:{})});
    const data=await response.json();
    if(!response.ok)throw new Error(data.error||"Không thể nhân bản Invoice.");
    const v=data.invoice;
@@ -139,9 +139,15 @@ export default function CustomInvoiceManager(){
    setSendAfterIssue(false);
    await refresh();
    window.scrollTo({top:0,behavior:"smooth"});
-   setMessage("Đã nhân bản "+data.sourceInvoiceNo+" thành bản nháp "+data.invoiceNo+". Chỉnh sửa và bấm Lưu bản nháp trước khi phát hành.");
+   setMessage((replacementReason?"Đã tạo bản nháp thay thế ":"Đã nhân bản ")+data.sourceInvoiceNo+" → "+data.invoiceNo+". Chỉnh sửa, lưu rồi phát hành bản mới. Hóa đơn nguồn vẫn giữ nguyên cho đến khi phát hành bản thay thế.");
   }catch(error){setMessage(error instanceof Error?error.message:"Không thể nhân bản Invoice.");}
   finally{setBusy(false);}
+ }
+ async function replaceInvoice(id:string){
+  const reason=window.prompt("Lý do xử lý sai sót (ít nhất 10 ký tự). Invoice gốc/PDF vẫn được lưu; chỉ đánh dấu đã thay thế sau khi phát hành Invoice mới:");
+  if(reason===null)return;
+  if(reason.trim().length<10){setMessage("Lý do thay thế phải có ít nhất 10 ký tự.");return;}
+  await duplicateInvoice(id,reason.trim());
  }
  async function loadDelivery(id:string){
   if(deliveryDetails?.id===id){setDeliveryDetails(null);return;}
@@ -349,10 +355,13 @@ export default function CustomInvoiceManager(){
        {(inv.emailedAt||inv.emailDeliveryStatus)&&<div className={s.deliveryStatus}>{deliveryStatusText(inv.emailDeliveryStatus||"SENT")} · {inv.emailDeliveryUpdatedAt||inv.emailedAt?new Date(inv.emailDeliveryUpdatedAt||inv.emailedAt||"").toLocaleString("vi-VN"):""}</div>}
       </div>
       <div className={s.listActions}>
-       <span className={inv.status==="ISSUED"?s.state+" "+s.stateIssued:s.state}>{inv.status==="ISSUED"?"Đã phát hành":"Bản nháp"}</span>
+       <span className={inv.status==="ISSUED"?s.state+" "+s.stateIssued:s.state}>{inv.status==="SUPERSEDED"?"Đã thay thế":inv.status==="ISSUED"?"Đã phát hành":"Bản nháp"}</span>
+       {inv.replacesInvoiceId&&<span className={s.listSub}>Thay thế Invoice: {invoices.find(i=>i.id===inv.replacesInvoiceId)?.invoiceNo||inv.replacesInvoiceId} · Lý do: {inv.replacementReason||"—"}</span>}
+       {inv.replacedByInvoiceId&&<span className={s.listSub}>Được thay bằng: {invoices.find(i=>i.id===inv.replacedByInvoiceId)?.invoiceNo||inv.replacedByInvoiceId}</span>}
        {permissions.canCreateCustomInvoice&&<button type="button" className={s.link} disabled={busy} onClick={()=>void duplicateInvoice(inv.id)}>Nhân bản</button>}
        {inv.status==="DRAFT"&&<a className={s.link} href={"/api/admin/documents/invoices/"+encodeURIComponent(inv.id)+"/draft-pdf"}>Tải bản nháp</a>}{inv.status==="DRAFT"&&permissions.canIssueCustomInvoice&&<button type="button" className={s.link} onClick={()=>void issue(inv.id,false)}>Phát hành</button>}
-       {inv.status==="ISSUED"&&<a className={s.link} href={"/api/admin/documents/invoices/"+encodeURIComponent(inv.id)+"/pdf"}>Tải PDF</a>}
+       {(inv.status==="ISSUED"||inv.status==="SUPERSEDED")&&<a className={s.link} href={"/api/admin/documents/invoices/"+encodeURIComponent(inv.id)+"/pdf"}>Tải PDF</a>}
+       {inv.status==="ISSUED"&&permissions.canIssueCustomInvoice&&permissions.canCreateCustomInvoice&&<button type="button" className={s.link} disabled={busy} onClick={()=>void replaceInvoice(inv.id)}>Xử lý sai sót</button>}
        {inv.status==="ISSUED"&&permissions.canIssueCustomInvoice&&<button type="button" className={s.link} disabled={busy||!emailServiceReady} onClick={()=>void retryEmail(inv.id)}>{inv.emailedAt?"Gửi lại email":"Gửi email"}</button>}
        {(inv.emailedAt||inv.emailDeliveryStatus)&&<button type="button" className={s.link} disabled={deliveryLoading===inv.id} onClick={()=>void loadDelivery(inv.id)}>{deliveryLoading===inv.id?"Đang tải...":deliveryDetails?.id===inv.id?"Ẩn lịch sử":"Chi tiết giao nhận"}</button>}
       </div>

@@ -15,6 +15,8 @@ type AdminAuditEvent = {
     | "forbidden_data"
     | "custom_invoice_duplicated"
     | "custom_invoice_draft_updated"
+    | "custom_invoice_replacement_draft_created"
+    | "custom_invoice_replacement_issued"
     | "custom_invoice_issued"
     | "custom_invoice_email_sent"
     | "vnc_legal_entity_created"

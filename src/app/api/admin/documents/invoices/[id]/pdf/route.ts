@@ -29,6 +29,7 @@ export async function GET(request:NextRequest, context:{params:Promise<{id:strin
       issueDate,dueDate:date(snapshot.dueDate),currency:String(snapshot.currency),total:String(snapshot.total),
       lines:snapshot.lines,adjustments:snapshot.adjustments,bankDetails:snapshot.bankDetails,
       notes:typeof snapshot.notes==="string"?snapshot.notes:null,
+   replacesInvoiceNo:typeof snapshot.replacesInvoiceNo==="string"?snapshot.replacesInvoiceNo:null,
       companyLogoUrl:typeof snapshot.companyLogoUrl==="string"?snapshot.companyLogoUrl:null,
       createdByDisplayName:typeof snapshot.createdByDisplayName==="string"?snapshot.createdByDisplayName:null,
       preparedByName:typeof snapshot.preparedByName==="string"?snapshot.preparedByName:null,

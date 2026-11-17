@@ -38,7 +38,6 @@ export default function IntegratedProductionWorkspace({jobs,orders,factories,doc
  const [docTab,setDocTab]=useState<DocTab>("Tech Pack");
  const [horizon,setHorizon]=useState(21);
  const factoriesById=useMemo(()=>new Map(factories.map(f=>[f.id,f])),[factories]);
- const ordersById=useMemo(()=>new Map(orders.map(o=>[o.id,o])),[orders]);
  const filteredJobs=useMemo(()=>jobs.filter(j=>{
   if(orderFilter!=="all"&&j.orderId!==orderFilter)return false;
   if(stageFilter!=="all"&&j.stage!==stageFilter)return false;
@@ -47,7 +46,6 @@ export default function IntegratedProductionWorkspace({jobs,orders,factories,doc
   return !q||[j.orderNo,j.sku,j.name,j.stage,j.batch??"",factoriesById.get(j.factoryId??"")?.name??""].some(t=>t.toLowerCase().includes(q));
  }),[jobs,orderFilter,stageFilter,riskFilter,search,factoriesById]);
  const grouped=useMemo(()=>{const m=new Map<string,Job[]>();for(const j of filteredJobs){const k=jobGroup(j,group);m.set(k,[...(m.get(k)??[]),j]);}return [...m.entries()].sort((a,b)=>a[0].localeCompare(b[0]));},[filteredJobs,group]);
- const openOrder=orders.find(o=>o.id===selectedOrder);
  const openFactory=factories.find(f=>f.id===selectedFactory);
  const openJob=jobs.find(j=>j.id===selectedJob);
  const jobsForFactory=jobs.filter(j=>j.factoryId===selectedFactory);

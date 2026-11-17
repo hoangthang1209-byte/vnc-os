@@ -23,7 +23,9 @@ export async function GET(request:NextRequest,context:{params:Promise<{id:string
   const branding=await prisma.vncOsCompanyBranding.findUnique({where:{id:"default"},select:{logoUrl:true}});
   const pdf=await renderInvoicePdf({
    draft:true,invoiceNo:invoice.invoiceNo,recipientName:invoice.recipientName,
-   recipientAddress:invoice.recipientAddress,issuerName:invoice.issuerName,
+   recipientAddress:invoice.recipientAddress,
+   deliveryRecipientName:invoice.deliveryRecipientName,deliveryRecipientPhone:invoice.deliveryRecipientPhone,deliveryRecipientAddress:invoice.deliveryRecipientAddress,
+   issuerName:invoice.issuerName,
    issuerAddress:invoice.issuerAddress,currency:invoice.currency,total:invoice.total,
    issueDate:invoice.issueDate,dueDate:invoice.dueDate,
    lines:invoice.lines,adjustments:invoice.adjustments,bankDetails:invoice.bankDetails,

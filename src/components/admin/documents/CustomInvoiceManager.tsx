@@ -12,7 +12,7 @@ import { VNC_LOGO_PNG_DATA_URI } from "@/features/documents/vnc-invoice-brand";
 import { isValidInvoiceNumericInput } from "@/features/documents/custom-invoice-calculation";
 import {parseInvoiceRecipients} from "@/features/documents/invoice-email";
 type Line={description:string;quantity:string;unit:string;unitPrice:string};
-type SavedInvoice={id:string;invoiceNo:string;status:string;recipientName:string;currency:string;total:string;createdAt:string;createdByDisplayName:string;createdByMode:string;preparedByName:string|null;emailedAt:string|null;emailedTo:string|null;emailSendCount:number;emailDeliveryStatus:string|null;emailDeliveryUpdatedAt:string|null};
+type SavedInvoice={id:string;invoiceNo:string;status:string;recipientName:string;currency:string;total:string;createdAt:string;createdByDisplayName:string;createdByMode:string;preparedByName:string|null;emailedAt:string|null;emailedTo:string|null;emailSendCount:number;emailDeliveryStatus:string|null;emailDeliveryUpdatedAt:string|null;replacesInvoiceId:string|null;replacementReason:string|null;replacedByInvoiceId:string|null;replacedAt:string|null};
 type DeliveryDetails={invoiceNo:string;sent:boolean;emailedAt:string|null;status:string;sendCount:number;recipients:string|null;summary:null|{delivered:number;failed:number;pending:number;byRecipient:{email:string;status:string}[]};events:{eventType:string;recipient:string|null;occurredAt:string;detail:string|null}[]};
 const deliveryStatusText=(value:string|null|undefined):string=>({
  SENT:"Sent · Đã được dịch vụ tiếp nhận",DELIVERED:"Delivered · Máy chủ nhận đã chấp nhận",
@@ -39,6 +39,10 @@ export default function CustomInvoiceManager(){
  const [deliveryDetails,setDeliveryDetails]=useState<{id:string;value:DeliveryDetails}|null>(null);
  const [deliveryLoading,setDeliveryLoading]=useState<string|null>(null);
  const [recipientAddress,setRecipientAddress]=useState("");
+ const [deliveryRecipientName,setDeliveryRecipientName]=useState("");
+ const [deliveryRecipientPhone,setDeliveryRecipientPhone]=useState("");
+ const [deliveryRecipientAddress,setDeliveryRecipientAddress]=useState("");
+ const [showDeliveryRecipient,setShowDeliveryRecipient]=useState(false);
  const [issuerName,setIssuerName]=useState("");
  const [issuerAddress,setIssuerAddress]=useState("");
  const [issuerTaxId,setIssuerTaxId]=useState("");
@@ -108,22 +112,24 @@ export default function CustomInvoiceManager(){
   if(swift.trim()&&!/^[A-Za-z]{6}[A-Za-z0-9]{2}([A-Za-z0-9]{3})?$/.test(swift.trim())){setMessage("SWIFT/BIC gồm 8 hoặc 11 ký tự, khác với số tài khoản. Nếu không có hãy để trống.");return;}
   setBusy(true);setMessage("Đang lưu bản nháp...");
   try{
-   const r=await fetch(editingDraftId?"/api/admin/documents/invoices/"+encodeURIComponent(editingDraftId):"/api/admin/documents/invoices",{method:editingDraftId?"PATCH":"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({preparedByEmployeeId:preparedByEmployeeId||null,customerId:customerId||null,orderId:orderId||null,legalEntityId:legalEntityId||null,bankAccountId:bankAccountId||null,recipientName,recipientAddress,recipientEmail,recipientCcEmails,issuerName,issuerAddress,issuerTaxId,currency,issueDate,dueDate,lines,beneficiary,bank,bankAccount,accountAddress,bankAddress,branch,swift,notes,discount,extraCharge,tax})});
+   const r=await fetch(editingDraftId?"/api/admin/documents/invoices/"+encodeURIComponent(editingDraftId):"/api/admin/documents/invoices",{method:editingDraftId?"PATCH":"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({preparedByEmployeeId:preparedByEmployeeId||null,customerId:customerId||null,orderId:orderId||null,legalEntityId:legalEntityId||null,bankAccountId:bankAccountId||null,recipientName,recipientAddress,recipientEmail,recipientCcEmails,deliveryRecipientName,deliveryRecipientPhone,deliveryRecipientAddress,issuerName,issuerAddress,issuerTaxId,currency,issueDate,dueDate,lines,beneficiary,bank,bankAccount,accountAddress,bankAddress,branch,swift,notes,discount,extraCharge,tax})});
    const data=await r.json();if(!r.ok)throw new Error(data.error||"Không thể lưu bản nháp");
    setInvoiceNo(data.invoiceNo);setPdfId(data.id);setEditingDraftId(data.id);setIssued(false);setMessage("Đã lưu bản nháp "+data.invoiceNo+".");await refresh();
   }catch(error){setMessage(error instanceof Error?error.message:"Lưu không thành công");}
   finally{setBusy(false);}
  }
- async function duplicateInvoice(id:string){
+ async function duplicateInvoice(id:string,replacementReason?:string){
   if(busy)return;
   setBusy(true);setMessage("Đang nhân bản Invoice...");
   try{
-   const response=await fetch("/api/admin/documents/invoices/"+encodeURIComponent(id)+"/duplicate",{method:"POST"});
+   const response=await fetch("/api/admin/documents/invoices/"+encodeURIComponent(id)+"/duplicate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(replacementReason?{replacementReason}:{})});
    const data=await response.json();
    if(!response.ok)throw new Error(data.error||"Không thể nhân bản Invoice.");
    const v=data.invoice;
    setInvoiceNo(data.invoiceNo);setEditingDraftId(data.id);setPdfId(data.id);setIssued(false);
    setRecipientName(v.recipientName);setRecipientAddress(v.recipientAddress);
+   setDeliveryRecipientName(v.deliveryRecipientName||"");setDeliveryRecipientPhone(v.deliveryRecipientPhone||"");setDeliveryRecipientAddress(v.deliveryRecipientAddress||"");
+   setShowDeliveryRecipient(Boolean(v.deliveryRecipientName||v.deliveryRecipientPhone||v.deliveryRecipientAddress));
    setRecipientEmail(v.recipientEmail);setRecipientCcEmails(v.recipientCcEmails);
    setCustomerId(v.customerId);setOrderId(v.orderId);
    setPreparedByName(v.preparedByName);setPreparedByEmployeeId(v.preparedByEmployeeId);
@@ -139,9 +145,15 @@ export default function CustomInvoiceManager(){
    setSendAfterIssue(false);
    await refresh();
    window.scrollTo({top:0,behavior:"smooth"});
-   setMessage("Đã nhân bản "+data.sourceInvoiceNo+" thành bản nháp "+data.invoiceNo+". Chỉnh sửa và bấm Lưu bản nháp trước khi phát hành.");
+   setMessage((replacementReason?"Đã tạo bản nháp thay thế ":"Đã nhân bản ")+data.sourceInvoiceNo+" → "+data.invoiceNo+". Chỉnh sửa, lưu rồi phát hành bản mới. Hóa đơn nguồn vẫn giữ nguyên cho đến khi phát hành bản thay thế.");
   }catch(error){setMessage(error instanceof Error?error.message:"Không thể nhân bản Invoice.");}
   finally{setBusy(false);}
+ }
+ async function replaceInvoice(id:string){
+  const reason=window.prompt("Lý do xử lý sai sót (ít nhất 10 ký tự). Invoice gốc/PDF vẫn được lưu; chỉ đánh dấu đã thay thế sau khi phát hành Invoice mới:");
+  if(reason===null)return;
+  if(reason.trim().length<10){setMessage("Lý do thay thế phải có ít nhất 10 ký tự.");return;}
+  await duplicateInvoice(id,reason.trim());
  }
  async function loadDelivery(id:string){
   if(deliveryDetails?.id===id){setDeliveryDetails(null);return;}
@@ -262,6 +274,15 @@ export default function CustomInvoiceManager(){
       <div className={s.field}><label>Email CC — người nhận bản sao</label><textarea className={s.textarea} rows={2} value={recipientCcEmails} onChange={e=>{setRecipientCcEmails(e.target.value);setPdfId("");setIssued(false);}} placeholder="manager@customer.com; team@customer.com"/><p className={s.helper}>Một email Invoice sẽ được gửi chung đến toàn bộ To và CC.</p></div>
       {field("Địa chỉ bên phát hành",issuerAddress,setIssuerAddress,"Địa chỉ pháp lý")}
       {field("Địa chỉ khách hàng",recipientAddress,setRecipientAddress,"Địa chỉ nhận Invoice")}
+      <div className={s.field+" "+s.full}>
+       <label><input type="checkbox" checked={showDeliveryRecipient} onChange={e=>{setShowDeliveryRecipient(e.target.checked);if(!e.target.checked){setDeliveryRecipientName("");setDeliveryRecipientPhone("");setDeliveryRecipientAddress("");}}}/> Thêm thông tin người nhận hàng (tùy chọn)</label>
+       <p className={s.helper}>Khác với thông tin khách hàng thanh toán; chỉ xuất hiện trên PDF khi có dữ liệu.</p>
+      </div>
+      {showDeliveryRecipient&&<>
+       {field("Tên người nhận hàng",deliveryRecipientName,setDeliveryRecipientName,"Họ tên người nhận")}
+       {field("Số điện thoại người nhận",deliveryRecipientPhone,setDeliveryRecipientPhone,"+84 ...","tel")}
+       {field("Địa chỉ giao hàng",deliveryRecipientAddress,setDeliveryRecipientAddress,"Địa chỉ nhận hàng đầy đủ")}
+      </>}
      </div></div>
      <div className={s.section}><p className={s.sectionTitle}>04 / Chi tiết khoản thu</p>
       {lines.map((l,i)=><div className={s.item} key={i}><div className={s.itemTop}><span className={s.itemIndex}>Khoản thu {String(i+1).padStart(2,"0")}</span><button type="button" className={s.ghost} disabled={lines.length===1} onClick={()=>{setLines(rows=>rows.filter((_,j)=>j!==i));setPdfId("");}}>Xóa khoản thu</button></div>
@@ -312,6 +333,7 @@ export default function CustomInvoiceManager(){
       <div className={s.paperParty}><div className={s.paperCaption}>ISSUED BY</div><div className={s.paperPartyName}>{issuerName||"Vietnam Clothing Manufacturing"}</div><div className={s.paperPartyAddress}>{issuerAddress||"Ho Chi Minh City, Vietnam"}</div></div>
       <div className={s.paperParty}><div className={s.paperCaption}>BILL TO</div><div className={s.paperPartyName}>{recipientName||"Customer name"}</div><div className={s.paperPartyAddress}>{recipientAddress||"Customer address"}</div></div>
      </div>
+     {(deliveryRecipientName||deliveryRecipientPhone||deliveryRecipientAddress)&&<div className={s.paperBank} style={{marginBottom:12}}><div className={s.paperTableTitle}>DELIVER TO / NGƯỜI NHẬN HÀNG</div>{deliveryRecipientName&&<div>{deliveryRecipientName}</div>}{deliveryRecipientPhone&&<div>{deliveryRecipientPhone}</div>}{deliveryRecipientAddress&&<div>{deliveryRecipientAddress}</div>}</div>}
      <div className={s.paperMetaEnterprise}>
       {([{label:"INVOICE NUMBER",value:invoiceNo||"—"},{label:"ISSUE DATE",value:issueDate||"—"},{label:"DUE DATE",value:dueDate||"—"}]).map(meta=><div className={s.paperMetaCell} key={meta.label}><span className={s.paperCaption}>{meta.label}</span><strong>{meta.value}</strong></div>)}
      </div>
@@ -349,10 +371,13 @@ export default function CustomInvoiceManager(){
        {(inv.emailedAt||inv.emailDeliveryStatus)&&<div className={s.deliveryStatus}>{deliveryStatusText(inv.emailDeliveryStatus||"SENT")} · {inv.emailDeliveryUpdatedAt||inv.emailedAt?new Date(inv.emailDeliveryUpdatedAt||inv.emailedAt||"").toLocaleString("vi-VN"):""}</div>}
       </div>
       <div className={s.listActions}>
-       <span className={inv.status==="ISSUED"?s.state+" "+s.stateIssued:s.state}>{inv.status==="ISSUED"?"Đã phát hành":"Bản nháp"}</span>
+       <span className={inv.status==="ISSUED"?s.state+" "+s.stateIssued:s.state}>{inv.status==="SUPERSEDED"?"Đã thay thế":inv.status==="ISSUED"?"Đã phát hành":"Bản nháp"}</span>
+       {inv.replacesInvoiceId&&<span className={s.listSub}>Thay thế Invoice: {invoices.find(i=>i.id===inv.replacesInvoiceId)?.invoiceNo||inv.replacesInvoiceId} · Lý do: {inv.replacementReason||"—"}</span>}
+       {inv.replacedByInvoiceId&&<span className={s.listSub}>Được thay bằng: {invoices.find(i=>i.id===inv.replacedByInvoiceId)?.invoiceNo||inv.replacedByInvoiceId}</span>}
        {permissions.canCreateCustomInvoice&&<button type="button" className={s.link} disabled={busy} onClick={()=>void duplicateInvoice(inv.id)}>Nhân bản</button>}
        {inv.status==="DRAFT"&&<a className={s.link} href={"/api/admin/documents/invoices/"+encodeURIComponent(inv.id)+"/draft-pdf"}>Tải bản nháp</a>}{inv.status==="DRAFT"&&permissions.canIssueCustomInvoice&&<button type="button" className={s.link} onClick={()=>void issue(inv.id,false)}>Phát hành</button>}
-       {inv.status==="ISSUED"&&<a className={s.link} href={"/api/admin/documents/invoices/"+encodeURIComponent(inv.id)+"/pdf"}>Tải PDF</a>}
+       {(inv.status==="ISSUED"||inv.status==="SUPERSEDED")&&<a className={s.link} href={"/api/admin/documents/invoices/"+encodeURIComponent(inv.id)+"/pdf"}>Tải PDF</a>}
+       {inv.status==="ISSUED"&&permissions.canIssueCustomInvoice&&permissions.canCreateCustomInvoice&&<button type="button" className={s.link} disabled={busy} onClick={()=>void replaceInvoice(inv.id)}>Xử lý sai sót</button>}
        {inv.status==="ISSUED"&&permissions.canIssueCustomInvoice&&<button type="button" className={s.link} disabled={busy||!emailServiceReady} onClick={()=>void retryEmail(inv.id)}>{inv.emailedAt?"Gửi lại email":"Gửi email"}</button>}
        {(inv.emailedAt||inv.emailDeliveryStatus)&&<button type="button" className={s.link} disabled={deliveryLoading===inv.id} onClick={()=>void loadDelivery(inv.id)}>{deliveryLoading===inv.id?"Đang tải...":deliveryDetails?.id===inv.id?"Ẩn lịch sử":"Chi tiết giao nhận"}</button>}
       </div>

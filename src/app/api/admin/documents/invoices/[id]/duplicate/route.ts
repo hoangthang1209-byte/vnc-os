@@ -20,6 +20,23 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
   try {
     const source = await prisma.customPaymentInvoice.findUnique({ where: { id } });
     if (!source) return NextResponse.json({ error: "Invoice nguồn không tồn tại." }, { status: 404 });
+    const raw: unknown = await request.json().catch(() => ({}));
+    const body = raw && typeof raw === "object" && !Array.isArray(raw) ? raw as Record<string,unknown> : {};
+    const reasonInput = body.replacementReason;
+    const replacement = reasonInput !== undefined;
+    const replacementReason = typeof reasonInput === "string" ? reasonInput.trim() : "";
+    if (replacement && (!can(session,"payments.manage") || source.status !== "ISSUED")) {
+      return NextResponse.json({error:"Chỉ được thay thế Invoice đã phát hành với quyền phê duyệt tài chính."},{status:403});
+    }
+    if (replacement && (replacementReason.length < 10 || replacementReason.length > 2000)) {
+      return NextResponse.json({error:"Vui lòng nhập lý do thay thế (10–2000 ký tự)."},{status:400});
+    }
+    if (replacement && source.replacedByInvoiceId) {
+      return NextResponse.json({error:"Invoice này đã có bản thay thế."},{status:409});
+    }
+    if (replacement && await prisma.customPaymentInvoice.findUnique({where:{replacesInvoiceId:id},select:{id:true}})) {
+      return NextResponse.json({error:"Đã tồn tại bản nháp thay thế cho Invoice này."},{status:409});
+    }
     if (source.status !== "DRAFT" && source.status !== "ISSUED") {
       return NextResponse.json({ error: "Không thể nhân bản hóa đơn ở trạng thái này." }, { status: 409 });
     }
@@ -62,11 +79,16 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
       return tx.customPaymentInvoice.create({
         data: {
           invoiceNo, status: "DRAFT",
+          replacesInvoiceId: replacement ? source.id : null,
+          replacementReason: replacement ? replacementReason : null,
           currency: source.currency,
           recipientName: source.recipientName,
           recipientEmail: source.recipientEmail,
           recipientCcEmails: source.recipientCcEmails,
           recipientAddress: source.recipientAddress,
+          deliveryRecipientName: source.deliveryRecipientName,
+          deliveryRecipientPhone: source.deliveryRecipientPhone,
+          deliveryRecipientAddress: source.deliveryRecipientAddress,
           customerId: source.customerId, orderId: source.orderId,
           legalEntityId: entity.id, bankAccountId: bank.id,
           issuerName: entity.legalName, issuerAddress: entity.address, issuerTaxId: entity.taxCode,
@@ -90,7 +112,7 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
       });
     }, { maxWait: 5000, timeout: 15000 });
     logAdminAuditEvent({
-      action: "custom_invoice_duplicated", userId: session.userId, employeeId: session.employeeId,
+      action: replacement ? "custom_invoice_replacement_draft_created" : "custom_invoice_duplicated", userId: session.userId, employeeId: session.employeeId,
       route: request.nextUrl.pathname,
       detail: { sourceInvoiceId: source.id, sourceInvoiceNo: source.invoiceNo,
         newInvoiceId: duplicate.id, newInvoiceNo: duplicate.invoiceNo },
@@ -98,8 +120,13 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
     return NextResponse.json({
       id: duplicate.id, invoiceNo: duplicate.invoiceNo, status: duplicate.status,
       sourceInvoiceNo: source.invoiceNo,
+      replacementOfInvoiceNo: replacement ? source.invoiceNo : null,
+      replacementReason: replacement ? replacementReason : null,
       invoice: {
         recipientName: duplicate.recipientName, recipientAddress: duplicate.recipientAddress ?? "",
+        deliveryRecipientName: duplicate.deliveryRecipientName ?? "",
+        deliveryRecipientPhone: duplicate.deliveryRecipientPhone ?? "",
+        deliveryRecipientAddress: duplicate.deliveryRecipientAddress ?? "",
         recipientEmail: duplicate.recipientEmail ?? "", recipientCcEmails: duplicate.recipientCcEmails ?? "",
         customerId: duplicate.customerId ?? "", orderId: duplicate.orderId ?? "",
         legalEntityId: duplicate.legalEntityId ?? "", bankAccountId: duplicate.bankAccountId ?? "",

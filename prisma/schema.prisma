@@ -6618,6 +6618,9 @@ model CustomPaymentInvoice {
   recipientEmail String? @db.Text
   recipientCcEmails String? @db.Text
   recipientAddress String? @db.Text
+  deliveryRecipientName String?
+  deliveryRecipientPhone String?
+  deliveryRecipientAddress String? @db.Text
   issuerName    String
   issuerAddress String? @db.Text
   issuerTaxId   String?
@@ -6631,6 +6634,11 @@ model CustomPaymentInvoice {
   notes         String? @db.Text
   issuedSnapshot Json?
   issuedAt      DateTime?
+  // Controlled commercial-invoice replacement. Issued PDF snapshot is immutable.
+  replacesInvoiceId    String?  @unique
+  replacementReason    String?  @db.Text
+  replacedByInvoiceId  String?  @unique
+  replacedAt           DateTime?
   createdByUserId     String?
   createdByEmployeeId String?
   createdByDisplayName String
@@ -6649,6 +6657,7 @@ model CustomPaymentInvoice {
   @@index([status, createdAt])
   @@index([recipientName])
   @@index([customerId])
+  @@index([replacedAt])
 }
 
 /** Signed, deduplicated Resend notifications for every invoice recipient.

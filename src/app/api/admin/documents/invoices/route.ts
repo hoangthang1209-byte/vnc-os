@@ -119,6 +119,9 @@ export async function POST(request: NextRequest) {
       recipientEmail:recipientTo.join(", ")||null,
       recipientCcEmails:recipientCc.join(", ")||null,
       recipientAddress:optional(body.recipientAddress,1000),
+      deliveryRecipientName:optional(body.deliveryRecipientName,250),
+      deliveryRecipientPhone:optional(body.deliveryRecipientPhone,50),
+      deliveryRecipientAddress:optional(body.deliveryRecipientAddress,1500),
       issuerName:entity?.legalName??required(body.issuerName,250),
       issuerAddress:entity?.address??optional(body.issuerAddress,1000),
       issuerTaxId:entity?.taxCode??optional(body.issuerTaxId,80),
@@ -158,7 +161,7 @@ export async function POST(request: NextRequest) {
 export async function GET(request:NextRequest) {
   const refused=authorize(request,"orders.view_financials");if(refused)return refused;
   try {
-    const invoices=await prisma.customPaymentInvoice.findMany({take:100,orderBy:{createdAt:"desc"},select:{id:true,invoiceNo:true,status:true,recipientName:true,currency:true,total:true,createdAt:true,createdByDisplayName:true,createdByMode:true,preparedByName:true,emailedAt:true,emailedTo:true,emailSendCount:true,emailDeliveryStatus:true,emailDeliveryUpdatedAt:true,orderId:true,customerId:true}});
+    const invoices=await prisma.customPaymentInvoice.findMany({take:100,orderBy:{createdAt:"desc"},select:{id:true,invoiceNo:true,status:true,recipientName:true,currency:true,total:true,createdAt:true,createdByDisplayName:true,createdByMode:true,preparedByName:true,emailedAt:true,emailedTo:true,emailSendCount:true,emailDeliveryStatus:true,emailDeliveryUpdatedAt:true,orderId:true,customerId:true,replacesInvoiceId:true,replacementReason:true,replacedByInvoiceId:true,replacedAt:true}});
     return NextResponse.json({invoices});
   }catch(error) {
     console.error("[custom invoice list]",error);

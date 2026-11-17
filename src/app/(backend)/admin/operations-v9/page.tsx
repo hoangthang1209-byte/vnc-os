@@ -20,7 +20,7 @@ export default async function OperationsV9Page() {
   const orderItemScope = assignedItemWhere ?? {};
   const [trackings, orders] = await Promise.all([
     prisma.itemProductionTracking.findMany({
-      where: { orderItem: { AND: [orderItemScope, { order: { is: orderWhere } }] } },
+      where: { orderItem: { is: { AND: [orderItemScope, { order: { is: orderWhere } }] } } },
       take: 300, orderBy: { updatedAt: "desc" },
       select: {
         id: true, orderItemId: true, orderedQuantity: true, plannedQuantity: true,

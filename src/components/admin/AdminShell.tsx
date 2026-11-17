@@ -324,6 +324,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [sidebarCompact, setSidebarCompact] = useState(false);
   const isLogin = pathname === "/admin/login";
+  const isOperationsV9 = pathname === "/admin/operations-v9";
 
   useEffect(() => {
     if (!mobileNavOpen) return;
@@ -346,6 +347,13 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
 
   if (isLogin) {
     return children;
+  }
+
+  // Standalone V9 command center follows the approved full-width HTML layout.
+  // Keep providers, server auth and RBAC; omit the generic ATTD Admin header
+  // and duplicate sidebar on this one dedicated route only.
+  if (isOperationsV9) {
+    return <WorkspaceModeProvider><AdminTitleProvider>{children}</AdminTitleProvider></WorkspaceModeProvider>;
   }
 
   return (

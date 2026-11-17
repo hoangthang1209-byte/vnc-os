@@ -13,6 +13,8 @@ type AdminAuditEvent = {
     | "forbidden_route"
     | "forbidden_api"
     | "forbidden_data"
+    | "custom_invoice_duplicated"
+    | "custom_invoice_draft_updated"
     | "custom_invoice_issued"
     | "custom_invoice_email_sent"
     | "vnc_legal_entity_created"

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import AdminLogoutButton from "@/components/admin/AdminLogoutButton";
 import { useMemo, useState } from "react";
 
 type Job = { id:string; trackingId:string; orderId:string; orderNo:string; customer:string;
@@ -73,7 +74,7 @@ export default function IntegratedProductionWorkspace({jobs,orders,factories,doc
  </button>;
  return <div className="vncops">
  <style>{`
- .vncops{--ink:#17253a;--muted:#6b7b90;--line:#e1e7ef;--navy:#14233a;--blue:#2563eb;color:var(--ink);font-size:13px;background:#f3f6fa;border-radius:16px;padding:20px;min-height:80vh}
+ .vncops{min-height:100vh;border-radius:0;--ink:#17253a;--muted:#6b7b90;--line:#e1e7ef;--navy:#14233a;--blue:#2563eb;color:var(--ink);font-size:13px;background:#f3f6fa;border-radius:16px;padding:20px;min-height:80vh}
  .vncops *{box-sizing:border-box}.v9shell{display:grid;grid-template-columns:182px minmax(0,1fr);gap:18px;align-items:start}
  .v9localnav{background:#17263f;border-radius:13px;color:#b2c0d2;min-height:680px;padding:19px 11px;position:sticky;top:12px}
  .v9brand{font-weight:800;letter-spacing:.03em;font-size:16px;color:white;padding:5px 12px 18px;border-bottom:1px solid #30415a;margin-bottom:18px}
@@ -142,6 +143,9 @@ export default function IntegratedProductionWorkspace({jobs,orders,factories,doc
   <Link className="v9navitem" href="/admin/tech-pack">▧ &nbsp; Tech Pack</Link>
   <Link className="v9navitem" href="/admin/production-suppliers">◇ &nbsp; SRM / Supplier</Link>
   <Link className="v9navitem" href="/admin/manufacturing/production-timeline">◷ &nbsp; Cập nhật sản xuất</Link>
+  <div className="v9navlabel">ACCOUNT</div>
+  <Link className="v9navitem" href="/admin/dashboard">← &nbsp; VNC OS Dashboard</Link>
+  <div style={{padding:"10px 12px"}}><AdminLogoutButton /></div>
  </nav>
  <main className="v9content">
  {section==="orders"&&<>

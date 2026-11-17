@@ -6,6 +6,7 @@ import { loadInvoiceInterFont } from "./inter-font";
 
 type InvoicePdfInput = {
   invoiceNo: string; recipientName: string; recipientAddress?: string | null;
+  deliveryRecipientName?: string | null; deliveryRecipientPhone?: string | null; deliveryRecipientAddress?: string | null;
   issuerName: string; issuerAddress?: string | null; currency: string; total: string;
   issueDate: Date; dueDate?: Date | null; lines: unknown; adjustments?: unknown;
   bankDetails?: unknown; notes?: string | null; createdByDisplayName?: string | null; preparedByName?: string | null;
@@ -93,6 +94,23 @@ export async function renderInvoicePdf(invoice:InvoicePdfInput):Promise<Buffer>{
   if(issuerAddress)write(issuerAddress,L,y,half,false,7.6,GREY);
   if(customerAddress)write(customerAddress,right,y,half,false,7.6,GREY);
   y+=addrHeight+12;
+  // Shipping contact is optional and separate from the bill-to entity.
+  const deliveryName=str(invoice.deliveryRecipientName).slice(0,250);
+  const deliveryPhone=str(invoice.deliveryRecipientPhone).slice(0,50);
+  const deliveryAddress=str(invoice.deliveryRecipientAddress).slice(0,1500);
+  if(deliveryName || deliveryPhone || deliveryAddress){
+    const fields = [
+      deliveryName ? "CONTACT: "+deliveryName : "",
+      deliveryPhone ? "PHONE: "+deliveryPhone : "",
+      deliveryAddress ? "ADDRESS: "+deliveryAddress : "",
+    ].filter(Boolean);
+    const rowHeight=fields.reduce((sum,line)=>sum+height(line,W-20,false,7.7)+4,0);
+    ensure(rowHeight+28);
+    write("DELIVER TO / NGƯỜI NHẬN HÀNG",L,y,W,true,7.3,NAVY);
+    y+=15;
+    for(const line of fields){const h=height(line,W-20,false,7.7);write(line,L+8,y,W-20,false,7.7,INK);y+=h+4;}
+    y+=10;
+  }
   ensure(48);
   pdf.roundedRect(L,y,W,39,3).fill("#f7f8fa");
   const meta=[

@@ -14,7 +14,7 @@ export default async function OperationsV9Page() {
     return <main className="p-8"><h1>Không có quyền xem điều hành sản xuất</h1><Link href="/admin/dashboard">Quay lại</Link></main>;
   }
   // Read-only, bounded initial rollout. Existing order/stage identities are canonical.
-  const [trackings, suppliers] = await Promise.all([
+  const [trackings, suppliers, orders] = await Promise.all([
     prisma.itemProductionTracking.findMany({
       take: 300, orderBy: { updatedAt: "desc" },
       select: {
@@ -43,6 +43,12 @@ export default async function OperationsV9Page() {
       orderBy: { name: "asc" },
       select: { id: true, code: true, name: true, category: true,
         capabilities: true, factoryAddress: true, phone: true, contact: true },
+    }),
+    prisma.order.findMany({ take: 200, orderBy: { createdAt: "desc" },
+      select: { id: true, orderNo: true, customerCompanyName: true,
+        status: true, productionDueDate: true, deliveryExpectedAt: true,
+        items: { select: { id: true, skuSnapshot: true, productNameSnapshot: true,
+          quantity: true, designImageUrl: true } } },
     }),
   ]);
   const jobs = trackings.flatMap((t) => {
@@ -73,7 +79,11 @@ export default async function OperationsV9Page() {
     }));
     return grouped.map((job) => ({ ...base, ...job }));
   });
-  return <IntegratedProductionWorkspace jobs={jobs} factories={suppliers.map((f) => ({
+  return <IntegratedProductionWorkspace jobs={jobs} orders={orders.map(o => ({
+    id:o.id, orderNo:o.orderNo, customer:o.customerCompanyName??"", status:String(o.status),
+    due:(o.deliveryExpectedAt??o.productionDueDate)?.toISOString()??null,
+    items:o.items.map(i=>({id:i.id,sku:i.skuSnapshot??i.productNameSnapshot??i.id,name:i.productNameSnapshot??"",quantity:i.quantity,image:i.designImageUrl??null}))
+  }))} factories={suppliers.map((f) => ({
     id: f.id, code: f.code, name: f.name,
     category: String(f.category), capabilities: f.capabilities ?? "",
     address: f.factoryAddress ?? "", contact: f.contact ?? "", phone: f.phone ?? "",

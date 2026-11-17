@@ -80,7 +80,7 @@ export default function IntegratedProductionWorkspace({jobs,factories,orders,doc
     <header className="flex flex-wrap items-center justify-between gap-3">
       <div><p className="text-xs tracking-widest uppercase text-slate-500">VNC OS V9 / Operations</p>
         <h1 className="text-2xl font-semibold text-slate-900">Orders ↔ Production ↔ Factory</h1>
-        <p className="text-sm text-slate-500">Master timeline · Dữ liệu sản xuất thực từ VNC OS · Chế độ chỉ đọc</p></div>
+        <p className="text-sm text-slate-500">Master timeline · Dữ liệu sản xuất thực từ VNC OS · Chỉ đọc · Các KPI tính trên tập kết quả giới hạn</p></div>
       <div className="flex gap-2 text-sm">
         <Link className="border rounded-lg px-3 py-2" href="/admin/orders">Orders</Link>
         <Link className="border rounded-lg px-3 py-2" href="/admin/manufacturing/production-timeline">Cập nhật sản xuất</Link>
@@ -94,7 +94,7 @@ export default function IntegratedProductionWorkspace({jobs,factories,orders,doc
     <section className="bg-white border rounded-xl p-4 space-y-3">
       <div className="flex justify-between items-center gap-3">
         <h2 className="font-semibold">Order Portfolio · Dữ liệu thật</h2>
-        <span className="text-xs text-slate-500">Tối đa 200 đơn mới nhất</span>
+        <span className="text-xs text-slate-500">Tối đa 200 đơn theo quyền truy cập</span>
       </div>
       <div className="overflow-x-auto"><table className="w-full text-sm text-left">
         <thead className="text-xs text-slate-500 border-b"><tr>
@@ -164,7 +164,7 @@ export default function IntegratedProductionWorkspace({jobs,factories,orders,doc
       <p className="text-xs text-slate-500">Thanh lịch chỉ xuất hiện với job có ngày bắt đầu/kết thúc kế hoạch. Nhấp vào job để xem thông tin thật và liên kết về đơn hàng.</p>
     </div>
     <section className="bg-white border rounded-xl p-4">
-      <h2 className="font-semibold mb-3">Factory Directory · Đối tác sản xuất đang hoạt động</h2>
+      <h2 className="font-semibold mb-3">Factory Directory · Đối tác sản xuất từ SRM (chưa tách Factory độc lập)</h2>
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
         {factories.map(f=><button key={f.id} onClick={()=>setFactoryDetail(f.id)}
           className="border rounded-xl p-3 text-left hover:border-slate-600">
@@ -231,7 +231,7 @@ export default function IntegratedProductionWorkspace({jobs,factories,orders,doc
           {factoryJobs.map(j=><button key={j.id} className="block w-full text-left border rounded-lg p-3"
             onClick={()=>{setSelected(j.id);setFactoryDetail(null)}}>
             <strong>{j.orderNo} · {j.sku}</strong><span className="block text-xs text-slate-500">{j.stage} · {dateText(j.start)} – {dateText(j.end)}</span></button>)}
-          <p className="text-xs text-amber-700">Công suất xưởng chưa có nguồn dữ liệu cam kết theo ngày nên hệ thống không tự tính % tải giả.</p>
+          <p className="text-xs text-amber-700">Dữ liệu đang hiển thị theo đối tác SRM. Factory độc lập và công suất cam kết theo ngày chưa được triển khai; hệ thống không tự tính % tải giả.</p>
           <Link className="underline" href="/admin/production-suppliers">Mở Supplier / SRM</Link>
         </div>}
       </aside>

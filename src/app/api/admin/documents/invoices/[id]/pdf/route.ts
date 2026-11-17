@@ -12,7 +12,7 @@ export async function GET(request:NextRequest, context:{params:Promise<{id:strin
   try{
     const invoice=await prisma.customPaymentInvoice.findUnique({where:{id}});
     if(!invoice)return NextResponse.json({error:"Not found"},{status:404});
-    if(invoice.status!=="ISSUED" || !invoice.issuedSnapshot) {
+    if(!["ISSUED","SUPERSEDED"].includes(invoice.status) || !invoice.issuedSnapshot) {
       return NextResponse.json({error:"Issue invoice before downloading final PDF"},{status:409});
     }
     const snapshot=invoice.issuedSnapshot as Record<string,unknown>;

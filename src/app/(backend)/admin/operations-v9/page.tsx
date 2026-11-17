@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { getAdminSessionFromCookies } from "@/lib/admin-auth/get-admin-session";
-import { can } from "@/features/auth/admin-permissions";
+import { can, getPermissionScope } from "@/features/auth/admin-permissions";
+import { buildProductionPlanOrderWhere, buildAssignedJobFilter } from "@/features/production-planning/production-plan-scope";
 import { adminPageMetadata } from "@/lib/admin/admin-metadata";
 import IntegratedProductionWorkspace from "@/components/admin/operations-v9/IntegratedProductionWorkspace";
 
@@ -13,9 +14,13 @@ export default async function OperationsV9Page() {
   if (!session || !can(session, "production.view")) {
     return <main className="p-8"><h1>Không có quyền xem điều hành sản xuất</h1><Link href="/admin/dashboard">Quay lại</Link></main>;
   }
-  // Read-only, bounded initial rollout. Existing order/stage identities are canonical.
-  const [trackings, suppliers, orders] = await Promise.all([
+  // Server-side scoping: apply BEFORE LIMIT, never filter confidential data client-side.
+  const orderWhere = buildProductionPlanOrderWhere(session);
+  const assignedItemWhere = buildAssignedJobFilter(session);
+  const orderItemScope = assignedItemWhere ?? {};
+  const [trackings, orders] = await Promise.all([
     prisma.itemProductionTracking.findMany({
+      where: { orderItem: { AND: [orderItemScope, { order: { is: orderWhere } }] } },
       take: 300, orderBy: { updatedAt: "desc" },
       select: {
         id: true, orderItemId: true, orderedQuantity: true, plannedQuantity: true,
@@ -38,19 +43,26 @@ export default async function OperationsV9Page() {
             plannedStartAt: true, plannedEndAt: true, completedQuantity: true, acceptedQuantity: true } } } },
       },
     }),
-    prisma.productionSupplier.findMany({
-      where: { isActive: true }, take: 500,
-      orderBy: { name: "asc" },
-      select: { id: true, code: true, name: true, category: true,
-        capabilities: true, factoryAddress: true, phone: true, contact: true },
-    }),
-    prisma.order.findMany({ take: 200, orderBy: { createdAt: "desc" },
+    prisma.order.findMany({ where: orderWhere, take: 200, orderBy: { createdAt: "desc" },
       select: { id: true, orderNo: true, customerCompanyName: true,
         status: true, productionDueDate: true, deliveryExpectedAt: true,
-        items: { select: { id: true, skuSnapshot: true, productNameSnapshot: true,
+        items: { where: orderItemScope, select: { id: true, skuSnapshot: true, productNameSnapshot: true,
           quantity: true, designImageUrl: true } } },
     }),
   ]);
+  const factoryIds = [...new Set(trackings.flatMap(t => [
+    ...t.stages.map(s => s.supplierId),
+    ...t.batches.flatMap(b => [b.supplierId,...b.stages.map(s => s.supplierId)]),
+  ]).filter((id): id is string => Boolean(id)))];
+  // Only Owners / ALL-scoped production users may see the full factory directory.
+  const fullFactoryDirectory = getPermissionScope(session, "production.view") === "ALL";
+  const suppliers = await prisma.productionSupplier.findMany({
+    where: { isActive: true, ...(fullFactoryDirectory ? {} :
+      { id: { in: factoryIds.length ? factoryIds : ["__no_access__"] } }) },
+    take: 500, orderBy: { name: "asc" },
+    select: { id: true, code: true, name: true, category: true,
+      capabilities: true, factoryAddress: true, phone: true, contact: true },
+  });
   const itemIds = [...new Set(orders.flatMap(o=>o.items.map(i=>i.id)))];
   const [techPacks, productionFiles, qcInspections] = itemIds.length ? await Promise.all([
     prisma.techPack.findMany({ where: { orderItemId: { in: itemIds } },

@@ -39,6 +39,10 @@ export default function CustomInvoiceManager(){
  const [deliveryDetails,setDeliveryDetails]=useState<{id:string;value:DeliveryDetails}|null>(null);
  const [deliveryLoading,setDeliveryLoading]=useState<string|null>(null);
  const [recipientAddress,setRecipientAddress]=useState("");
+ const [deliveryRecipientName,setDeliveryRecipientName]=useState("");
+ const [deliveryRecipientPhone,setDeliveryRecipientPhone]=useState("");
+ const [deliveryRecipientAddress,setDeliveryRecipientAddress]=useState("");
+ const [showDeliveryRecipient,setShowDeliveryRecipient]=useState(false);
  const [issuerName,setIssuerName]=useState("");
  const [issuerAddress,setIssuerAddress]=useState("");
  const [issuerTaxId,setIssuerTaxId]=useState("");
@@ -108,7 +112,7 @@ export default function CustomInvoiceManager(){
   if(swift.trim()&&!/^[A-Za-z]{6}[A-Za-z0-9]{2}([A-Za-z0-9]{3})?$/.test(swift.trim())){setMessage("SWIFT/BIC gồm 8 hoặc 11 ký tự, khác với số tài khoản. Nếu không có hãy để trống.");return;}
   setBusy(true);setMessage("Đang lưu bản nháp...");
   try{
-   const r=await fetch(editingDraftId?"/api/admin/documents/invoices/"+encodeURIComponent(editingDraftId):"/api/admin/documents/invoices",{method:editingDraftId?"PATCH":"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({preparedByEmployeeId:preparedByEmployeeId||null,customerId:customerId||null,orderId:orderId||null,legalEntityId:legalEntityId||null,bankAccountId:bankAccountId||null,recipientName,recipientAddress,recipientEmail,recipientCcEmails,issuerName,issuerAddress,issuerTaxId,currency,issueDate,dueDate,lines,beneficiary,bank,bankAccount,accountAddress,bankAddress,branch,swift,notes,discount,extraCharge,tax})});
+   const r=await fetch(editingDraftId?"/api/admin/documents/invoices/"+encodeURIComponent(editingDraftId):"/api/admin/documents/invoices",{method:editingDraftId?"PATCH":"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({preparedByEmployeeId:preparedByEmployeeId||null,customerId:customerId||null,orderId:orderId||null,legalEntityId:legalEntityId||null,bankAccountId:bankAccountId||null,recipientName,recipientAddress,recipientEmail,recipientCcEmails,deliveryRecipientName,deliveryRecipientPhone,deliveryRecipientAddress,issuerName,issuerAddress,issuerTaxId,currency,issueDate,dueDate,lines,beneficiary,bank,bankAccount,accountAddress,bankAddress,branch,swift,notes,discount,extraCharge,tax})});
    const data=await r.json();if(!r.ok)throw new Error(data.error||"Không thể lưu bản nháp");
    setInvoiceNo(data.invoiceNo);setPdfId(data.id);setEditingDraftId(data.id);setIssued(false);setMessage("Đã lưu bản nháp "+data.invoiceNo+".");await refresh();
   }catch(error){setMessage(error instanceof Error?error.message:"Lưu không thành công");}
@@ -124,6 +128,8 @@ export default function CustomInvoiceManager(){
    const v=data.invoice;
    setInvoiceNo(data.invoiceNo);setEditingDraftId(data.id);setPdfId(data.id);setIssued(false);
    setRecipientName(v.recipientName);setRecipientAddress(v.recipientAddress);
+   setDeliveryRecipientName(v.deliveryRecipientName||"");setDeliveryRecipientPhone(v.deliveryRecipientPhone||"");setDeliveryRecipientAddress(v.deliveryRecipientAddress||"");
+   setShowDeliveryRecipient(Boolean(v.deliveryRecipientName||v.deliveryRecipientPhone||v.deliveryRecipientAddress));
    setRecipientEmail(v.recipientEmail);setRecipientCcEmails(v.recipientCcEmails);
    setCustomerId(v.customerId);setOrderId(v.orderId);
    setPreparedByName(v.preparedByName);setPreparedByEmployeeId(v.preparedByEmployeeId);
@@ -268,6 +274,15 @@ export default function CustomInvoiceManager(){
       <div className={s.field}><label>Email CC — người nhận bản sao</label><textarea className={s.textarea} rows={2} value={recipientCcEmails} onChange={e=>{setRecipientCcEmails(e.target.value);setPdfId("");setIssued(false);}} placeholder="manager@customer.com; team@customer.com"/><p className={s.helper}>Một email Invoice sẽ được gửi chung đến toàn bộ To và CC.</p></div>
       {field("Địa chỉ bên phát hành",issuerAddress,setIssuerAddress,"Địa chỉ pháp lý")}
       {field("Địa chỉ khách hàng",recipientAddress,setRecipientAddress,"Địa chỉ nhận Invoice")}
+      <div className={s.field+" "+s.full}>
+       <label><input type="checkbox" checked={showDeliveryRecipient} onChange={e=>{setShowDeliveryRecipient(e.target.checked);if(!e.target.checked){setDeliveryRecipientName("");setDeliveryRecipientPhone("");setDeliveryRecipientAddress("");}}}/> Thêm thông tin người nhận hàng (tùy chọn)</label>
+       <p className={s.helper}>Khác với thông tin khách hàng thanh toán; chỉ xuất hiện trên PDF khi có dữ liệu.</p>
+      </div>
+      {showDeliveryRecipient&&<>
+       {field("Tên người nhận hàng",deliveryRecipientName,setDeliveryRecipientName,"Họ tên người nhận")}
+       {field("Số điện thoại người nhận",deliveryRecipientPhone,setDeliveryRecipientPhone,"+84 ...","tel")}
+       {field("Địa chỉ giao hàng",deliveryRecipientAddress,setDeliveryRecipientAddress,"Địa chỉ nhận hàng đầy đủ")}
+      </>}
      </div></div>
      <div className={s.section}><p className={s.sectionTitle}>04 / Chi tiết khoản thu</p>
       {lines.map((l,i)=><div className={s.item} key={i}><div className={s.itemTop}><span className={s.itemIndex}>Khoản thu {String(i+1).padStart(2,"0")}</span><button type="button" className={s.ghost} disabled={lines.length===1} onClick={()=>{setLines(rows=>rows.filter((_,j)=>j!==i));setPdfId("");}}>Xóa khoản thu</button></div>
@@ -318,6 +333,7 @@ export default function CustomInvoiceManager(){
       <div className={s.paperParty}><div className={s.paperCaption}>ISSUED BY</div><div className={s.paperPartyName}>{issuerName||"Vietnam Clothing Manufacturing"}</div><div className={s.paperPartyAddress}>{issuerAddress||"Ho Chi Minh City, Vietnam"}</div></div>
       <div className={s.paperParty}><div className={s.paperCaption}>BILL TO</div><div className={s.paperPartyName}>{recipientName||"Customer name"}</div><div className={s.paperPartyAddress}>{recipientAddress||"Customer address"}</div></div>
      </div>
+     {(deliveryRecipientName||deliveryRecipientPhone||deliveryRecipientAddress)&&<div className={s.paperBank} style={{marginBottom:12}}><div className={s.paperTableTitle}>DELIVER TO / NGƯỜI NHẬN HÀNG</div>{deliveryRecipientName&&<div>{deliveryRecipientName}</div>}{deliveryRecipientPhone&&<div>{deliveryRecipientPhone}</div>}{deliveryRecipientAddress&&<div>{deliveryRecipientAddress}</div>}</div>}
      <div className={s.paperMetaEnterprise}>
       {([{label:"INVOICE NUMBER",value:invoiceNo||"—"},{label:"ISSUE DATE",value:issueDate||"—"},{label:"DUE DATE",value:dueDate||"—"}]).map(meta=><div className={s.paperMetaCell} key={meta.label}><span className={s.paperCaption}>{meta.label}</span><strong>{meta.value}</strong></div>)}
      </div>

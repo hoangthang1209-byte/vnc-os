@@ -57,6 +57,7 @@ export const adminNavigationSections: AdminNavigationSection[] = [
     { label:"Dự án & Batch", href:"/admin/orders/projects", status:"active", requiredPermissions:["canManageUsers"] },
     { label:"Tiến độ sản xuất", href:"/admin/manufacturing/production-timeline", status:"active", requiredPermissions:["canViewProduction"] },
     { label:"Điều hành sản xuất", href:"/admin/production", status:"active", requiredPermissions:["canViewProduction"] },
+    { label:"Operations V9 · Orders / SKU / Factory", href:"/admin/operations-v9", status:"active", requiredPermissions:["canViewProduction"] },
     { label:"Giao hàng", href:"/admin/delivery", status:"active", requiredPermissions:["canViewDelivery"] },
   ]) },
   { label:"TECHNICAL & SOURCING", icon:"▧", platforms: domainItems([

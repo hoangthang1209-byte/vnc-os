@@ -17,6 +17,7 @@ import { formatOrderItemCardHeading } from "@/features/orders/order-item-display
 import OrderItemReadinessBadge from "@/components/admin/orders/OrderItemReadinessBadge";
 import { useAdminMutation } from "@/hooks/useAdminAction";
 import { parseAdminJsonResponse } from "@/lib/admin/adminMutation";
+import qcStyles from "./OrderQcSummary.module.css";
 
 type MediaAssetPick = {
   id: string;
@@ -451,7 +452,7 @@ export default function OrderItemExecutionCard({
               <div className="admin-form-grid">
                 <div className="admin-field admin-field--full" aria-label="Kết quả QC đã ghi nhận">
                   <strong>Kết quả QC đã ghi nhận</strong>
-                  <dl style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 12, marginTop: 10 }}>
+                  <dl className={qcStyles.summaryGrid}>
                     {([
                       ["Đã kiểm", qc.inspectedQuantity],
                       ["Đạt", qc.passedQuantity],
@@ -461,7 +462,7 @@ export default function OrderItemExecutionCard({
                     ] as const).map(([label, value]) => (
                       <div key={label}>
                         <dt className="admin-field-hint">{label}</dt>
-                        <dd style={{ margin: "4px 0 0", fontWeight: 700 }}>{value}</dd>
+                        <dd className={qcStyles.summaryValue}>{value}</dd>
                       </div>
                     ))}
                   </dl>

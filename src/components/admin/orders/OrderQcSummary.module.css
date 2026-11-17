@@ -1,0 +1,13 @@
+.summaryGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 12px;
+  margin-top: 10px;
+}
+.summaryValue {
+  margin: 4px 0 0;
+  font-weight: 700;
+}
+@media (max-width: 440px) {
+  .summaryGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}

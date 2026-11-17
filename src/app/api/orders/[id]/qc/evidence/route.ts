@@ -4,7 +4,7 @@ import {
   addQcEvidence,
 } from "@/features/orders/qc-inspection.service";
 import { ProductionExecutionValidationError } from "@/features/orders/production-quantity";
-import { requireAdminPermission } from "@/lib/permissions/require-admin-permission";
+import { checkQcOrderAccess } from "@/features/orders/qc-route-access";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -23,14 +23,9 @@ function parseOptionalString(value: unknown): string | null | undefined {
 }
 
 export async function POST(req: NextRequest, context: RouteContext) {
-  const permission = await requireAdminPermission({
-    platform: "commercial",
-    action: "update",
-    request: req,
-  });
-  if (!permission.ok) return permission.response;
-
   const { id } = await context.params;
+  const denied = await checkQcOrderAccess(req, id, "write");
+  if (denied) return denied;
   let body: unknown;
   try {
     body = await req.json();

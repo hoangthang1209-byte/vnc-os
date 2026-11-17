@@ -172,8 +172,17 @@ export default function IntegratedProductionWorkspace({jobs,orders,factories,doc
    <div className="v9ganttwrap"><div className="v9gantt">
     <div className="v9grow v9ghead"><div className="v9glabel">ĐƠN HÀNG / SKU / JOB</div><div className="v9gridcell" style={{["--cell" as string]:cell+"px",height:34}}>{Array.from({length:horizon},(_,i)=><div className="v9day" key={i} style={{left:i*cell,width:cell}}>{new Date(base+i*day).getDate()}</div>)}</div></div>
     {grouped.map(([key,rows])=><div key={key}><div className="v9grow"><button className="v9glabel" title={key} onClick={()=>setExpanded(a=>a.includes(key)?a.filter(k=>k!==key):[...a,key])}><span>{expanded.includes(key)?"▾":"▸"} {group==="factory"?factoriesById.get(key)?.name??"Chưa gán Factory":key} ({rows.length})</span></button><div className="v9gridcell" style={{["--cell" as string]:cell+"px"}}>{rows.map(timeline)}</div></div>{expanded.includes(key)&&rows.map(j=><div className="v9grow v9subrow" key={j.id}><button className="v9glabel" onClick={()=>setSelectedJob(j.id)} title={j.sku+" / "+j.stage}><span>{j.sku} · {j.stage}</span></button><div className="v9gridcell" style={{["--cell" as string]:cell+"px"}}>{timeline(j)}</div></div>)}</div>)}
+    {(group==="order"||group==="sku")&&orders.filter(o=>(orderFilter==="all"||orderFilter===o.id)&&!orderJobs(o.id).length&&(!search||[o.orderNo,o.customer,...o.items.map(i=>i.sku)].some(x=>x.toLowerCase().includes(search.toLowerCase())))).map(o=>
+      <div className="v9grow" key={"unplanned-"+o.id}>
+        <button className="v9glabel" onClick={()=>{setSection("orders");setSelectedOrder(o.id);}} title="Chưa có Production Stage">
+          <span>◇ {o.orderNo} · {o.items.length} SKU</span>
+        </button>
+        <div className="v9gridcell" style={{["--cell" as string]:cell+"px",display:"flex",alignItems:"center"}}>
+          <span style={{fontSize:10,paddingLeft:12,color:"#8795a7"}}>Chưa lập Production Jobs · <Link href={"/admin/production/plan?search="+encodeURIComponent(o.orderNo)} style={{color:"#2563eb",textDecoration:"underline"}}>Mở kế hoạch sản xuất</Link></span>
+        </div>
+      </div>)}
    </div></div>
-   {!grouped.length&&<div className="v9empty">Chưa có Production Stage phù hợp bộ lọc. Đơn hàng chưa được lập routing hoặc batch sẽ không tạo thanh Gantt giả.</div>}
+   {!grouped.length&&!orders.length&&<div className="v9empty">Không có dữ liệu sản xuất trong phạm vi được phép xem.</div>}
    <div className="v9footnote">Các thanh màu biểu diễn lịch dự kiến của stage có ngày bắt đầu và kết thúc. Nhấp vào thanh để mở Job Detail. Bộ lọc và KPI dùng dữ liệu được phép xem, không phải tổng toàn hệ thống.</div>
   </section>
   <div className="v9twocol"><div className="v9panel v9panelpad"><h3 className="v9subheading">Factory Capacity</h3><div className="v9placeholder">Chưa có công suất cam kết theo ngày. Không thể tính tỷ lệ tải Factory chính xác từ số Jobs.</div><button className="v9link" style={{marginTop:12}} onClick={()=>setSection("factories")}>Mở Factory Management →</button></div><div className="v9panel v9panelpad"><h3 className="v9subheading">Production Alerts</h3>{jobs.filter(j=>j.risk!=="ON_TRACK").slice(0,6).map(j=><button key={j.id} className="v9docline" style={{display:"block",width:"100%",textAlign:"left"}} onClick={()=>setSelectedJob(j.id)}>{j.orderNo} · {j.sku} · {j.risk}</button>)}{!atRisk&&<div className="v9placeholder">Không có cảnh báo trên các tracking được tải. Chưa xác minh độ đầy đủ của dữ liệu lập lịch.</div>}</div></div>

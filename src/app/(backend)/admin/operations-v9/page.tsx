@@ -6,7 +6,7 @@ import { buildProductionPlanOrderWhere, buildAssignedJobFilter } from "@/feature
 import { adminPageMetadata } from "@/lib/admin/admin-metadata";
 import IntegratedProductionWorkspace from "@/components/admin/operations-v9/IntegratedProductionWorkspace";
 
-export const metadata = adminPageMetadata("Orders · Production · Factory V9");
+export const metadata = adminPageMetadata("Điều hành sản xuất V9");
 export const dynamic = "force-dynamic";
 
 export default async function OperationsV9Page() {

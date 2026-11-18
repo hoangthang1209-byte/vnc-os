@@ -39,7 +39,7 @@ describe("VNC OS V9 navigation contract (#294)", () => {
     for (const href of [
       "/admin/crm/leads", "/admin/crm/customers", "/admin/quotes",
       "/admin/pricing/costing", "/admin/orders", "/admin/orders/new/quick",
-      "/admin/production", "/admin/production-suppliers",
+      "/admin/production", "/admin/operations-v9", "/admin/production-suppliers",
       "/admin/tech-pack", "/admin/documents/invoices",
       "/admin/products", "/admin/danh-muc", "/admin/media",
       "/admin/blog", "/admin/content/seo",
@@ -48,6 +48,15 @@ describe("VNC OS V9 navigation contract (#294)", () => {
       items().find((item) => item.href === "/admin/documents/invoices")?.requiredPermissions?.[0],
       "canViewFinancials",
     );
+  });
+
+  it("preserves the approved Factory / SKU / Order command center on production", () => {
+    const all = items();
+    const workspace = all.find(item => item.href === "/admin/operations-v9");
+    assert.ok(workspace, "Operations V9 command center must remain linked");
+    assert.equal(workspace.requiredPermissions?.[0], "canViewProduction");
+    assert.equal(workspace.status, "active");
+    assert.ok(existsSync("src/app/(backend)/admin/operations-v9/page.tsx"));
   });
 
   it("separates production operations from scheduling without duplicate destinations", () => {

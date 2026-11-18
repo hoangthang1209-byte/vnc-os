@@ -34,12 +34,12 @@ describe("VNC OS V9 navigation contract (#294)", () => {
     assert.equal(new Set(hrefs).size, hrefs.length);
   });
 
-  it("preserves key operational routes and original access requirements", () => {
+  it("preserves canonical operational navigation and access requirements", () => {
     const hrefs = items().map((item) => item.href);
     for (const href of [
       "/admin/crm/leads", "/admin/crm/customers", "/admin/quotes",
       "/admin/pricing/costing", "/admin/orders", "/admin/orders/new/quick",
-      "/admin/production", "/admin/production-suppliers",
+      "/admin/operations-v9", "/admin/production-suppliers",
       "/admin/tech-pack", "/admin/documents/invoices",
       "/admin/products", "/admin/danh-muc", "/admin/media",
       "/admin/blog", "/admin/content/seo",
@@ -47,6 +47,19 @@ describe("VNC OS V9 navigation contract (#294)", () => {
     assert.equal(
       items().find((item) => item.href === "/admin/documents/invoices")?.requiredPermissions?.[0],
       "canViewFinancials",
+    );
+  });
+
+  it("deduplicates sidebar production routes while retaining legacy edit pages", () => {
+    const hrefs = items().filter((item) => item.status === "active").map((item) => item.href);
+    assert.equal(hrefs.filter((href) => href === "/admin/operations-v9").length, 1);
+    for (const legacy of ["/admin/production", "/admin/manufacturing/production-timeline"]) {
+      assert.ok(!hrefs.includes(legacy), `duplicate sidebar entry: ${legacy}`);
+      assert.ok(existsSync(path.join("src/app/(backend)", legacy.replace(/^\//, ""), "page.tsx")), `legacy route removed: ${legacy}`);
+    }
+    assert.deepEqual(
+      items().find((item) => item.href === "/admin/operations-v9")?.requiredPermissions,
+      ["canViewProduction"],
     );
   });
 

@@ -96,7 +96,7 @@ async function main() {
   if (results.some(r => !r.pass)) process.exitCode = 1;
 }
 
-void main().catch((error: unknown) => {
+void main().catch(() => {
   // Avoid echoing possibly sensitive URL, file names or session details.
   process.stderr.write("QC smoke failed to initialize or execute. Check private operator inputs.\n");
   process.exitCode = 1;

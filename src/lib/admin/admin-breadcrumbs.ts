@@ -313,6 +313,14 @@ const breadcrumbRules: AdminBreadcrumbRule[] = [
     },
   },
 
+  {
+    path: "/admin/operations-v9",
+    meta: {
+      breadcrumbs: ["VẬN HÀNH", "Đơn hàng · Sản xuất · Factory"],
+      title: "Điều hành sản xuất V9",
+      description: "Không gian làm việc chung cho đơn hàng, SKU, Production Gantt và Factory 360.",
+    },
+  },
   // ── SẢN XUẤT ───────────────────────────────────────────────
   {
     path: "/admin/manufacturing-library/new",

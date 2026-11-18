@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import AdminLogoutButton from "@/components/admin/AdminLogoutButton";
 import { useMemo, useState } from "react";
 
 type Job = { id:string; trackingId:string; orderId:string; orderNo:string; customer:string;
@@ -79,13 +78,12 @@ export default function IntegratedProductionWorkspace({jobs,orders,factories,doc
  </button>;
  return <div className="vncops">
  <style>{`
- .vncops{min-height:100vh;border-radius:0;--ink:#17253a;--muted:#6b7b90;--line:#e1e7ef;--navy:#14233a;--blue:#2563eb;color:var(--ink);font-size:13px;background:#f3f6fa;border-radius:16px;padding:20px;min-height:80vh}
- .vncops *{box-sizing:border-box}.v9shell{display:grid;grid-template-columns:182px minmax(0,1fr);gap:18px;align-items:start}
- .v9localnav{background:#17263f;border-radius:13px;color:#b2c0d2;min-height:680px;padding:19px 11px;position:sticky;top:12px}
- .v9brand{font-weight:800;letter-spacing:.03em;font-size:16px;color:white;padding:5px 12px 18px;border-bottom:1px solid #30415a;margin-bottom:18px}
- .v9brand small{font-weight:400;display:block;color:#93a6bd;font-size:10px;margin-top:3px}.v9navlabel{padding:11px 12px 8px;color:#7e98b7;font-size:10px;font-weight:750;letter-spacing:1.1px}
- .v9navitem{display:block;width:100%;text-align:left;border:0;background:none;color:#b3c4d8;font-weight:650;padding:12px;border-radius:9px;cursor:pointer;margin-bottom:5px}
- .v9navitem.active{background:#294365;color:white;box-shadow:inset 3px 0 #4e8cf6}.v9navitem:hover{background:#233c5c;color:white}
+ .vncops{--ink:#17253a;--muted:#6b7b90;--line:#e1e7ef;--navy:#14233a;--blue:#2563eb;color:var(--ink);font-size:13px;background:#f3f6fa;border-radius:12px;padding:16px;min-height:60vh}
+ .vncops *{box-sizing:border-box}.v9shell{display:block}
+ .v9localnav{display:flex;align-items:center;flex-wrap:wrap;gap:7px;margin-bottom:18px;background:white;border:1px solid #e1e7ef;border-radius:10px;padding:9px}
+ .v9navitem{width:auto;border:0;background:#f0f4f9;color:#405670;font-weight:700;padding:10px 13px;border-radius:7px;cursor:pointer;font-size:12px}
+ .v9navitem.active{background:#233d65;color:#fff}.v9navitem:hover{background:#dbe7f6;color:#16375a}.v9navitem.active:hover{background:#233d65;color:#fff}
+ .v9navhint{font-size:10px;color:#71829a;margin-left:auto}
  .v9content{min-width:0}.v9head{display:flex;justify-content:space-between;align-items:center;gap:15px;margin:7px 0 20px}.v9eyebrow{font-size:10px;letter-spacing:1.1px;font-weight:750;color:#58749e}
  .v9head h1{font-size:26px;font-weight:800;letter-spacing:-.7px;margin:3px 0 4px}.v9head p{color:var(--muted);font-size:12px}.v9actions{display:flex;flex-wrap:wrap;gap:8px}
  .v9btn{background:white;border:1px solid #d5deea;border-radius:8px;padding:9px 13px;font-weight:650;color:#2e415f;cursor:pointer;white-space:nowrap}
@@ -135,22 +133,14 @@ export default function IntegratedProductionWorkspace({jobs,orders,factories,doc
  .v9doctabs{display:flex;flex-wrap:wrap;gap:5px;margin:16px 0}.v9doctabs button{border:1px solid #dde6ee;border-radius:6px;background:#f6f9fc;padding:8px;font-size:11px}
  .v9doctabs button.active{background:#192b47;color:white}.v9docline{padding:11px;border:1px solid #e8edf4;border-radius:8px;margin-bottom:8px;font-size:12px}
  @media(max-width:1200px){.v9metrics{grid-template-columns:repeat(3,minmax(0,1fr))}.v9factorygrid{grid-template-columns:repeat(2,minmax(0,1fr))}}
- @media(max-width:760px){.vncops{padding:10px}.v9shell{display:block}.v9localnav{position:static;min-height:auto;display:flex;flex-wrap:wrap;gap:5px;margin-bottom:13px;padding:9px}.v9brand{display:none}.v9navlabel{display:none}.v9navitem{width:auto;padding:9px}.v9head h1{font-size:22px}.v9head{align-items:flex-start;flex-direction:column}.v9metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.v9twocol{grid-template-columns:1fr}.v9factorygrid{grid-template-columns:1fr}}
+ @media(max-width:760px){.vncops{padding:10px}.v9localnav{padding:8px}.v9navitem{width:auto;padding:9px}.v9navhint{width:100%;margin-left:0}.v9head h1{font-size:22px}.v9head{align-items:flex-start;flex-direction:column}.v9metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.v9twocol{grid-template-columns:1fr}.v9factorygrid{grid-template-columns:1fr}}
  `}</style>
  <div className="v9shell">
- <nav className="v9localnav" aria-label="Operations V9 navigation">
-  <div className="v9brand">VNC OS V9<small>OPERATIONS COMMAND</small></div>
-  <div className="v9navlabel">WORKSPACE</div>
-  <button className={"v9navitem "+(section==="orders"?"active":"")} onClick={()=>setSection("orders")}>▤ &nbsp; Orders</button>
-  <button className={"v9navitem "+(section==="production"?"active":"")} onClick={()=>setSection("production")}>▥ &nbsp; Production Timeline</button>
-  <button className={"v9navitem "+(section==="factories"?"active":"")} onClick={()=>setSection("factories")}>▨ &nbsp; Factory Management</button>
-  <div className="v9navlabel">CONNECTED RECORDS</div>
-  <Link className="v9navitem" href="/admin/tech-pack">▧ &nbsp; Tech Pack</Link>
-  <Link className="v9navitem" href="/admin/production-suppliers">◇ &nbsp; SRM / Supplier</Link>
-  <Link className="v9navitem" href="/admin/manufacturing/production-timeline">◷ &nbsp; Cập nhật sản xuất</Link>
-  <div className="v9navlabel">ACCOUNT</div>
-  <Link className="v9navitem" href="/admin/dashboard">← &nbsp; VNC OS Dashboard</Link>
-  <div style={{padding:"10px 12px"}}><AdminLogoutButton /></div>
+ <nav className="v9localnav" aria-label="Các màn hình của Điều hành sản xuất V9">
+  <button type="button" className={"v9navitem "+(section==="orders"?"active":"")} onClick={()=>setSection("orders")}>Đơn hàng & SKU</button>
+  <button type="button" className={"v9navitem "+(section==="production"?"active":"")} onClick={()=>setSection("production")}>Tiến độ & Gantt</button>
+  <button type="button" className={"v9navitem "+(section==="factories"?"active":"")} onClick={()=>setSection("factories")}>Factory Management</button>
+  <span className="v9navhint">Các tính năng chỉnh sửa vẫn nằm trong trang nghiệp vụ hiện có.</span>
  </nav>
  <main className="v9content">
  {section==="orders"&&<>

@@ -6,7 +6,7 @@ import type { OrderDetailRecord } from "@/features/orders/order.types";
 import type { OrderWorkspaceTab } from "./order-workspace.types";
 import styles from "./V9OrderOverview.module.css";
 
-type Step = {label:string;date:string|null;tab:OrderWorkspaceTab;done:boolean};
+type Step = {label:string;date:string|null;tab:OrderWorkspaceTab;done:boolean;requiresDelivery?:boolean};
 export default function V9OrderOverview({order,canViewFinancials,canViewCrm,canViewProduction,canViewDelivery,onNavigateTab}:{
   order:OrderDetailRecord;canViewFinancials:boolean;canViewCrm:boolean;canViewProduction:boolean;canViewDelivery:boolean;
   onNavigateTab:(tab:OrderWorkspaceTab)=>void;
@@ -15,8 +15,8 @@ export default function V9OrderOverview({order,canViewFinancials,canViewCrm,canV
     {label:"Tạo đơn",date:order.createdAt,tab:"info",done:true},
     {label:"Xác nhận",date:order.confirmedAt,tab:"info",done:Boolean(order.confirmedAt)},
     {label:"Bắt đầu sản xuất",date:order.productionStartedAt,tab:"products",done:Boolean(order.productionStartedAt)},
-    {label:"Sẵn sàng giao",date:order.readyToShipAt,tab:"delivery",done:Boolean(order.readyToShipAt)},
-    {label:"Đã gửi hàng",date:order.shippedAt,tab:"delivery",done:Boolean(order.shippedAt)},
+    {label:"Sẵn sàng giao",requiresDelivery:true,date:order.readyToShipAt,tab:"delivery",done:Boolean(order.readyToShipAt)},
+    {label:"Đã gửi hàng",requiresDelivery:true,date:order.shippedAt,tab:"delivery",done:Boolean(order.shippedAt)},
     {label:"Hoàn tất",date:order.completedAt,tab:"activity",done:Boolean(order.completedAt)},
   ];
   const quantities=order.items.reduce((sum,item)=>sum+item.quantity,0);
@@ -44,6 +44,7 @@ export default function V9OrderOverview({order,canViewFinancials,canViewCrm,canV
           {canViewFinancials&&order.quoteId&&<Link href={`/admin/quotes/${encodeURIComponent(order.quoteId)}`}><span>Báo giá</span><strong>{order.quote?.quoteNo||"Mở báo giá"}</strong></Link>}
           <button type="button" onClick={()=>onNavigateTab("info")}><span>Project / Batch</span><strong>Xem liên kết của đơn</strong></button>
           {canViewProduction&&<button type="button" onClick={()=>onNavigateTab("qc")}><span>Sản xuất & QC</span><strong>Xem từng dòng sản phẩm</strong></button>}
+          {canViewProduction&&<Link href="/admin/manufacturing/production-timeline"><span>Lịch & tiến độ sản xuất</span><strong>Theo dõi các công đoạn</strong></Link>}
           {canViewDelivery&&<button type="button" onClick={()=>onNavigateTab("delivery")}><span>Giao hàng</span><strong>{order.deliveryTrackingCode||order.deliveryCarrierName||"Xem tình trạng giao"}</strong></button>}
           <button type="button" onClick={()=>onNavigateTab("documents")}><span>Chứng từ</span><strong>Hợp đồng · Invoice · Packing</strong></button>
           <button type="button" onClick={()=>onNavigateTab("activity")}><span>Lịch sử hoạt động</span><strong>{order.activities.length} sự kiện</strong></button>
@@ -52,12 +53,22 @@ export default function V9OrderOverview({order,canViewFinancials,canViewCrm,canV
     </div>
     <section className={styles.timeline} aria-label="Các mốc thực hiện đơn hàng">
       <header><h2>Order Timeline</h2><p>Mốc xác nhận từ đơn hàng; chưa có ngày không được coi là hoàn tất.</p></header>
-      <div className={styles.steps}>{steps.map((step,i)=><button key={step.label} type="button"
-        className={step.done?styles.done:styles.waiting} onClick={()=>onNavigateTab(step.tab)}>
-        <span className={styles.marker}>{step.done?"✓":i+1}</span>
-        <strong>{step.label}</strong>
-        <small>{step.date?formatOrderDate(step.date):"Chưa ghi nhận"}</small>
-      </button>)}</div>
+      <div className={styles.steps}>{steps.map((step,i)=>{
+        const content = <>
+          <span className={styles.marker}>{step.done?"✓":i+1}</span>
+          <strong>{step.label}</strong>
+          <small>{step.date?formatOrderDate(step.date):"Chưa ghi nhận"}</small>
+        </>;
+        if (step.requiresDelivery && !canViewDelivery) {
+          return <div key={step.label} className={step.done?styles.done:styles.waiting} aria-label={step.label}>
+            {content}
+          </div>;
+        }
+        return <button key={step.label} type="button"
+          className={step.done?styles.done:styles.waiting} onClick={()=>onNavigateTab(step.tab)}>
+          {content}
+        </button>;
+      })}</div>
       {order.cancelledAt&&<p className={styles.cancelled} role="status">Đơn đã hủy ngày {formatOrderDate(order.cancelledAt)}. {order.cancelReason||""}</p>}
     </section>
   </div>;

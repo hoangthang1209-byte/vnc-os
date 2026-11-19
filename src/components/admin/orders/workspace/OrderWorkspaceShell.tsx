@@ -244,6 +244,7 @@ export default function OrderWorkspaceShell(props: OrderWorkspaceShellProps) {
               loading={workspaceData.loading}
               canViewProduction={canViewProduction}
               canEditOrder={canEditOrder}
+              onRefreshOrder={onRefreshOrder}
               productionApprovals={workspaceData.productionApprovals}
             />
             <details className={styles.productionDisclosure}>

@@ -28,6 +28,14 @@ export async function PATCH(req:NextRequest,ctx:Context){
  const e=await prisma.vncLegalEntity.findUnique({where:{id:data.legalEntityId}});
  if(!e?.isActive||e.legalName!==data.seller.name)return NextResponse.json({error:"Pháp nhân không hợp lệ."},{status:400});
  }
+ if(data.bankAccountId){
+  const bank=await prisma.vncBankAccount.findUnique({where:{id:data.bankAccountId}});
+  if(!bank?.isActive||bank.legalEntityId!==data.legalEntityId||
+     (bank.currency&&bank.currency!==data.currency)||
+     bank.accountNo!==data.seller.accountNo||bank.bankName!==data.seller.bankName||
+     bank.accountName!==data.seller.accountName)
+   return NextResponse.json({error:"Tài khoản ngân hàng không hợp lệ hoặc thông tin nhận tiền bị chỉnh sửa."},{status:400});
+ }
  if(data.customerId&&!await prisma.customer.findUnique({where:{id:data.customerId},select:{id:true}}))return NextResponse.json({error:"Khách hàng không hợp lệ."},{status:400});
  if(data.orderId){
   if(!can(session,"orders.view"))return NextResponse.json({error:"Forbidden"},{status:403});

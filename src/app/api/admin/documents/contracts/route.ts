@@ -33,6 +33,14 @@ export async function POST(request:NextRequest){
   const entity=await prisma.vncLegalEntity.findUnique({where:{id:parsed.legalEntityId}});
   if(!entity?.isActive||parsed.seller.name!==entity.legalName) return send({error:"Pháp nhân phát hành không còn hợp lệ."},400);
  }
+ if(parsed.bankAccountId){
+  const bank=await prisma.vncBankAccount.findUnique({where:{id:parsed.bankAccountId}});
+  if(!bank?.isActive||bank.legalEntityId!==parsed.legalEntityId||
+     (bank.currency&&bank.currency!==parsed.currency)||
+     bank.accountNo!==parsed.seller.accountNo||bank.bankName!==parsed.seller.bankName||
+     bank.accountName!==parsed.seller.accountName)
+   return send({error:"Tài khoản ngân hàng không hợp lệ hoặc thông tin nhận tiền bị chỉnh sửa."},400);
+ }
  if(parsed.customerId&&!await prisma.customer.findUnique({where:{id:parsed.customerId},select:{id:true}}))return send({error:"Khách hàng không tồn tại."},400);
  if(parsed.orderId){
   if(!can(a.session,"orders.view"))return send({error:"Forbidden"},403);

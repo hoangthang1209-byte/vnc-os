@@ -503,7 +503,10 @@ export default function OrderItemFormRow({
 
         </div>
 
-        {showVariantMatrix ? (
+      </OrderAdvancedSection>
+      {showVariantMatrix ? (
+        <div className={styles.itemSizeMatrix}>
+          <div className={styles.itemSizeMatrixTitle}>Bảng size & số lượng <span>Thông tin bắt buộc để lập kế hoạch sản xuất</span></div>
           <OrderItemVariantMatrixEditor
             variants={variantRows}
             colors={colors}
@@ -514,8 +517,8 @@ export default function OrderItemFormRow({
             onChange={(nextVariants) => onChange({ variants: nextVariants })}
             onAddCatalogColor={() => onAddColor()}
           />
-        ) : null}
-      </OrderAdvancedSection>
+        </div>
+      ) : null}
     </article>
   );
 }

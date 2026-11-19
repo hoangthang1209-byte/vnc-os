@@ -1,4 +1,4 @@
-.workspace{max-width:1060px;margin:0 auto;padding:4px 0 32px;color:#182338}
+.workspace{max-width:1320px;margin:0 auto;padding:4px 0 32px;color:#182338}
 .intro{padding:24px 26px;background:#fff;border:1px solid #e3e8f0;border-radius:14px;margin-bottom:18px}
 .kicker{font-size:10px;font-weight:750;letter-spacing:.13em;color:#65758d}
 .intro h2{font-size:21px;letter-spacing:-.035em;font-weight:750;margin:9px 0 7px}
@@ -13,3 +13,6 @@
 .panel :global(.admin-form){border:0;box-shadow:none;margin:0;padding:0;background:transparent}
 .panel :global(h2){font-size:17px;letter-spacing:-.025em}
 @media(max-width:640px){.intro,.panel{padding:17px 14px}.tabs{max-width:none}.tabs button{padding:10px 8px;font-size:12px}}
+
+.companyPanel{margin:0;padding:0;background:transparent;border:0}
+.companyPanel[hidden]{display:none}

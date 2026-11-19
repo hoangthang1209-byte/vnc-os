@@ -6685,6 +6685,8 @@ model VncLegalEntity {
   legalName String
   address   String?  @db.Text
   taxCode   String?
+  legalRepresentativeName String?
+  legalRepresentativeTitle String?
   email     String?
   phone     String?
   isActive  Boolean  @default(true)

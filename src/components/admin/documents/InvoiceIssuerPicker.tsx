@@ -2,14 +2,14 @@
 import { useEffect, useState } from "react";
 import s from "./CustomInvoiceManager.module.css";
 export type VncBankInfo={id:string;legalEntityId:string;accountName:string;accountNo:string;accountAddress:string|null;bankName:string;bankAddress:string|null;branch:string|null;swift:string|null;currency:string|null;isActive:boolean;isDefault:boolean};
-export type VncIssuerInfo={id:string;code:string;legalName:string;address:string|null;taxCode:string|null;email:string|null;phone:string|null;isActive:boolean;isDefault:boolean;bankAccounts:VncBankInfo[]};
+export type VncIssuerInfo={id:string;code:string;legalName:string;address:string|null;taxCode:string|null;email:string|null;phone:string|null;legalRepresentativeName:string|null;legalRepresentativeTitle:string|null;isActive:boolean;isDefault:boolean;bankAccounts:VncBankInfo[]};
 export type IssuerSelection={entity:VncIssuerInfo;account:VncBankInfo|null};
-type Props={onSelect:(value:IssuerSelection)=>void;selectedEntityId:string;selectedBankId:string;canManage:boolean;disabled?:boolean;useModal?:boolean};
+type Props={onSelect:(value:IssuerSelection)=>void;onDataChange?:(entities:VncIssuerInfo[])=>void;selectedEntityId:string;selectedBankId:string;canManage:boolean;disabled?:boolean;useModal?:boolean};
 const emptyBank=()=>({accountName:"",accountNo:"",accountAddress:"",bankName:"",bankAddress:"",branch:"",swift:"",currency:"USD"});
-export default function InvoiceIssuerPicker({onSelect,selectedEntityId,selectedBankId,canManage,disabled,useModal=false}:Props){
+export default function InvoiceIssuerPicker({onSelect,onDataChange,selectedEntityId,selectedBankId,canManage,disabled,useModal=false}:Props){
  const [entities,setEntities]=useState<VncIssuerInfo[]>([]);
  const [editing,setEditing]=useState<""|"entity"|"bank">("");
- const [entityDraft,setEntityDraft]=useState({code:"",legalName:"",address:"",taxCode:"",email:"",phone:""});
+ const [entityDraft,setEntityDraft]=useState({code:"",legalName:"",address:"",taxCode:"",email:"",phone:"",legalRepresentativeName:"",legalRepresentativeTitle:""});
  const [bankDraft,setBankDraft]=useState(emptyBank());
  const [editId,setEditId]=useState("");
  const [error,setError]=useState("");
@@ -19,7 +19,7 @@ export default function InvoiceIssuerPicker({onSelect,selectedEntityId,selectedB
   try{const res=await fetch("/api/admin/documents/invoices/issuers",{cache:"no-store"});
    const data=await res.json();if(!res.ok)throw new Error(data.error||"Không tải được danh mục.");
    const list:VncIssuerInfo[]=data.legalEntities??[];
-   setEntities(list);
+   setEntities(list);onDataChange?.(list);
    if(useModal && !selectedEntityId){
     const entity=list.find(x=>x.isDefault&&x.isActive)||list.find(x=>x.isActive);
     if(entity){
@@ -40,7 +40,7 @@ export default function InvoiceIssuerPicker({onSelect,selectedEntityId,selectedB
     body:JSON.stringify(editId?{...body,id:editId}:body)
    });
    const data=await res.json();if(!res.ok)throw new Error(data.error||"Lưu không thành công");
-   setEditing("");setEditId("");setEntityDraft({code:"",legalName:"",address:"",taxCode:"",email:"",phone:""});setBankDraft(emptyBank());
+   setEditing("");setEditId("");setEntityDraft({code:"",legalName:"",address:"",taxCode:"",email:"",phone:"",legalRepresentativeName:"",legalRepresentativeTitle:""});setBankDraft(emptyBank());
    await refresh();
    if(kind==="entity"&&data.entity){
     onSelect({entity:{...data.entity,bankAccounts:[]},account:null});
@@ -57,14 +57,14 @@ export default function InvoiceIssuerPicker({onSelect,selectedEntityId,selectedB
   <select className={s.select} value={selectedEntityId} disabled={disabled} onChange={e=>{
    const entity=entities.find(x=>x.id===e.target.value);if(entity)onSelect({entity,account:null});
   }}><option value="">Chọn pháp nhân của VNC...</option>{entities.filter(x=>x.isActive||x.id===selectedEntityId).map(x=><option value={x.id} key={x.id}>{x.legalName} ({x.code})</option>)}</select>
-  {current&&<div className={s.issuerBrief}><strong>{current.legalName}</strong><div>{current.address||"Chưa có địa chỉ pháp lý"} · MST: {current.taxCode||"Chưa cập nhật"}</div>{canManage&&<button className={s.customerTextButton} type="button" onClick={()=>{setEditing("entity");setEditId(current.id);setEntityDraft({code:current.code,legalName:current.legalName,address:current.address||"",taxCode:current.taxCode||"",email:current.email||"",phone:current.phone||""});}}>Chỉnh sửa pháp nhân</button>}</div>}
+  {current&&<div className={s.issuerBrief}><strong>{current.legalName}</strong><div>{current.address||"Chưa có địa chỉ pháp lý"} · MST: {current.taxCode||"Chưa cập nhật"}</div><div>Người đại diện theo pháp luật: {current.legalRepresentativeName||"Chưa cập nhật"}{current.legalRepresentativeTitle?" · "+current.legalRepresentativeTitle:""}</div>{canManage&&<button className={s.customerTextButton} type="button" onClick={()=>{setEditing("entity");setEditId(current.id);setEntityDraft({code:current.code,legalName:current.legalName,address:current.address||"",taxCode:current.taxCode||"",email:current.email||"",phone:current.phone||"",legalRepresentativeName:current.legalRepresentativeName||"",legalRepresentativeTitle:current.legalRepresentativeTitle||""});}}>Chỉnh sửa pháp nhân</button>}</div>}
   <div className={s.customerPickerTop} style={{marginTop:14}}><label>Tài khoản ngân hàng nhận thanh toán</label>{canManage&&current&&<button className={s.customerTextButton} type="button" disabled={disabled} onClick={()=>{setEditing("bank");setEditId("");setBankDraft(emptyBank());setError("");}}>+ Thêm tài khoản</button>}</div>
   <select className={s.select} value={selectedBankId} disabled={disabled||!current} onChange={e=>{
    if(!current)return;const bank=current.bankAccounts.find(x=>x.id===e.target.value)||null;onSelect({entity:current,account:bank});
   }}><option value="">Chọn tài khoản ngân hàng...</option>{current?.bankAccounts.filter(x=>x.isActive||x.id===selectedBankId).map(a=><option key={a.id} value={a.id}>{a.currency||"—"} · {a.bankName} · {a.accountNo}</option>)}</select>
   {account&&<div className={s.issuerBrief}><strong>{account.accountName}</strong><div>{account.bankName} · {account.branch||"Chưa có chi nhánh"}</div><div>{account.currency} · {account.accountNo} · {account.swift||"Không có SWIFT"}</div><div>Account address: {account.accountAddress||"Chưa cập nhật"}</div><div>Bank address: {account.bankAddress||"Chưa cập nhật"}</div>{canManage&&<button type="button" className={s.customerTextButton} onClick={()=>{setEditing("bank");setEditId(account.id);setBankDraft({accountName:account.accountName,accountNo:account.accountNo,accountAddress:account.accountAddress||"",bankName:account.bankName,bankAddress:account.bankAddress||"",branch:account.branch||"",swift:account.swift||"",currency:account.currency||"USD"});}}>Chỉnh sửa tài khoản</button>}</div>}
   {editing&&canManage&&<div role={useModal?"dialog":undefined} aria-modal={useModal?true:undefined} aria-label={editing==="entity"?"Cập nhật thông tin pháp nhân":"Cập nhật tài khoản ngân hàng"} className={useModal?s.issuerModalOverlay:undefined}><div className={`${s.customerCreate} ${useModal?s.issuerModal:""}`}><div className={s.customerPickerTop}><strong>{editId?"Cập nhật":"Tạo mới"} {editing==="entity"?"pháp nhân":"tài khoản ngân hàng"}</strong><button type="button" className={s.customerTextButton} onClick={()=>{setEditing("");setEditId("");}}>Đóng</button></div>
-   {editing==="entity"?<div className={s.fields}>{input("Mã pháp nhân",entityDraft.code,x=>setEntityDraft(p=>({...p,code:x})),!editId)}{input("Tên pháp lý",entityDraft.legalName,x=>setEntityDraft(p=>({...p,legalName:x})),true)}{input("Địa chỉ pháp lý",entityDraft.address,x=>setEntityDraft(p=>({...p,address:x})))}{input("Mã số thuế",entityDraft.taxCode,x=>setEntityDraft(p=>({...p,taxCode:x})))}{input("Email",entityDraft.email,x=>setEntityDraft(p=>({...p,email:x})))}{input("Điện thoại",entityDraft.phone,x=>setEntityDraft(p=>({...p,phone:x})))}</div>
+   {editing==="entity"?<div className={s.fields}>{input("Mã pháp nhân",entityDraft.code,x=>setEntityDraft(p=>({...p,code:x})),!editId)}{input("Tên pháp lý",entityDraft.legalName,x=>setEntityDraft(p=>({...p,legalName:x})),true)}{input("Địa chỉ pháp lý",entityDraft.address,x=>setEntityDraft(p=>({...p,address:x})))}{input("Mã số thuế",entityDraft.taxCode,x=>setEntityDraft(p=>({...p,taxCode:x})))}{input("Người đại diện theo pháp luật",entityDraft.legalRepresentativeName,x=>setEntityDraft(p=>({...p,legalRepresentativeName:x})))}{input("Chức danh người đại diện",entityDraft.legalRepresentativeTitle,x=>setEntityDraft(p=>({...p,legalRepresentativeTitle:x})))}{input("Email",entityDraft.email,x=>setEntityDraft(p=>({...p,email:x})))}{input("Điện thoại",entityDraft.phone,x=>setEntityDraft(p=>({...p,phone:x})))}</div>
    :<div className={s.fields}>
     {input("Account Number",bankDraft.accountNo,x=>setBankDraft(p=>({...p,accountNo:x})),true)}
     {input("Currency",bankDraft.currency,x=>setBankDraft(p=>({...p,currency:x})),true)}

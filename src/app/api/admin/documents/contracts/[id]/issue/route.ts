@@ -39,13 +39,13 @@ export async function POST(req:NextRequest,ctx:{params:Promise<{id:string}>}){
    notes:c.notes,createdByName:c.createdByName,issuedAt:issuedAt.toISOString()
   };
   const updated=await tx.vncCommercialContract.updateMany({
-   where:{id,status:"DRAFT",issuedSnapshot:null},
+   where:{id,status:"DRAFT"},
    data:{status:"ISSUED",issuedAt,issuedSnapshot:snapshot as Prisma.InputJsonValue}
   });
   if(updated.count!==1)throw new Error("Contract issuance conflict");
   return {id,contractNo:c.contractNo,status:"ISSUED"};
  });
- if("error" in result)return NextResponse.json({error:result.error},{status:result.status});
+ if("error" in result)return NextResponse.json({error:result.error},{status:typeof result.status==="number"?result.status:409});
  return NextResponse.json(result,{headers:{"Cache-Control":"private, no-store"}});
  }catch(error){console.error("[contract issue]",error);return NextResponse.json({error:"Không thể phát hành hợp đồng."},{status:500});}
 }

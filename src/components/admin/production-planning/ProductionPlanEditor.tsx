@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { ProductionPlanPriority } from "@prisma/client";
 import ProductionOwnerSelect from "@/components/admin/orders/ProductionOwnerSelect";
 import AdminLoadingButton from "@/components/admin/feedback/AdminLoadingButton";
@@ -61,32 +61,65 @@ export default function ProductionPlanEditor({ open, row, onClose, onSaved, canE
   const [warnings, setWarnings] = useState<string[]>([]);
   const [employees, setEmployees] = useState<EmployeeRecord[]>([]);
   const [saving, setSaving] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const dirtyRef = useRef(false);
+  const requestRef = useRef(0);
+  const editField = (patch: Partial<FormState>) => {
+    dirtyRef.current = true;
+    setForm((current) => current ? { ...current, ...patch } : current);
+  };
   const isEdit = Boolean(row?.planId);
 
   useEffect(() => {
     if (!open || !row) return;
+    const requestId = ++requestRef.current;
+    dirtyRef.current = false;
+    setLoadError(null);
+    setWarnings([]);
     setForm(buildForm(row));
+
     void fetch("/api/employees?active=1&role=PRODUCTION&limit=200")
-      .then((r) => r.json())
-      .then((data: { employees?: EmployeeRecord[] }) => setEmployees(data.employees ?? []));
+      .then(async (response) => {
+        if (!response.ok) throw new Error("Không tải được danh sách nhân viên");
+        return response.json() as Promise<{ employees?: EmployeeRecord[] }>;
+      })
+      .then((data) => {
+        if (requestRef.current === requestId) setEmployees(data.employees ?? []);
+      })
+      .catch(() => {
+        if (requestRef.current === requestId) setEmployees([]);
+      });
+
     void fetch(`/api/production/plans/${row.orderItemId}`)
-      .then((r) => r.json())
-      .then((data: { plan?: ProductionPlanDetail }) => {
-        if (data.plan) {
-          setForm({
-            internalDeadlineAt: toDateInput(data.plan.internalDeadline),
-            plannedStartAt: toDateInput(data.plan.plannedStartAt),
-            plannedEndAt: toDateInput(data.plan.plannedEndAt),
-            productionOwnerId: data.plan.ownerId ?? "",
-            productionTeamName: data.plan.workshopName ?? "",
-            priority: data.plan.priority,
-            estimatedLeadDays: data.plan.estimatedLeadDays?.toString() ?? "",
-            planningNote: data.plan.planningNote ?? "",
-            riskNote: data.plan.riskNote ?? "",
-          });
-          setWarnings(data.plan.warnings);
+      .then(async (response) => {
+        const data = await response.json() as { plan?: ProductionPlanDetail; message?: string };
+        if (!response.ok || !data.plan) throw new Error(data.message || "Không tải được kế hoạch");
+        return data.plan;
+      })
+      .then((plan) => {
+        if (requestRef.current !== requestId) return;
+        setWarnings(plan.warnings ?? []);
+        // Never overwrite edits made while the detail request was in flight.
+        if (dirtyRef.current) return;
+        setForm({
+          internalDeadlineAt: toDateInput(plan.internalDeadline),
+          plannedStartAt: toDateInput(plan.plannedStartAt),
+          plannedEndAt: toDateInput(plan.plannedEndAt),
+          productionOwnerId: plan.ownerId ?? "",
+          productionTeamName: plan.workshopName ?? "",
+          priority: plan.priority,
+          estimatedLeadDays: plan.estimatedLeadDays?.toString() ?? "",
+          planningNote: plan.planningNote ?? "",
+          riskNote: plan.riskNote ?? "",
+        });
+      })
+      .catch((error: unknown) => {
+        if (requestRef.current === requestId) {
+          setLoadError(error instanceof Error ? error.message : "Không tải được dữ liệu kế hoạch");
         }
       });
+
+    return () => { requestRef.current += 1; };
   }, [open, row]);
 
   if (!open || !row || !form) return null;
@@ -150,6 +183,7 @@ export default function ProductionPlanEditor({ open, row, onClose, onSaved, canE
           </div>
         )}
 
+        {loadError && <p role="alert" className="admin-field-hint">Không thể đồng bộ dữ liệu mới nhất: {loadError}. Kiểm tra lại trước khi lưu.</p>}
         <div className="prod-plan-drawer__body">
           <div className="prod-plan-readonly-grid">
             <div><span className="prod-plan-field-label">Mã công việc</span><strong>{row.jobCode}</strong></div>
@@ -165,7 +199,7 @@ export default function ProductionPlanEditor({ open, row, onClose, onSaved, canE
               type="date"
               className="admin-input"
               value={form.internalDeadlineAt}
-              onChange={(e) => setForm({ ...form, internalDeadlineAt: e.target.value })}
+              onChange={(e) => editField({ internalDeadlineAt: e.target.value })}
               disabled={!canEdit}
             />
           </label>
@@ -177,7 +211,7 @@ export default function ProductionPlanEditor({ open, row, onClose, onSaved, canE
                 type="date"
                 className="admin-input"
                 value={form.plannedStartAt}
-                onChange={(e) => setForm({ ...form, plannedStartAt: e.target.value })}
+                onChange={(e) => editField({ plannedStartAt: e.target.value })}
                 disabled={!canEdit}
               />
             </label>
@@ -187,7 +221,7 @@ export default function ProductionPlanEditor({ open, row, onClose, onSaved, canE
                 type="date"
                 className="admin-input"
                 value={form.plannedEndAt}
-                onChange={(e) => setForm({ ...form, plannedEndAt: e.target.value })}
+                onChange={(e) => editField({ plannedEndAt: e.target.value })}
                 disabled={!canEdit}
               />
             </label>
@@ -197,7 +231,7 @@ export default function ProductionPlanEditor({ open, row, onClose, onSaved, canE
             <span className="admin-field-label">Người phụ trách sản xuất</span>
             <ProductionOwnerSelect
               value={form.productionOwnerId}
-              onChange={(v) => setForm({ ...form, productionOwnerId: v })}
+              onChange={(v) => editField({ productionOwnerId: v })}
               employees={employees}
               onEmployeesChange={setEmployees}
               disabled={!canEdit}
@@ -210,7 +244,7 @@ export default function ProductionPlanEditor({ open, row, onClose, onSaved, canE
               className="admin-input"
               list="prod-workshop-presets"
               value={form.productionTeamName}
-              onChange={(e) => setForm({ ...form, productionTeamName: e.target.value })}
+              onChange={(e) => editField({ productionTeamName: e.target.value })}
               disabled={!canEdit}
               placeholder="VD: Xưởng may A"
             />
@@ -226,7 +260,7 @@ export default function ProductionPlanEditor({ open, row, onClose, onSaved, canE
             <select
               className="admin-input"
               value={form.priority}
-              onChange={(e) => setForm({ ...form, priority: e.target.value as ProductionPlanPriority })}
+              onChange={(e) => editField({ priority: e.target.value as ProductionPlanPriority })}
               disabled={!canEdit}
             >
               {(Object.keys(PRODUCTION_PLAN_PRIORITY_LABELS) as ProductionPlanPriority[]).map((p) => (
@@ -242,7 +276,7 @@ export default function ProductionPlanEditor({ open, row, onClose, onSaved, canE
               min={0}
               className="admin-input"
               value={form.estimatedLeadDays}
-              onChange={(e) => setForm({ ...form, estimatedLeadDays: e.target.value })}
+              onChange={(e) => editField({ estimatedLeadDays: e.target.value })}
               disabled={!canEdit}
             />
           </label>
@@ -253,7 +287,7 @@ export default function ProductionPlanEditor({ open, row, onClose, onSaved, canE
               className="admin-input"
               rows={3}
               value={form.planningNote}
-              onChange={(e) => setForm({ ...form, planningNote: e.target.value })}
+              onChange={(e) => editField({ planningNote: e.target.value })}
               disabled={!canEdit}
             />
           </label>
@@ -264,7 +298,7 @@ export default function ProductionPlanEditor({ open, row, onClose, onSaved, canE
               className="admin-input"
               rows={2}
               value={form.riskNote}
-              onChange={(e) => setForm({ ...form, riskNote: e.target.value })}
+              onChange={(e) => editField({ riskNote: e.target.value })}
               disabled={!canEdit}
             />
           </label>

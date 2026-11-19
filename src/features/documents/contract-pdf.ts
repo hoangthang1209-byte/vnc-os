@@ -98,9 +98,9 @@ export async function renderContractPdf(c:ContractPrint):Promise<Buffer>{
    for(const col of columns){style(7.1,true,C.white).text(col.label,x+5,y+9,{width:col.width-10,align:x===X?"center":"left",lineBreak:false});x+=col.width;}
    y+=27;
   }
+  const rowHeight=(cells:string[],widths:number[],minH:number)=>Math.max(minH,...cells.map((cell,i)=>height(cell,widths[i]-12,8)+13));
   function tableRow(cells:string[],widths:number[],minH=30,emph=false){
-   const heights=cells.map((cell,i)=>height(cell,widths[i]-12,8));
-   const h=Math.max(minH,...heights.map(z=>z+13));
+   const h=rowHeight(cells,widths,minH);
    keep(h);
    if(emph)pdf.rect(X,y,W,h).fill(C.pale);
    else if(Math.round(y)%2===0)pdf.rect(X,y,W,h).fill("#FBFCFD");
@@ -135,9 +135,10 @@ export async function renderContractPdf(c:ContractPrint):Promise<Buffer>{
   const widths=[33,205,43,43,86,95],heads=columns.map((label,i)=>({label,width:widths[i]}));
   tableHeader(heads);
   goods.forEach((g,i)=>{
-   if(y+42>BOTTOM){page();tableHeader(heads);}
    const item=[g.description,g.specification].filter(Boolean).join("\n");
-   tableRow([String(i+1),item,String(g.quantity),g.unit,fmt(g.unitPrice,c.currency),fmt(g.quantity*g.unitPrice,c.currency)],widths,36);
+   const cells=[String(i+1),item,String(g.quantity),g.unit,fmt(g.unitPrice,c.currency),fmt(g.quantity*g.unitPrice,c.currency)];
+   if(y+rowHeight(cells,widths,36)>BOTTOM){page();tableHeader(heads);}
+   tableRow(cells,widths,36);
   });
   keep(103);y+=7;
   function totalRow(label:string,value:string,highlight=false){
@@ -153,8 +154,10 @@ export async function renderContractPdf(c:ContractPrint):Promise<Buffer>{
   section(vi?"LỊCH THANH TOÁN":"PAYMENT SCHEDULE","02");
   tableHeader([{label:vi?"Đợt":"Stage",width:125},{label:vi?"Điều kiện / Thời hạn":"Terms / Due date",width:205},{label:vi?"Tỷ lệ":"Rate",width:65},{label:vi?"Số tiền":"Amount",width:110}]);
   for(const p of milestones){
-   if(y+35>BOTTOM){page();tableHeader([{label:vi?"Đợt":"Stage",width:125},{label:vi?"Điều kiện / Thời hạn":"Terms / Due date",width:205},{label:vi?"Tỷ lệ":"Rate",width:65},{label:vi?"Số tiền":"Amount",width:110}]);}
-   tableRow([p.label,p.due,String(p.percent)+"%",fmt(Number(c.grandTotal)*p.percent/100,c.currency)],[125,205,65,110],33);
+   const payCells=[p.label,p.due,String(p.percent)+"%",fmt(Number(c.grandTotal)*p.percent/100,c.currency)];
+   const payWidths=[125,205,65,110];
+   if(y+rowHeight(payCells,payWidths,33)>BOTTOM){page();tableHeader([{label:vi?"Đợt":"Stage",width:125},{label:vi?"Điều kiện / Thời hạn":"Terms / Due date",width:205},{label:vi?"Tỷ lệ":"Rate",width:65},{label:vi?"Số tiền":"Amount",width:110}]);}
+   tableRow(payCells,payWidths,33);
   }
   if(c.deliveryDate||c.deliveryAddress){
    section(vi?"THÔNG TIN GIAO HÀNG":"DELIVERY DETAILS","03");

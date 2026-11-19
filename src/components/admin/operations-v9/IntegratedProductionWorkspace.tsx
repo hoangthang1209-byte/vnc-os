@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
+import OperationsV9ActionQueue from "./OperationsV9ActionQueue";
 
 type Job = { id:string; trackingId:string; orderId:string; orderNo:string; customer:string;
   orderItemId:string; sku:string; name:string; image:string|null; ordered:number;
@@ -180,6 +181,7 @@ export default function IntegratedProductionWorkspace({jobs,orders,factories,doc
    {!grouped.length&&!orders.length&&<div className="v9empty">Không có dữ liệu sản xuất trong phạm vi được phép xem.</div>}
    <div className="v9footnote">Các thanh màu biểu diễn lịch dự kiến của stage có ngày bắt đầu và kết thúc. Nhấp vào thanh để mở Job Detail. Bộ lọc và KPI dùng dữ liệu được phép xem, không phải tổng toàn hệ thống.</div>
   </section>
+  <OperationsV9ActionQueue />
   <div className="v9twocol"><div className="v9panel v9panelpad"><h3 className="v9subheading">Factory Capacity</h3><div className="v9placeholder">Chưa có công suất cam kết theo ngày. Không thể tính tỷ lệ tải Factory chính xác từ số Jobs.</div><button className="v9link" style={{marginTop:12}} onClick={()=>setSection("factories")}>Mở Factory Management →</button></div><div className="v9panel v9panelpad"><h3 className="v9subheading">Production Alerts</h3>{jobs.filter(j=>j.risk!=="ON_TRACK").slice(0,6).map(j=><button key={j.id} className="v9docline" style={{display:"block",width:"100%",textAlign:"left"}} onClick={()=>setSelectedJob(j.id)}>{j.orderNo} · {j.sku} · {j.risk}</button>)}{!atRisk&&<div className="v9placeholder">Không có cảnh báo trên các tracking được tải. Chưa xác minh độ đầy đủ của dữ liệu lập lịch.</div>}</div></div>
  </>}
  {section==="factories"&&<>

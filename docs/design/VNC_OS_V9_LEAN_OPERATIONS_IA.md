@@ -41,7 +41,7 @@ Every screen must answer **what is this record, what is its operational state, w
 | CMS / Marketing | Product/list, publication status, channel/locale, action | SEO, metadata, variants, media controls |
 | Agent OS | Run state, owner, blockers, last action | Raw logs, leases, diagnostics |
 
-## P0 Order implementation in PR #401
+## P0 Order implementation in PR #402
 
 - Order Detail displays one compact header, a small essential KPI strip, tab navigation, and the full-width item size matrix. Extra project/timeline information is retained within the **Info** tab.
 - The Order form shows catalog/product name, color, quantity (or size matrix), price and an optional compact thumbnail first. Unit, lead time, notes, categorization, gender, MOQ etc. remain editable within the existing advanced section.

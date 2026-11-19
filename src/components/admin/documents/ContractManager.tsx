@@ -3,7 +3,7 @@ import {useCallback,useEffect,useMemo,useState} from "react";
 import Link from "next/link";
 import s from "./ContractManager.module.css";
 import {blankParty,standardClauses,type ContractParty,type ContractItem,type ContractClause,type PaymentMilestone,type ContractLanguage} from "@/features/documents/contract-fields";
-type Entity={id:string;legalName:string;address:string|null;taxCode:string|null};
+type Entity={id:string;legalName:string;address:string|null;taxCode:string|null;bankAccounts:{id:string;bankName:string;accountNo:string;accountName:string;swift:string|null;currency:string|null}[]};
 type Customer={id:string;name:string;legalName:string|null;address:string|null;taxCode:string|null;representativeName:string|null;representativeTitle:string|null};
 type ListItem={id:string;contractNo:string;status:string;language:string;title:string;currency:string;grandTotal:string;createdAt:string;buyer:unknown};
 type ContractForm={
@@ -112,8 +112,14 @@ export default function ContractManager(){
     <div className={s.full}>{input("Tên hợp đồng",form.title,v=>patch("title",v))}</div>
     {selectOptions("Pháp nhân bên bán",form.legalEntityId,v=>{
      const e=entities.find(x=>x.id===v);
-     setForm(f=>({...f,legalEntityId:v,seller:e?{...f.seller,name:e.legalName,address:e.address||"",taxId:e.taxCode||""}:f.seller}));
+     setForm(f=>({...f,legalEntityId:v,bankAccountId:"",seller:e?{...f.seller,name:e.legalName,address:e.address||"",taxId:e.taxCode||"",bankName:"",accountName:"",accountNo:"",swift:""}:f.seller}));
     },[{value:"",label:"Chọn pháp nhân..."},...entities.map(x=>({value:x.id,label:x.legalName}))])}
+    {selectOptions("Tài khoản nhận thanh toán",form.bankAccountId,v=>{
+     const e=entities.find(x=>x.id===form.legalEntityId);
+     const bank=e?.bankAccounts.find(x=>x.id===v);
+     setForm(f=>({...f,bankAccountId:v,currency:bank?.currency||f.currency,
+      seller:{...f.seller,bankName:bank?.bankName||"",accountName:bank?.accountName||"",accountNo:bank?.accountNo||"",swift:bank?.swift||""}}));
+    },[{value:"",label:"Chọn tài khoản..."},...(entities.find(x=>x.id===form.legalEntityId)?.bankAccounts||[]).map(x=>({value:x.id,label:x.bankName+" · "+x.accountNo}))])}
     {selectOptions("Khách hàng",form.customerId,v=>{
      const c=customers.find(x=>x.id===v);
      setForm(f=>({...f,customerId:v,buyer:c?{...f.buyer,name:c.legalName||c.name,address:c.address||"",taxId:c.taxCode||"",representative:c.representativeName||"",title:c.representativeTitle||""}:f.buyer}));
@@ -121,7 +127,11 @@ export default function ContractManager(){
     <div className={s.full}>
      {input("Tìm đơn hàng (mã đơn / PO)",orderQuery,setOrderQuery,"Nhập tối thiểu 2 ký tự")}
      {orders.length>0&&<div className={s.row}>{orders.map(o=><button type="button" key={o.id} className={s.secondary} style={{margin:3}} onClick={()=>{
-       setForm(f=>({...f,orderId:o.id,customerId:o.customerId||f.customerId}));setOrderQuery(o.orderNo);setOrders([]);
+       setForm(f=>{
+        const customer=customers.find(c=>c.id===o.customerId);
+        return {...f,orderId:o.id,customerId:o.customerId||f.customerId,
+         buyer:customer?{...f.buyer,name:customer.legalName||customer.name,address:customer.address||"",taxId:customer.taxCode||"",representative:customer.representativeName||"",title:customer.representativeTitle||""}:f.buyer};
+       });setOrderQuery(o.orderNo);setOrders([]);
       }}>{o.orderNo}</button>)}</div>}
      {form.orderId&&<div className={s.small}>Đã liên kết Order ID: {form.orderId} <button type="button" className={s.secondary} onClick={()=>patch("orderId","")}>Bỏ liên kết</button></div>}
     </div>

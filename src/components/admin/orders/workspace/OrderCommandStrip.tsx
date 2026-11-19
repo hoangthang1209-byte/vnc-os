@@ -24,7 +24,7 @@ export default function OrderCommandStrip({ order, canViewFinancials }: Props) {
     { label: "TOTAL QTY", value: number(quantity), helper: "pcs" },
     { label: "MARKETS", value: number(markets.size) },
     { label: "UNALLOCATED", value: number(unallocated), tone: unallocated ? "warning" : undefined, helper: "pcs" },
-    ...(canViewFinancials ? [{ label: "ORDER VALUE", value: order.totalAmount > 0 ? `${number(order.totalAmount)} ${order.currency}` : "Pending pricing", helper: order.totalAmount > 0 ? undefined : "Not a zero-value sale" }] : []),
+    ...(canViewFinancials ? [{ label: "ORDER VALUE", value: order.internalNote?.includes("NO CUSTOMER SELLING PRICES") && order.totalAmount === 0 ? "Pending pricing" : `${number(order.totalAmount)} ${order.currency}`, helper: order.internalNote?.includes("NO CUSTOMER SELLING PRICES") && order.totalAmount === 0 ? "Not a zero-value sale" : undefined }] : []),
   ];
   return <section className={styles.strip} aria-label="Order operating summary" data-testid="v9-order-command-strip">
     <div className={styles.identity}><span className={styles.small}>CUSTOMER / PROJECT</span><strong>{order.customerCompanyName || order.customer?.name || "—"}</strong><small>{order.orderNo} · {order.status}</small></div>

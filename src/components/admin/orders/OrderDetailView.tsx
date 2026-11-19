@@ -587,6 +587,7 @@ export default function OrderDetailView({ id }: Props) {
         listBackHref={listBackHref}
         busy={busy}
         canEditOrder={canEditOrder}
+        onRefreshOrder={load}
         canRecordPayment={canRecordPayment}
         showDeliveryForm={showDeliveryForm}
         transitions={transitions}

@@ -57,6 +57,7 @@ export type OrderWorkspaceShellProps = {
   listBackHref: string;
   busy: boolean;
   canEditOrder: boolean;
+  onRefreshOrder: () => Promise<void>;
   canRecordPayment: boolean;
   showDeliveryForm: boolean;
   transitions: OrderStatus[];
@@ -96,6 +97,7 @@ export default function OrderWorkspaceShell(props: OrderWorkspaceShellProps) {
     order,
     busy,
     canEditOrder,
+    onRefreshOrder,
     canRecordPayment,
     showDeliveryForm,
     transitions,
@@ -242,6 +244,7 @@ export default function OrderWorkspaceShell(props: OrderWorkspaceShellProps) {
               loading={workspaceData.loading}
               canViewProduction={canViewProduction}
               canEditOrder={canEditOrder}
+              onRefreshOrder={onRefreshOrder}
               productionApprovals={workspaceData.productionApprovals}
             />
             <details className={styles.productionDisclosure}>

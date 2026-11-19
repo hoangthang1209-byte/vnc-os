@@ -131,20 +131,31 @@ export default function OrderDetailView({ id }: Props) {
 
   async function load() {
     setLoading(true);
-    const res = await fetch(`/api/orders/${id}`);
-    const data = await res.json() as { order?: OrderDetailRecord; message?: string };
-    if (!res.ok) {
-      setError(data.message ?? "Không tìm thấy đơn hàng");
-      setOrder(null);
-    } else {
-      const next = data.order ?? null;
-      setOrder(next);
-      if (next) {
-        setProductionFields(syncProductionFields(next));
-        setDeliveryFields(syncDeliveryFields(next));
+    setError(null);
+    try {
+      const res = await fetch(`/api/orders/${id}`);
+      if (!res.ok) {
+        const failure = await res.json().catch(() => null) as { message?: string } | null;
+        setError(failure?.message ?? "Không thể tải đơn hàng. Vui lòng thử lại.");
+        setOrder(null);
+        return;
       }
+      const data = await res.json() as { order?: OrderDetailRecord };
+      const next = data.order ?? null;
+      if (!next) {
+        setError("Không tìm thấy dữ liệu đơn hàng.");
+        setOrder(null);
+        return;
+      }
+      setOrder(next);
+      setProductionFields(syncProductionFields(next));
+      setDeliveryFields(syncDeliveryFields(next));
+    } catch {
+      setError("Không thể kết nối để tải đơn hàng. Vui lòng kiểm tra mạng và thử lại.");
+      setOrder(null);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }
 
   useEffect(() => {
@@ -559,8 +570,13 @@ export default function OrderDetailView({ id }: Props) {
   if (error || !order) {
     return (
       <div className="admin-empty-state admin-empty-state--error">
-        <p>{error ?? "Không tìm thấy đơn hàng"}</p>
-        <Link href="/admin/orders" className="admin-btn">Quay lại</Link>
+        <p role="alert">{error ?? "Không tìm thấy đơn hàng"}</p>
+        <div className="flex flex-wrap gap-2">
+          <button type="button" className="admin-btn admin-btn--primary" onClick={() => void load()}>
+            Thử tải lại
+          </button>
+          <Link href={listBackHref} className="admin-btn admin-btn--secondary">Quay lại</Link>
+        </div>
       </div>
     );
   }

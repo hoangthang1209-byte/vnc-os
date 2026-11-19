@@ -65,6 +65,8 @@ export async function PATCH(req: NextRequest, context: Params) {
   });
   if (!source) return NextResponse.json({ message: "Không tìm thấy SKU thuộc đơn hàng" }, { status: 404 });
   const applyToStyle = input.applyToStyle === true;
+  if (applyToStyle && Object.keys(changes).some(field => field !== "productNameSnapshot" && field !== "designImageUrl"))
+    return NextResponse.json({ message: "Chỉ cho phép sửa tên và ảnh đại diện khi áp dụng cho cả style" }, { status: 400 });
   let targetIds = [source.id];
   if (applyToStyle) {
     const match = source.skuSnapshot?.match(/^(.*)-([A-Z]{3})$/);

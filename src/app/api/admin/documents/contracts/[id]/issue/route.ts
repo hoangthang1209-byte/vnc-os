@@ -15,6 +15,17 @@ export async function POST(req:NextRequest,ctx:{params:Promise<{id:string}>}){
   if(c.status!=="DRAFT"||c.issuedSnapshot)return {error:"Hợp đồng không còn ở trạng thái bản nháp.",status:409};
   const seller=c.seller as Record<string,unknown>,buyer=c.buyer as Record<string,unknown>;
   if(!seller.name||!buyer.name)return {error:"Thiếu thông tin pháp nhân.",status:400};
+  if(!seller.representative||!buyer.representative)return {error:"Cần nhập người đại diện ký hợp đồng của cả hai bên.",status:400};
+  if(!c.legalEntityId)return {error:"Cần liên kết pháp nhân VNC trước khi phát hành.",status:400};
+  const entity=await tx.vncLegalEntity.findUnique({where:{id:c.legalEntityId}});
+  if(!entity?.isActive||seller.name!==entity.legalName)return {error:"Thông tin pháp nhân bên bán không khớp Cấu hình chung.",status:409};
+  if(c.bankAccountId){
+   const bank=await tx.vncBankAccount.findUnique({where:{id:c.bankAccountId}});
+   if(!bank?.isActive||bank.legalEntityId!==entity.id||
+      (bank.currency&&bank.currency!==c.currency)||
+      bank.accountNo!==seller.accountNo||bank.bankName!==seller.bankName)
+     return {error:"Tài khoản thanh toán không hợp lệ.",status:409};
+  }
   if(!c.signedDate)return {error:"Cần nhập ngày ký trước khi phát hành.",status:400};
   const issuedAt=new Date();
   const snapshot={

@@ -10,7 +10,6 @@ import type { EmployeeRecord } from "@/features/employees/employee.service";
 import type { OrderDetailRecord } from "@/features/orders/order.types";
 import OrderWorkspaceHeader from "./OrderWorkspaceHeader";
 import OrderDocumentActions from "@/components/admin/orders/OrderDocumentActions";
-import OrderWorkspaceSummaryCards from "./OrderWorkspaceSummaryCards";
 import OrderExecutionControl from "./OrderExecutionControl";
 import V9OrderOverview from "./V9OrderOverview";
 import OrderCommandStrip from "./OrderCommandStrip";
@@ -191,34 +190,7 @@ export default function OrderWorkspaceShell(props: OrderWorkspaceShellProps) {
       />
 
       <OrderCommandStrip order={order} canViewFinancials={canViewFinancials} />
-      <details className="order-workspace-secondary-summary" style={{ marginBottom: 10 }}>
-        <summary className={styles.utilityDisclosure}>Connected Records / Order Timeline</summary>
-        <V9OrderOverview order={order} canViewFinancials={canViewFinancials}
-          canViewCrm={permissions.canViewCrm} canViewProduction={canViewProduction}
-          canViewDelivery={canViewDelivery}
-          onNavigateTab={navigateTab} />
-      </details>
-      <details className="order-workspace-secondary-summary" style={{ marginBottom: 14 }}>
-        <summary style={{cursor:"pointer",padding:"12px 16px",border:"1px solid #e2e8f0",borderRadius:8,fontWeight:650,fontSize:12}}>Checklist kiểm soát đơn hàng và việc cần xử lý</summary>
-        <OrderExecutionControl order={order} onNavigateTab={navigateTab} canViewFinancials={canViewFinancials} />
-      </details>
-
-      <details className="order-workspace-secondary-summary" style={{ margin: "12px 0 20px" }}>
-        <summary style={{ cursor: "pointer", padding: "12px 16px", border: "1px solid #e2e8f0", borderRadius: 10, fontWeight: 600 }}>
-          Xem tổng quan khách hàng, tài chính và các mốc giao hàng
-        </summary>
-        <div style={{ marginTop: 12 }}>
-          <OrderWorkspaceSummaryCards
-            order={order}
-            bundle={workspaceData.bundle}
-            canViewFinancials={canViewFinancials}
-            canEditOrder={canEditOrder}
-            onNavigateTab={navigateTab}
-          />
-        </div>
-      </details>
-
-      <div className={`admin-crm-360-tabs order-workspace-tabs ${styles.tabs}`} role="tablist">
+      <div className={`admin-crm-360-tabs order-workspace-tabs ${styles.tabs}`} role="tablist" aria-label="Order sections">
         {visibleTabs.map((tab) => (
           <button
             key={tab.key}
@@ -281,7 +253,26 @@ export default function OrderWorkspaceShell(props: OrderWorkspaceShellProps) {
         )}
 
         {activeTab === "info" && (
-          <OrderBatchAssignment orderId={orderId} customerId={order.customerId} canEditOrder={canEditOrder} />
+          <div className={styles.infoFlow}>
+            <OrderBatchAssignment orderId={orderId} customerId={order.customerId} canEditOrder={canEditOrder} />
+            <details className={styles.compactDetails}>
+              <summary>Liên kết khách hàng, project và lộ trình</summary>
+              <V9OrderOverview order={order} canViewFinancials={canViewFinancials}
+                canViewCrm={permissions.canViewCrm} canViewProduction={canViewProduction}
+                canViewDelivery={canViewDelivery} onNavigateTab={navigateTab} />
+            </details>
+            <details className={styles.compactDetails}>
+              <summary>Checklist điều hành</summary>
+              <OrderExecutionControl order={order} onNavigateTab={navigateTab} canViewFinancials={canViewFinancials} />
+            </details>
+            <details className={styles.compactDetails}>
+              <summary>Tài liệu và thông tin bổ sung</summary>
+              <OrderWorkspaceLowerSections order={order} orderId={orderId}
+                productionFileCount={workspaceData.productionFileCount}
+                canViewFinancials={canViewFinancials}
+                roleCode={roleCode} onNavigateTab={navigateTab} />
+            </details>
+          </div>
         )}
 
         {activeTab === "info" && (
@@ -336,23 +327,6 @@ export default function OrderWorkspaceShell(props: OrderWorkspaceShellProps) {
         )}
       </div>
 
-      {activeTab === "products" && (
-        <details style={{ marginTop: 20 }}>
-          <summary style={{ cursor: "pointer", padding: "12px 16px", border: "1px solid #e2e8f0", borderRadius: 10, fontWeight: 600 }}>
-            Tài liệu, lịch giao, lịch sử và thông tin bổ sung
-          </summary>
-          <div style={{ marginTop: 12 }}>
-            <OrderWorkspaceLowerSections
-              order={order}
-              orderId={orderId}
-              productionFileCount={workspaceData.productionFileCount}
-              canViewFinancials={canViewFinancials}
-              roleCode={roleCode}
-              onNavigateTab={navigateTab}
-            />
-          </div>
-        </details>
-      )}
     </div>
   );
 }

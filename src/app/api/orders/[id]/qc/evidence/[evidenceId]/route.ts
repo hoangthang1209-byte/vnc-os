@@ -5,7 +5,7 @@ import {
   updateQcEvidence,
 } from "@/features/orders/qc-inspection.service";
 import { ProductionExecutionValidationError } from "@/features/orders/production-quantity";
-import { requireAdminPermission } from "@/lib/permissions/require-admin-permission";
+import { checkQcOrderAccess } from "@/features/orders/qc-route-access";
 
 type RouteContext = { params: Promise<{ id: string; evidenceId: string }> };
 
@@ -24,14 +24,9 @@ function parseOptionalString(value: unknown): string | null | undefined {
 }
 
 export async function PATCH(req: NextRequest, context: RouteContext) {
-  const permission = await requireAdminPermission({
-    platform: "commercial",
-    action: "update",
-    request: req,
-  });
-  if (!permission.ok) return permission.response;
-
   const { id, evidenceId } = await context.params;
+  const denied = await checkQcOrderAccess(req, id, "write");
+  if (denied) return denied;
   let body: unknown;
   try {
     body = await req.json();
@@ -65,14 +60,9 @@ export async function PATCH(req: NextRequest, context: RouteContext) {
 }
 
 export async function DELETE(req: NextRequest, context: RouteContext) {
-  const permission = await requireAdminPermission({
-    platform: "commercial",
-    action: "delete",
-    request: req,
-  });
-  if (!permission.ok) return permission.response;
-
   const { id, evidenceId } = await context.params;
+  const denied = await checkQcOrderAccess(req, id, "write");
+  if (denied) return denied;
   try {
     await deleteQcEvidence(id, evidenceId);
     return NextResponse.json({ ok: true });

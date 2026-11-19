@@ -6724,3 +6724,42 @@ model VncOsCompanyBranding {
   faviconUrl String?
   updatedAt  DateTime @updatedAt
 }
+
+
+/** B2B commercial contracts. Draft can change; issued snapshot is immutable. */
+model VncCommercialContract {
+  id               String   @id @default(cuid())
+  contractNo       String   @unique
+  status           String   @default("DRAFT")
+  language         String   @default("VI")
+  contractType     String   @default("SALES")
+  customerId       String?
+  orderId          String?
+  legalEntityId    String?
+  bankAccountId    String?
+  title            String
+  currency         String   @default("VND")
+  seller           Json
+  buyer            Json
+  goods            Json
+  clauses          Json
+  subtotal         String
+  taxAmount        String
+  grandTotal       String
+  signedDate       DateTime?
+  effectiveDate    DateTime?
+  deliveryDate     DateTime?
+  deliveryAddress  String?  @db.Text
+  paymentTerms     Json
+  notes            String?  @db.Text
+  issuedSnapshot   Json?
+  issuedAt         DateTime?
+  createdByUserId  String?
+  createdByName    String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([status, createdAt])
+  @@index([customerId])
+  @@index([orderId])
+}

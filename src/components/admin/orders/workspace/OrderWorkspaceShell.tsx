@@ -21,6 +21,7 @@ import OrderItemProductionPanel from "@/components/admin/item-production/OrderIt
 import OrderWorkspaceInfoTab from "./OrderWorkspaceInfoTab";
 import OrderWorkspaceDeliveryTab from "./OrderWorkspaceDeliveryTab";
 import OrderWorkspacePaymentTab from "./OrderWorkspacePaymentTab";
+import OrderCommercialCostStrip from "./OrderCommercialCostStrip";
 import OrderWorkspaceActivityTab from "./OrderWorkspaceActivityTab";
 import OrderWorkspaceNotesTab from "./OrderWorkspaceNotesTab";
 import OrderWorkspaceLowerSections from "./OrderWorkspaceLowerSections";
@@ -311,7 +312,8 @@ export default function OrderWorkspaceShell(props: OrderWorkspaceShellProps) {
         )}
 
         {activeTab === "payment" && canViewFinancials && (
-          <OrderWorkspacePaymentTab
+          <div className={styles.infoFlow}>
+            <OrderWorkspacePaymentTab
             order={order}
             canRecordPayment={canRecordPayment}
             busy={busy}
@@ -319,6 +321,11 @@ export default function OrderWorkspaceShell(props: OrderWorkspaceShellProps) {
             onOpenEditPayment={onOpenEditPayment}
             onOpenVoidPayment={onOpenVoidPayment}
           />
+            <details className={styles.compactDetails}>
+              <summary>Chi phí, giá vốn và lãi gộp</summary>
+              <OrderCommercialCostStrip order={order} canEditOrder={canEditOrder} />
+            </details>
+          </div>
         )}
 
         {activeTab === "activity" && <OrderWorkspaceActivityTab order={order} />}

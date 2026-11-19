@@ -30,10 +30,37 @@ export default function ContractManager(){
  const [currentId,setCurrentId]=useState("");
  const [currentNo,setCurrentNo]=useState("");
  const [status,setStatus]=useState("DRAFT");
+ const [savedFormJson,setSavedFormJson]=useState(()=>JSON.stringify(newForm()));
  const [busy,setBusy]=useState(false);
  const [message,setMessage]=useState("");
  const [orderQuery,setOrderQuery]=useState("");
  const [orders,setOrders]=useState<{id:string;orderNo:string;customerId:string|null}[]>([]);
+ const [view,setView]=useState<"list"|"editor">("list");
+ const [activeSection,setActiveSection]=useState<"parties"|"goods"|"delivery"|"terms">("parties");
+ const [search,setSearch]=useState("");
+ const [statusFilter,setStatusFilter]=useState<"ALL"|"DRAFT"|"ISSUED">("ALL");
+ const steps=[
+  {key:"parties",label:"01 · Thông tin & các bên",short:"Thông tin"},
+  {key:"goods",label:"02 · Hàng hóa & giá trị",short:"Hàng hóa"},
+  {key:"delivery",label:"03 · Thanh toán & giao hàng",short:"Thanh toán"},
+  {key:"terms",label:"04 · Điều khoản & ký kết",short:"Điều khoản"}
+ ] as const;
+ const dirty=view==="editor"&&status==="DRAFT"&&JSON.stringify(form)!==savedFormJson;
+ const startNew=()=>{const fresh=newForm();setForm(fresh);setSavedFormJson(JSON.stringify(fresh));setCurrentId("");setCurrentNo("");setStatus("DRAFT");setActiveSection("parties");setView("editor");setMessage("");};
+ const filteredContracts=contracts.filter(c=>{
+  const buyer=c.buyer&&typeof c.buyer==="object"&&"name" in c.buyer?String(c.buyer.name):"";
+  return (statusFilter==="ALL"||c.status===statusFilter)&&
+   (c.contractNo+" "+c.title+" "+buyer).toLocaleLowerCase("vi").includes(search.toLocaleLowerCase("vi").trim());
+ });
+ const readiness=[
+  {label:"Bên mua và bên bán",ok:Boolean(form.buyer.name&&form.seller.name)},
+  {label:"Đại diện hai bên",ok:Boolean(form.buyer.representative&&form.seller.representative)},
+  {label:"Pháp nhân VNC",ok:Boolean(form.legalEntityId)},
+  {label:"Hàng hóa và đơn giá",ok:form.goods.every(g=>g.description&&g.quantity>0&&g.unitPrice>=0)},
+  {label:"Thanh toán đủ 100%",ok:Math.abs(form.paymentTerms.reduce((sum,p)=>sum+Number(p.percent),0)-100)<0.001},
+  {label:"Ngày ký và điều khoản",ok:Boolean(form.signedDate&&form.clauses.length&&form.clauses.every(x=>x.heading&&x.body))}
+ ];
+
  const patch=<K extends keyof ContractForm>(key:K,value:ContractForm[K])=>setForm(f=>({...f,[key]:value}));
  const patchParty=(key:"seller"|"buyer",field:keyof ContractParty,value:string)=>setForm(f=>({...f,[key]:{...f[key],[field]:value}}));
  const refresh=useCallback(async()=>{
@@ -59,13 +86,14 @@ export default function ContractManager(){
    const j=await r.json();if(!r.ok)throw new Error(j.error||"Không tải được hợp đồng.");
    const c=j.contract;
    const derivedTax=Number(c.subtotal)>0?Number(c.taxAmount)/Number(c.subtotal)*100:0;
-   setForm({language:c.language==="EN"?"EN":"VI",title:c.title,
+   const loadedForm:ContractForm={language:c.language==="EN"?"EN":"VI",title:c.title,
     customerId:c.customerId||"",orderId:c.orderId||"",legalEntityId:c.legalEntityId||"",
     bankAccountId:c.bankAccountId||"",currency:c.currency,seller:c.seller,buyer:c.buyer,
     goods:c.goods,clauses:c.clauses,paymentTerms:c.paymentTerms,
     taxRate:derivedTax,signedDate:dateText(c.signedDate),effectiveDate:dateText(c.effectiveDate),
-    deliveryDate:dateText(c.deliveryDate),deliveryAddress:c.deliveryAddress||"",notes:c.notes||""});
-   setCurrentId(c.id);setCurrentNo(c.contractNo);setStatus(c.status);
+    deliveryDate:dateText(c.deliveryDate),deliveryAddress:c.deliveryAddress||"",notes:c.notes||""};
+   setForm(loadedForm);setSavedFormJson(JSON.stringify(loadedForm));
+   setCurrentId(c.id);setCurrentNo(c.contractNo);setStatus(c.status);setView("editor");setActiveSection("parties");
    setMessage("Đã mở hợp đồng "+c.contractNo+".");
    window.scrollTo({top:0,behavior:"smooth"});
   }catch(e){setMessage(e instanceof Error?e.message:"Lỗi đọc hợp đồng.");}finally{setBusy(false);}
@@ -76,12 +104,13 @@ export default function ContractManager(){
    const target=currentId?"/api/admin/documents/contracts/"+encodeURIComponent(currentId):"/api/admin/documents/contracts";
    const r=await fetch(target,{method:currentId?"PATCH":"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(form)});
    const j=await r.json();if(!r.ok)throw new Error(j.error||"Không thể lưu.");
-   setCurrentId(j.id);setCurrentNo(j.contractNo);setStatus("DRAFT");setMessage("Đã lưu bản nháp "+j.contractNo+".");
+   setCurrentId(j.id);setCurrentNo(j.contractNo);setStatus("DRAFT");setSavedFormJson(JSON.stringify(form));setMessage("Đã lưu bản nháp "+j.contractNo+".");
    await refresh();
   }catch(e){setMessage(e instanceof Error?e.message:"Lưu thất bại.");}finally{setBusy(false);}
  }
  async function issue(){
   if(!currentId||!canEdit)return;
+  if(dirty){setMessage("Bạn đang có thay đổi chưa lưu. Hãy lưu bản nháp trước khi phát hành.");return;}
   if(!window.confirm("Phát hành hợp đồng "+currentNo+"? Nội dung sẽ bị khóa và PDF cuối không còn watermark DRAFT."))return;
   setBusy(true);try{
    const r=await fetch("/api/admin/documents/contracts/"+encodeURIComponent(currentId)+"/issue",{method:"POST"});
@@ -95,17 +124,63 @@ export default function ContractManager(){
   <div className={s.field}><label>{label}</label><textarea value={value} disabled={disabled} onChange={e=>onChange(e.target.value)}/></div>;
  const selectOptions=(label:string,value:string,onChange:(v:string)=>void,options:{value:string;label:string}[])=>
   <div className={s.field}><label>{label}</label><select disabled={!canEdit} value={value} onChange={e=>onChange(e.target.value)}>{options.map(x=><option key={x.value} value={x.value}>{x.label}</option>)}</select></div>;
- return <div className={s.root}>
-  <div className={s.panel}>
-   <div className={s.toolbar}>
-    <button type="button" className={s.secondary} disabled={busy} onClick={()=>{setForm(newForm());setCurrentId("");setCurrentNo("");setStatus("DRAFT");setMessage("Đã mở form hợp đồng mới.");}}>+ Hợp đồng mới</button>
-    <button type="button" className={s.primary} disabled={busy||!canEdit} onClick={()=>void save()}>{busy?"Đang xử lý...":currentId?"Lưu thay đổi":"Lưu bản nháp"}</button>
-    {currentId&&canEdit&&<button type="button" className={s.secondary} disabled={busy} onClick={()=>void issue()}>Phát hành</button>}
-    {currentId&&<a className={s.secondary} style={{textDecoration:"none"}} href={"/api/admin/documents/contracts/"+encodeURIComponent(currentId)+"/pdf"}>{status==="DRAFT"?"Tải PDF Draft":"Tải PDF hợp đồng"}</a>}
-    <Link href="/admin/documents/invoices" className={s.secondary} style={{textDecoration:"none"}}>Invoice</Link>
+ if(view==="list")return <div className={s.documentHub}>
+  <header className={s.hubHeader}>
+   <div><span className={s.eyebrow}>DOCUMENT CENTER  /  CONTRACTS</span>
+    <h1>Hợp đồng thương mại</h1>
+    <p>Quản lý bản nháp, hợp đồng phát hành và chứng từ liên kết đơn hàng trên cùng một danh sách.</p>
    </div>
-   {message&&<div className={s.warning} role="status">{message}</div>}
-   <h2>{currentNo||"Hợp đồng mới"} <span className={status==="ISSUED"?s.state+" "+s.issued:s.state}>{status==="DRAFT"?"BẢN NHÁP":"ĐÃ PHÁT HÀNH"}</span></h2>
+   <div className={s.hubActions}><Link className={s.secondary} href="/admin/documents/invoices">Invoice</Link><button type="button" className={s.primary} onClick={startNew}>+ Tạo hợp đồng</button></div>
+  </header>
+  <div className={s.statsGrid}>
+   <div><span>Tất cả hợp đồng</span><strong>{contracts.length}</strong></div>
+   <div><span>Đang soạn thảo</span><strong>{contracts.filter(x=>x.status==="DRAFT").length}</strong></div>
+   <div><span>Đã phát hành</span><strong>{contracts.filter(x=>x.status==="ISSUED").length}</strong></div>
+  </div>
+  <section className={s.listSurface}>
+   <div className={s.listToolbar}>
+    <div><h2>Danh sách hợp đồng</h2><p>Mở bản nháp để tiếp tục soạn thảo hoặc xem chứng từ đã phát hành.</p></div>
+    <div className={s.filterRow}>
+     <input className={s.searchInput} aria-label="Tìm hợp đồng" placeholder="Tìm số hợp đồng, tên, khách hàng..." value={search} onChange={e=>setSearch(e.target.value)}/>
+     <select aria-label="Lọc trạng thái" value={statusFilter} onChange={e=>setStatusFilter(e.target.value as "ALL"|"DRAFT"|"ISSUED")}><option value="ALL">Tất cả trạng thái</option><option value="DRAFT">Bản nháp</option><option value="ISSUED">Đã phát hành</option></select>
+    </div>
+   </div>
+   {message&&<p className={s.notice} role="status">{message}</p>}
+   {filteredContracts.length===0?<div className={s.emptyState}><strong>{contracts.length?"Không tìm thấy hợp đồng":"Chưa có hợp đồng nào"}</strong><p>{contracts.length?"Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm.":"Tạo hợp đồng đầu tiên từ thông tin khách hàng và đơn hàng của VNC."}</p><button type="button" className={s.primary} onClick={startNew}>+ Tạo hợp đồng</button></div>:
+   <div className={s.tableScroll}><table className={s.contractTable}><thead><tr><th>Số hợp đồng</th><th>Khách hàng / Bên mua</th><th>Giá trị</th><th>Ngôn ngữ</th><th>Trạng thái</th><th></th></tr></thead><tbody>
+    {filteredContracts.map(c=><tr key={c.id}>
+     <td><strong>{c.contractNo}</strong><small>{new Date(c.createdAt).toLocaleDateString("vi-VN")}</small></td>
+     <td><strong>{c.buyer&&typeof c.buyer==="object"&&"name" in c.buyer?String(c.buyer.name):"—"}</strong><small>{c.title}</small></td>
+     <td className={s.moneyCell}>{renderMoney(Number(c.grandTotal),c.currency)}</td><td>{c.language==="EN"?"English":"Tiếng Việt"}</td>
+     <td><span className={c.status==="ISSUED"?s.tagIssued:s.tagDraft}>{c.status==="ISSUED"?"Đã phát hành":"Bản nháp"}</span></td>
+     <td><button type="button" className={s.openButton} disabled={busy} onClick={()=>void load(c.id)}>Mở chi tiết →</button></td>
+    </tr>)}
+   </tbody></table></div>}
+  </section>
+ </div>;
+ return <div className={s.workspaceRoot}>
+  <div className={s.editorHeader}>
+   <div><button type="button" className={s.backLink} onClick={()=>{if(dirty&&!window.confirm("Hợp đồng có thay đổi chưa lưu. Rời khỏi bản nháp?"))return;setView("list");}}>← Danh sách hợp đồng</button>
+    <div className={s.editorHeading}><h1>{currentNo||"Tạo hợp đồng mới"}</h1><span className={status==="ISSUED"?s.tagIssued:s.tagDraft}>{status==="ISSUED"?"Đã phát hành":"Bản nháp"}</span></div>
+    <p>{form.title||"Hợp đồng mua bán"} · {form.language==="VI"?"Tiếng Việt":"English"}</p>
+   </div>
+   <div className={s.headerActions}>
+    {currentId&&<a className={s.secondary} href={"/api/admin/documents/contracts/"+encodeURIComponent(currentId)+"/pdf"}>{status==="DRAFT"?"Tải bản nháp":"Tải PDF"}</a>}
+    {canEdit&&<button type="button" className={s.primary} disabled={busy} onClick={()=>void save()}>{busy?"Đang lưu...":currentId?"Lưu thay đổi":"Lưu bản nháp"}</button>}
+    {currentId&&canEdit&&<button type="button" className={s.secondary} disabled={busy||dirty||readiness.some(x=>!x.ok)} onClick={()=>void issue()}>Phát hành</button>}
+   </div>
+  </div>
+  {message&&<div className={s.notice} role="status">{message}</div>}
+  {dirty&&<div className={s.dirtyNotice} role="status">Bạn có thay đổi chưa lưu. Lưu bản nháp trước khi rời màn hình hoặc phát hành.</div>}
+  <nav className={s.stepNav} aria-label="Các bước soạn hợp đồng">
+   {steps.map((step,i)=><button key={step.key} type="button" aria-current={activeSection===step.key?"step":undefined} className={activeSection===step.key?s.stepActive:s.stepButton} onClick={()=>setActiveSection(step.key)}>
+     <span className={s.stepNo}>{String(i+1).padStart(2,"0")}</span><span>{step.short}</span>
+    </button>)}
+  </nav>
+  <div className={s.root}>
+  <div className={s.panel}>
+   {activeSection==="parties"&&<section className={s.editorSection}>
+    <div className={s.sectionIntro}><span>01 / THÔNG TIN HỢP ĐỒNG</span><h2>Thông tin chung & đối tác</h2><p>Chọn pháp nhân VNC, khách hàng và đơn hàng liên kết. Dữ liệu sẽ được đưa vào hợp đồng khi phát hành.</p></div>
    <div className={s.cols}>
     {selectOptions("Ngôn ngữ",form.language,v=>setForm(f=>({...f,language:v as ContractLanguage,title:v==="EN"?"GOODS SALES AGREEMENT":"HỢP ĐỒNG MUA BÁN HÀNG HÓA",clauses:standardClauses(v as ContractLanguage)})),[{value:"VI",label:"Tiếng Việt"},{value:"EN",label:"English"}])}
     {selectOptions("Đơn vị tiền",form.currency,v=>patch("currency",v),["VND","USD","EUR"].map(v=>({value:v,label:v})))}
@@ -156,7 +231,10 @@ export default function ContractManager(){
     {input("Tên người thụ hưởng",form.seller.accountName,v=>patchParty("seller","accountName",v))}
     {input("SWIFT",form.seller.swift,v=>patchParty("seller","swift",v))}
    </div>
-   <h3>Điều 1. Danh mục hàng hóa</h3>
+   </section>}
+   {activeSection==="goods"&&<section className={s.editorSection}>
+    <div className={s.sectionIntro}><span>02 / HÀNG HÓA</span><h2>Danh mục sản phẩm & giá trị</h2><p>Quản lý từng dòng sản phẩm, quy cách, số lượng và giá bán.</p></div>
+   <h3>Danh mục hàng hóa</h3>
    {form.goods.map((g,i)=><div className={s.row} key={i}>
     <div className={s.cols}>
      <div className={s.full}>{input("Sản phẩm / Description",g.description,v=>updateItem(i,"description",v))}</div>
@@ -169,7 +247,10 @@ export default function ContractManager(){
     {form.goods.length>1&&canEdit&&<button type="button" className={s.danger} onClick={()=>patch("goods",form.goods.filter((_,j)=>j!==i))}>Xóa dòng</button>}
    </div>)}
    <button type="button" disabled={!canEdit} className={s.secondary} onClick={()=>patch("goods",[...form.goods,{description:"",specification:"",quantity:1,unit:"pcs",unitPrice:0}])}>+ Thêm sản phẩm</button>
-   <h3>Thanh toán và giao hàng</h3>
+   </section>}
+   {activeSection==="delivery"&&<section className={s.editorSection}>
+    <div className={s.sectionIntro}><span>03 / THANH TOÁN</span><h2>Thanh toán & giao hàng</h2><p>Điều kiện thương mại, VAT, ngày giao hàng và lịch thanh toán.</p></div>
+   <h3>Điều kiện thanh toán và giao hàng</h3>
    <div className={s.cols}>
     {input("Thuế VAT (%)",String(form.taxRate),v=>patch("taxRate",Number(v)))}
     {input("Ngày ký (YYYY-MM-DD)",form.signedDate,v=>patch("signedDate",v))}
@@ -184,6 +265,9 @@ export default function ContractManager(){
    </div>{canEdit&&<button type="button" className={s.danger} onClick={()=>patch("paymentTerms",form.paymentTerms.filter((_,j)=>i!==j))}>Xóa đợt</button>}</div>)}
    <button type="button" className={s.secondary} disabled={!canEdit} onClick={()=>patch("paymentTerms",[...form.paymentTerms,{label:"",percent:0,due:""}])}>+ Thêm đợt thanh toán</button>
    <div className={s.warning}>Tổng tỷ lệ thanh toán: <strong>{form.paymentTerms.reduce((sum,p)=>sum+Number(p.percent),0)}%</strong> (bắt buộc bằng 100% trước khi lưu). Các điều khoản pháp lý dưới đây là mẫu có thể chỉnh sửa và cần được hai bên duyệt trước khi ký.</div>
+   </section>}
+   {activeSection==="terms"&&<section className={s.editorSection}>
+    <div className={s.sectionIntro}><span>04 / ĐIỀU KHOẢN</span><h2>Điều khoản & ký kết</h2><p>Đối chiếu điều khoản với thỏa thuận hai bên trước khi phát hành chứng từ.</p></div>
    <h3>Điều khoản hợp đồng (tùy chỉnh)</h3>
    {form.clauses.map((c,i)=><div className={s.row} key={i}>
     {input("Tiêu đề điều khoản",c.heading,v=>patch("clauses",form.clauses.map((x,j)=>i===j?{...x,heading:v}:x)))}
@@ -192,6 +276,12 @@ export default function ContractManager(){
    </div>)}
    <button type="button" disabled={!canEdit} className={s.secondary} onClick={()=>patch("clauses",[...form.clauses,{heading:"",body:""}])}>+ Thêm điều khoản</button>
    <div style={{marginTop:16}}>{textarea("Ghi chú khác",form.notes,v=>patch("notes",v))}</div>
+   </section>}
+   <div className={s.stepFooter}>
+     <button type="button" className={s.secondary} disabled={activeSection==="parties"} onClick={()=>setActiveSection(steps[Math.max(0,steps.findIndex(x=>x.key===activeSection)-1)].key)}>← Bước trước</button>
+     <span>{steps.findIndex(x=>x.key===activeSection)+1} / {steps.length}</span>
+     <button type="button" className={s.primary} disabled={activeSection==="terms"} onClick={()=>setActiveSection(steps[Math.min(steps.length-1,steps.findIndex(x=>x.key===activeSection)+1)].key)}>Tiếp tục →</button>
+   </div>
   </div>
   <div className={s.sticky}>
    <section className={s.panel}>
@@ -206,14 +296,11 @@ export default function ContractManager(){
     <div className={s.warning}>Hợp đồng này không phải chứng từ đã ký điện tử. Tải bản cuối để kiểm tra, ký và lưu bản ký theo quy trình của VNC.</div>
    </section>
    <section className={s.panel} style={{marginTop:16}}>
-    <h2>Hợp đồng đã lưu</h2>
-    {contracts.length===0?<p className={s.small}>Chưa có hợp đồng.</p>:contracts.map(c=><div className={s.item} key={c.id}>
-     <div><strong>{c.contractNo}</strong><span>{c.title} · {c.currency} {c.grandTotal}</span></div>
-     <div style={{textAlign:"right"}}><div className={c.status==="ISSUED"?s.state+" "+s.issued:s.state}>{c.status}</div>
-      <button type="button" className={s.secondary} style={{marginTop:7}} disabled={busy} onClick={()=>void load(c.id)}>Mở</button>
-     </div>
-    </div>)}
+    <h2>Kiểm tra trước phát hành</h2>
+    <div className={s.checklist}>{readiness.map(x=><div key={x.label} className={s.checkItem}><span className={x.ok?s.checkPass:s.checkPending}>{x.ok?"✓":"·"}</span>{x.label}</div>)}</div>
+    {readiness.some(x=>!x.ok)&&<p className={s.small}>Hoàn thiện các mục còn thiếu trước khi phát hành.</p>}
+    {currentId&&<a className={s.previewLink} href={"/api/admin/documents/contracts/"+encodeURIComponent(currentId)+"/pdf"}>Xem bản PDF {status==="DRAFT"?"(Draft)":""} →</a>}
    </section>
   </div>
- </div>;
+ </div></div>;
 }

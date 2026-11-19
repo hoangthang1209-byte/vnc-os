@@ -74,9 +74,14 @@ export default function ProductionPlanEditor({ open, row, onClose, onSaved, canE
     if (!open || !row) return;
     const requestId = ++requestRef.current;
     dirtyRef.current = false;
-    setLoadError(null);
-    setWarnings([]);
-    setForm(buildForm(row));
+    // Initialize asynchronously to avoid a synchronous setState cascade in this effect.
+    // The request lease also prevents a stale drawer instance from repainting the form.
+    void Promise.resolve().then(() => {
+      if (requestRef.current !== requestId) return;
+      setLoadError(null);
+      setWarnings([]);
+      if (!dirtyRef.current) setForm(buildForm(row));
+    });
 
     void fetch("/api/employees?active=1&role=PRODUCTION&limit=200")
       .then(async (response) => {

@@ -29,7 +29,7 @@ export async function POST(req:NextRequest,ctx:{params:Promise<{id:string}>}){
   if(!c.signedDate)return {error:"Cần nhập ngày ký trước khi phát hành.",status:400};
   const issuedAt=new Date();
   const snapshot={
-   contractNo:c.contractNo,language:c.language,contractType:c.contractType,title:c.title,
+   templateVersion:2,contractNo:c.contractNo,language:c.language,contractType:c.contractType,title:c.title,
    customerId:c.customerId,orderId:c.orderId,legalEntityId:c.legalEntityId,
    bankAccountId:c.bankAccountId,currency:c.currency,seller:c.seller,buyer:c.buyer,
    goods:c.goods,clauses:c.clauses,paymentTerms:c.paymentTerms,

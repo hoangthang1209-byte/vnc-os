@@ -9,7 +9,6 @@ type ContractPrint={
  signedDate:Date|null;deliveryDate:Date|null;effectiveDate:Date|null;
  deliveryAddress:string|null;notes:string|null;
 };
-const obj=(v:unknown):Record<string,unknown>=>v&&typeof v==="object"&&!Array.isArray(v)?v as Record<string,unknown>:{};
 const items=(v:unknown)=>Array.isArray(v)?v as ContractItem[]:[];
 const clauses=(v:unknown)=>Array.isArray(v)?v as ContractClause[]:[];
 const payments=(v:unknown)=>Array.isArray(v)?v as PaymentMilestone[]:[];

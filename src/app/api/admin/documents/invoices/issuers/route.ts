@@ -35,6 +35,8 @@ export async function POST(request:NextRequest){
    const entity=await prisma.vncLegalEntity.create({data:{
     code,legalName,address:str(data.address,1500)||null,taxCode:str(data.taxCode,100)||null,
     email:str(data.email,250)||null,phone:str(data.phone,100)||null,
+    legalRepresentativeName:str(data.legalRepresentativeName,250)||null,
+    legalRepresentativeTitle:str(data.legalRepresentativeTitle,150)||null,
     isActive:true,isDefault:false,
    }});
    audit(request,"vnc_legal_entity_created",entity.id);
@@ -69,7 +71,10 @@ export async function PATCH(request:NextRequest){
    const entity=await prisma.vncLegalEntity.update({where:{id},data:{
     legalName:str(data.legalName,250)||undefined,address:str(data.address,1500)||null,
     taxCode:str(data.taxCode,100)||null,email:str(data.email,250)||null,
-    phone:str(data.phone,100)||null,isActive:data.isActive!==false,
+    phone:str(data.phone,100)||null,
+    legalRepresentativeName:str(data.legalRepresentativeName,250)||null,
+    legalRepresentativeTitle:str(data.legalRepresentativeTitle,150)||null,
+    isActive:data.isActive!==false,
    }});audit(request,"vnc_legal_entity_updated",entity.id);return response({entity});
   }
   if(data.kind==="bank"){

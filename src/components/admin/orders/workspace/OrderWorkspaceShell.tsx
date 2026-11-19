@@ -23,6 +23,7 @@ import OrderWorkspaceDeliveryTab from "./OrderWorkspaceDeliveryTab";
 import OrderWorkspacePaymentTab from "./OrderWorkspacePaymentTab";
 import OrderWorkspaceActivityTab from "./OrderWorkspaceActivityTab";
 import OrderWorkspaceNotesTab from "./OrderWorkspaceNotesTab";
+import OrderWorkspaceLowerSections from "./OrderWorkspaceLowerSections";
 import { useOrderWorkspaceData } from "./useOrderWorkspaceData";
 import {
   visibleOrderWorkspaceTabs,
@@ -260,6 +261,15 @@ export default function OrderWorkspaceShell(props: OrderWorkspaceShellProps) {
             <details className={styles.compactDetails}>
               <summary>Checklist điều hành</summary>
               <OrderExecutionControl order={order} onNavigateTab={navigateTab} canViewFinancials={canViewFinancials} />
+            </details>
+            <details className={styles.compactDetails}>
+              <summary>Tài liệu và thông tin bổ sung</summary>
+              <OrderWorkspaceLowerSections
+                order={order} orderId={orderId}
+                productionFileCount={workspaceData.productionFileCount}
+                canViewFinancials={canViewFinancials}
+                roleCode={roleCode} onNavigateTab={navigateTab}
+              />
             </details>
           </div>
         )}

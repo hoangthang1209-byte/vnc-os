@@ -142,7 +142,8 @@ export default function OrderProductTable({
                   {mode === "style" && <ProductThumbnail src={getThumbnail(items)} label={key} />}
                   <div className={styles.groupDescription}>
                     <button type="button" onClick={() => setCollapsed(current => ({ ...current, [key]: !current[key] }))} aria-expanded={!collapsed[key]}>{collapsed[key] ? "▸" : "▾"} {mode === "market" ? MARKET_LABELS[key] || key : key}</button>
-                    <span>{items.length} SKU {mode === "style" ? "· ảnh mẫu theo style" : ""}</span>
+                    <span>{items.length} SKU {mode === "style" ? (getThumbnail(items) ? "· đã có ảnh mẫu" : "· chưa có ảnh mẫu") : ""}</span>
+                    {mode === "style" && !getThumbnail(items) && canEditOrder && <Link className={styles.attachImage} href={`/admin/orders/${encodeURIComponent(order.id)}/edit`}>+ Gắn ảnh sản phẩm</Link>}
                   </div>
                 </div>
               </td>

@@ -208,7 +208,7 @@ export default function CustomInvoiceManager(){
   <V9InvoicePulse invoices={invoices} />
   <div className={s.toolbar}>
    <div><p className={s.eyebrow}>DOCUMENT CENTER / TÀI CHÍNH</p><h1 className={s.heading}>Tạo yêu cầu thanh toán</h1><p className={s.muted}>Commercial Invoice · Phí làm mẫu, phát triển sản phẩm và các khoản thu khác</p></div>
-   <span className={s.pill}>{issued?"● Đã phát hành":"○ Bản nháp"}</span>
+   <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}><Link href="/admin/documents/contracts" className={s.secondary} style={{textDecoration:"none"}}>Hợp đồng / Contracts</Link><span className={s.pill}>{issued?"● Đã phát hành":"○ Bản nháp"}</span></div>
   </div>
   <div className={s.layout}>
    <section className={s.panel}>

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import AdminInlineLoader from "@/components/admin/feedback/AdminInlineLoader";
 import type { OrderDetailRecord, OrderItemRecord } from "@/features/orders/order.types";
 import type { ProductionExecutionBundle } from "@/features/orders/production-execution.service";
@@ -86,20 +86,20 @@ export default function OrderProductTable({
   const toggleMarket = (code: string) => setSelectedMarkets(current => current.includes(code) ? current.filter(value => value !== code) : [...current, code]);
   const [search, setSearch] = useState("");
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
-  const rows = useMemo(() => order.items.filter(item => {
+  const rows = order.items.filter(item => {
     const matchesMarket = activeMarkets.includes(getMarket(item)) || (getMarket(item) === "OTHER" && activeMarkets.length === availableMarkets.length);
     const q = search.trim().toLowerCase();
     return matchesMarket && (!q || [item.skuSnapshot, item.productNameSnapshot, item.colorSnapshot, getMarket(item)]
       .some(value => (value ?? "").toLowerCase().includes(q)));
-  }), [order.items, activeMarkets.join(","), search]);
-  const groups = useMemo(() => {
+  });
+  const groups = (() => {
     const data = new Map<string, OrderItemRecord[]>();
     rows.forEach((item, index) => {
       const key = mode === "style" ? styleKey(item) : mode === "market" ? getMarket(item) : `row-${index}`;
       data.set(key, [...(data.get(key) ?? []), item]);
     });
     return [...data.entries()];
-  }, [mode, rows]);
+  })();
   const unallocated = rows.reduce((total, item) => total + (matrix(item).sizes.get("UNALLOCATED") ?? 0), 0);
   const marketCount = availableMarkets.length;
   const styleCount = new Set(order.items.map(styleKey)).size;
@@ -193,6 +193,6 @@ export default function OrderProductTable({
     </div>
     {!rows.length && <div className={styles.empty}>Không tìm thấy sản phẩm phù hợp với bộ lọc.</div>}
     <div className={styles.foot}>Các ô tổng chỉ cộng những thị trường được tick, không chỉnh sửa số lượng lưu trong đơn. Cột FREE dành cho hàng không chia size; UNALLOCATED là số lượng chưa phân bổ. Kéo ngang bảng để xem toàn bộ công đoạn.</div>
-    <OrderSkuEditor orderId={order.id} target={editor} onClose={() => setEditor(null)} onSaved={async () => { if (onRefreshOrder) await onRefreshOrder(); }} />
+    {editor && <OrderSkuEditor key={`${editor.item.id}-${editor.level}`} orderId={order.id} target={editor} onClose={() => setEditor(null)} onSaved={async () => { if (onRefreshOrder) await onRefreshOrder(); }} />}
   </section>;
 }

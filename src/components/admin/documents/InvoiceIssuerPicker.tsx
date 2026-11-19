@@ -4,9 +4,9 @@ import s from "./CustomInvoiceManager.module.css";
 export type VncBankInfo={id:string;legalEntityId:string;accountName:string;accountNo:string;accountAddress:string|null;bankName:string;bankAddress:string|null;branch:string|null;swift:string|null;currency:string|null;isActive:boolean;isDefault:boolean};
 export type VncIssuerInfo={id:string;code:string;legalName:string;address:string|null;taxCode:string|null;email:string|null;phone:string|null;legalRepresentativeName:string|null;legalRepresentativeTitle:string|null;isActive:boolean;isDefault:boolean;bankAccounts:VncBankInfo[]};
 export type IssuerSelection={entity:VncIssuerInfo;account:VncBankInfo|null};
-type Props={onSelect:(value:IssuerSelection)=>void;selectedEntityId:string;selectedBankId:string;canManage:boolean;disabled?:boolean;useModal?:boolean};
+type Props={onSelect:(value:IssuerSelection)=>void;onDataChange?:(entities:VncIssuerInfo[])=>void;selectedEntityId:string;selectedBankId:string;canManage:boolean;disabled?:boolean;useModal?:boolean};
 const emptyBank=()=>({accountName:"",accountNo:"",accountAddress:"",bankName:"",bankAddress:"",branch:"",swift:"",currency:"USD"});
-export default function InvoiceIssuerPicker({onSelect,selectedEntityId,selectedBankId,canManage,disabled,useModal=false}:Props){
+export default function InvoiceIssuerPicker({onSelect,onDataChange,selectedEntityId,selectedBankId,canManage,disabled,useModal=false}:Props){
  const [entities,setEntities]=useState<VncIssuerInfo[]>([]);
  const [editing,setEditing]=useState<""|"entity"|"bank">("");
  const [entityDraft,setEntityDraft]=useState({code:"",legalName:"",address:"",taxCode:"",email:"",phone:"",legalRepresentativeName:"",legalRepresentativeTitle:""});
@@ -19,7 +19,7 @@ export default function InvoiceIssuerPicker({onSelect,selectedEntityId,selectedB
   try{const res=await fetch("/api/admin/documents/invoices/issuers",{cache:"no-store"});
    const data=await res.json();if(!res.ok)throw new Error(data.error||"Không tải được danh mục.");
    const list:VncIssuerInfo[]=data.legalEntities??[];
-   setEntities(list);
+   setEntities(list);onDataChange?.(list);
    if(useModal && !selectedEntityId){
     const entity=list.find(x=>x.isDefault&&x.isActive)||list.find(x=>x.isActive);
     if(entity){

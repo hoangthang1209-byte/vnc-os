@@ -146,6 +146,18 @@ export default function OrderListManager() {
 
   const activeQuick =
     filters.kpi ? null : filters.mine ? "mine" : filters.quickFilter || "all";
+  const hasActiveFilters = Boolean(
+    filters.search.trim() || filters.customerId || filters.status ||
+    filters.paymentState || filters.kpi || filters.mine ||
+    (filters.quickFilter && filters.quickFilter !== "all")
+  );
+  const clearFilters = () => {
+    setSearchInput("");
+    update({
+      search: "", customerId: "", status: "", paymentState: "",
+      quickFilter: "all", kpi: "", mine: false, page: 1,
+    });
+  };
 
   if (query.loading && !query.data) {
     return <AdminPageSkeleton message="Đang tải danh sách đơn hàng…" />;
@@ -220,6 +232,16 @@ export default function OrderListManager() {
             <SlidersHorizontal size={14} aria-hidden />
             <span>{advancedOpen ? "Thu gọn" : "Lọc thêm"}</span>
           </button>
+          {hasActiveFilters && (
+            <button
+              type="button"
+              className="admin-btn admin-btn--secondary admin-btn--small"
+              onClick={clearFilters}
+              aria-label="Xóa tất cả bộ lọc đơn hàng"
+            >
+              Xóa bộ lọc
+            </button>
+          )}
           {query.refreshing && (
             <span className="order-ops-toolbar__refresh">
               <AdminInlineLoader message="Đang lọc…" />
@@ -309,7 +331,7 @@ export default function OrderListManager() {
       {!query.error && orders.length === 0 && !query.loading && (
         <div className="order-ops-empty">
           <p>
-            {filters.search || filters.status || filters.kpi || filters.quickFilter !== "all" || filters.mine
+            {hasActiveFilters
               ? "Không tìm thấy đơn hàng phù hợp."
               : "Chưa có đơn hàng."}
           </p>

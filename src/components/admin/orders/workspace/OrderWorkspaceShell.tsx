@@ -97,6 +97,7 @@ export default function OrderWorkspaceShell(props: OrderWorkspaceShellProps) {
     order,
     busy,
     canEditOrder,
+    onRefreshOrder,
     canRecordPayment,
     showDeliveryForm,
     transitions,

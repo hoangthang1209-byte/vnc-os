@@ -16,6 +16,7 @@ import {
   PRODUCT_PROGRESS_LABELS,
 } from "@/features/orders/order-workspace-status";
 import styles from "./OrderSizeMatrix.module.css";
+import OrderSkuEditor, { type OrderSkuEditTarget } from "./OrderSkuEditor";
 
 type ItemMaterialRow = { orderItemId: string; materials: Array<{ id: string; materialType: string }> };
 type Props = {
@@ -26,6 +27,7 @@ type Props = {
   loading: boolean;
   canViewProduction: boolean;
   canEditOrder: boolean;
+  onRefreshOrder?: () => Promise<void> | void;
   productionApprovals?: Record<string, { status: "PENDING" | "NEEDS_REVISION" | "RELEASED"; artworkStale: boolean }>;
 };
 type Mode = "style" | "market" | "all";
@@ -74,18 +76,22 @@ function sumSizes(items: OrderItemRecord[], key: string) {
 }
 
 export default function OrderProductTable({
-  order, bundle, itemMaterials, materialRows, loading, canViewProduction, canEditOrder, productionApprovals = {},
+  order, bundle, itemMaterials, materialRows, loading, canViewProduction, canEditOrder, onRefreshOrder, productionApprovals = {},
 }: Props) {
   const [mode, setMode] = useState<Mode>("style");
-  const [market, setMarket] = useState("ALL");
+  const [selectedMarkets, setSelectedMarkets] = useState<string[]>(() => [...new Set(order.items.map(getMarket))].filter(code => code !== "OTHER"));
+  const [editor, setEditor] = useState<OrderSkuEditTarget | null>(null);
+  const availableMarkets = [...new Set(order.items.map(getMarket))].filter(code => code !== "OTHER");
+  const activeMarkets = selectedMarkets.filter(code => availableMarkets.includes(code));
+  const toggleMarket = (code: string) => setSelectedMarkets(current => current.includes(code) ? current.filter(value => value !== code) : [...current, code]);
   const [search, setSearch] = useState("");
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
   const rows = useMemo(() => order.items.filter(item => {
-    const matchesMarket = market === "ALL" || getMarket(item) === market;
+    const matchesMarket = activeMarkets.includes(getMarket(item)) || (getMarket(item) === "OTHER" && activeMarkets.length === availableMarkets.length);
     const q = search.trim().toLowerCase();
     return matchesMarket && (!q || [item.skuSnapshot, item.productNameSnapshot, item.colorSnapshot, getMarket(item)]
       .some(value => (value ?? "").toLowerCase().includes(q)));
-  }), [order.items, market, search]);
+  }), [order.items, activeMarkets.join(","), search]);
   const groups = useMemo(() => {
     const data = new Map<string, OrderItemRecord[]>();
     rows.forEach((item, index) => {
@@ -94,8 +100,8 @@ export default function OrderProductTable({
     });
     return [...data.entries()];
   }, [mode, rows]);
-  const unallocated = order.items.reduce((total, item) => total + (matrix(item).sizes.get("UNALLOCATED") ?? 0), 0);
-  const marketCount = new Set(order.items.map(getMarket).filter(key => key !== "OTHER")).size;
+  const unallocated = rows.reduce((total, item) => total + (matrix(item).sizes.get("UNALLOCATED") ?? 0), 0);
+  const marketCount = availableMarkets.length;
   const styleCount = new Set(order.items.map(styleKey)).size;
   if (loading) return <AdminInlineLoader message="Đang tải bảng sản phẩm và phân bổ size…" />;
 
@@ -109,21 +115,23 @@ export default function OrderProductTable({
       <div className={styles.controls}>
         <label className={styles.srOnly} htmlFor="order-matrix-search">Tìm theo sản phẩm, SKU hoặc thị trường</label>
         <input id="order-matrix-search" value={search} onChange={event => setSearch(event.target.value)} placeholder="Tìm tên hàng, SKU…" className={styles.search} />
-        <label className={styles.srOnly} htmlFor="order-matrix-market">Lọc thị trường</label>
-        <select id="order-matrix-market" value={market} onChange={event => setMarket(event.target.value)} className={styles.select}>
-          <option value="ALL">Tất cả thị trường</option>
-          {[...new Set(order.items.map(getMarket))].sort().map(code => <option value={code} key={code}>{MARKET_LABELS[code] || "Không xác định"}</option>)}
-        </select>
+
         <div className={styles.segment} role="group" aria-label="Chế độ nhóm sản phẩm">
           {([["style", "Theo mẫu"], ["market", "Theo thị trường"], ["all", "Tất cả"]] as const).map(([value, label]) =>
             <button type="button" key={value} aria-pressed={mode === value} className={mode === value ? styles.selected : ""} onClick={() => setMode(value)}>{label}</button>)}
         </div>
       </div>
     </div>
+    <div className={styles.marketSelector} role="group" aria-label="Chọn thị trường để cộng số lượng">
+      <span className={styles.marketSelectorLabel}>TỔNG HỢP THỊ TRƯỜNG</span>
+      <button type="button" className={styles.marketAll} onClick={() => setSelectedMarkets([...availableMarkets])}>Chọn tất cả</button>
+      {availableMarkets.map(code => <label key={code} className={`${styles.marketCheck} ${activeMarkets.includes(code) ? styles.marketCheckActive : ""}`}><input type="checkbox" checked={activeMarkets.includes(code)} onChange={() => toggleMarket(code)}/><span>{code} · {MARKET_LABELS[code]}</span></label>)}
+      <span className={styles.marketHint}>{activeMarkets.length}/{availableMarkets.length} thị trường · số lượng cộng theo style & size</span>
+    </div>
     <div className={styles.miniStats}>
       <span><strong>{format(rows.reduce((sum, item) => sum + item.quantity, 0))}</strong> pcs đang hiển thị</span>
       <span><strong>{rows.length}</strong> SKU lines</span>
-      <span className={unallocated ? styles.warning : ""}><strong>{format(unallocated)}</strong> pcs chưa phân size (toàn đơn)</span>
+      <span className={unallocated ? styles.warning : ""}><strong>{format(unallocated)}</strong> pcs chưa phân size (đã chọn)</span>
     </div>
     <div className={styles.scroll} role="region" tabIndex={0} aria-label="Bảng sản phẩm cuộn ngang">
       <table className={styles.table}>
@@ -143,7 +151,7 @@ export default function OrderProductTable({
                   <div className={styles.groupDescription}>
                     <button type="button" onClick={() => setCollapsed(current => ({ ...current, [key]: !current[key] }))} aria-expanded={!collapsed[key]}>{collapsed[key] ? "▸" : "▾"} {mode === "market" ? MARKET_LABELS[key] || key : key}</button>
                     <span>{items.length} SKU {mode === "style" ? (getThumbnail(items) ? "· đã có ảnh mẫu" : "· chưa có ảnh mẫu") : ""}</span>
-                    {mode === "style" && !getThumbnail(items) && canEditOrder && <Link className={styles.attachImage} href={`/admin/orders/${encodeURIComponent(order.id)}/edit`}>+ Gắn ảnh sản phẩm</Link>}
+                    {mode === "style" && canEditOrder && <button type="button" className={styles.attachImage} onClick={() => setEditor({ item: items[0], level: "style" })}>✎ Chỉnh style / ảnh</button>}
                   </div>
                 </div>
               </td>
@@ -176,8 +184,7 @@ export default function OrderProductTable({
                 <td className={styles.total}>{format(item.quantity)}{current.mismatch && <span className={styles.warning} title="Tổng biến thể vượt quá số lượng sản phẩm"> !</span>}</td>
                 <td><span className={docStatus === "Đủ" ? styles.ok : styles.warning}>{docStatus}</span></td>
                 <td className={styles.status}><strong>{PRODUCT_PROGRESS_LABELS[progress]}</strong>{progressPercent != null && <small>{progressPercent}%</small>}<small>Material: {matStatus} · QC: {qcStatus}</small>{canViewProduction && !isApproved && <small className={styles.warning}>Chưa duyệt SX</small>}</td>
-                <td>{canViewProduction ? <Link className={styles.action} href={`/admin/production/jobs/${encodeURIComponent(item.id)}`}>Mở Job</Link>
-                  : canEditOrder ? <Link className={styles.action} href={`/admin/orders/${encodeURIComponent(order.id)}/edit`}>Chỉnh sửa</Link> : <span className={styles.muted}>—</span>}</td>
+                <td><div className={styles.rowActions}>{canEditOrder && <button type="button" className={styles.action} onClick={() => setEditor({ item, level: "sku" })}>Sửa SKU</button>}{canViewProduction && <Link className={styles.action} href={`/admin/production/jobs/${encodeURIComponent(item.id)}`}>Mở Job</Link>}{!canEditOrder && !canViewProduction && <span className={styles.muted}>—</span>}</div></td>
               </tr>;
             }) : []),
           ];
@@ -185,6 +192,7 @@ export default function OrderProductTable({
       </table>
     </div>
     {!rows.length && <div className={styles.empty}>Không tìm thấy sản phẩm phù hợp với bộ lọc.</div>}
-    <div className={styles.foot}>Số lượng lấy trực tiếp từ Order Item Variants. Cột FREE dành cho hàng không chia size; UNALLOCATED là số lượng chưa phân bổ, không được tự suy đoán. Kéo ngang bảng để xem toàn bộ công đoạn.</div>
+    <div className={styles.foot}>Các ô tổng chỉ cộng những thị trường được tick, không chỉnh sửa số lượng lưu trong đơn. Cột FREE dành cho hàng không chia size; UNALLOCATED là số lượng chưa phân bổ. Kéo ngang bảng để xem toàn bộ công đoạn.</div>
+    <OrderSkuEditor orderId={order.id} target={editor} onClose={() => setEditor(null)} onSaved={async () => { if (onRefreshOrder) await onRefreshOrder(); }} />
   </section>;
 }

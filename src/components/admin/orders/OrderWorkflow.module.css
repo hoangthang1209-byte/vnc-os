@@ -395,3 +395,27 @@
     display: none;
   }
 }
+
+
+/* V9 lean operator form: compact 2-column essentials, optional depth on demand. */
+.orderWorkspace{font-family:var(--font-geist-sans),Inter,Arial,system-ui,sans-serif;line-height:1.45;color:#20334c;--vnc-form-gap:10px}
+.orderWorkspace__body{gap:16px!important;align-items:start}
+.orderWorkspace__main{min-width:0}
+.orderWorkspace__summary{min-width:220px}
+.itemCard{padding:12px 14px;border-radius:9px;border-color:#e1e7ef;box-shadow:none;margin-bottom:8px}
+.itemCard__header{margin-bottom:10px;padding-bottom:8px}
+.itemCard__primary{grid-template-columns:repeat(2,minmax(0,1fr));gap:11px 14px}
+.itemCard__primary :global(.admin-field){min-width:0}
+.itemCard__primary :global(.admin-label){font-size:11px;font-weight:700;margin-bottom:4px;color:#52657d}
+.itemCard__primary :global(.admin-input){min-height:36px;font-size:13px;border-radius:7px}
+.itemMediaToggle{border:1px solid #e2e9f0;background:#fafcff;border-radius:8px;margin:11px 0 0;padding:0 10px}
+.itemMediaToggle summary{display:flex;gap:10px;align-items:center;min-height:42px;cursor:pointer;font-size:12px;font-weight:700;color:#3e5470}
+.itemMediaToggle summary>span:first-child{flex:1}
+.itemMediaToggle img{object-fit:cover;border:1px solid #d4dfe8;border-radius:6px}
+.itemMediaEmpty{font-size:11px;color:#8393a7;font-weight:500}
+.itemMediaToggle[open]{padding-bottom:12px}
+.itemSizeMatrix{padding-top:12px;border-top:1px solid #e7edf3;margin-top:12px}
+.itemSizeMatrixTitle{font-size:12px;font-weight:750;color:#29405d;margin-bottom:8px;display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
+.itemSizeMatrixTitle span{font-weight:400;color:#8794a6;font-size:11px}
+@media(max-width:1160px){.orderWorkspace__body{grid-template-columns:minmax(0,1fr)!important}.orderWorkspace__summary{max-width:none;width:100%}.itemCard__primary{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:640px){.itemCard{padding:10px}.itemCard__primary{grid-template-columns:minmax(0,1fr);gap:9px}.itemCard__meta{gap:6px}.itemSizeMatrixTitle{font-size:11px}}

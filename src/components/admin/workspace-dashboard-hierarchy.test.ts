@@ -154,9 +154,10 @@ describe("IA-4E dashboard workspace hierarchy", () => {
     );
   });
 
-  it("leaves deferred execution dashboards unmodified in this sprint", () => {
-    const production = read("src/components/admin/production-planning/ProductionDashboardManager.tsx");
-    assert.match(production, /<h1/);
+  it("retires the duplicate production homepage while keeping other dashboards", () => {
+    const production = read("src/app/(backend)/admin/production/page.tsx");
+    assert.match(production, /redirect\(/);
+    assert.match(production, /\/admin\/operations-v9/);
     const kg = read("src/components/admin/knowledge-graph/KnowledgeGraphDashboardClient.tsx");
     assert.match(kg, /Loading…/);
   });

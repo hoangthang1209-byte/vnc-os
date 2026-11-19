@@ -9,7 +9,16 @@ import IntegratedProductionWorkspace from "@/components/admin/operations-v9/Inte
 export const metadata = adminPageMetadata("Điều hành sản xuất V9");
 export const dynamic = "force-dynamic";
 
-export default async function OperationsV9Page() {
+export default async function OperationsV9Page({
+  searchParams,
+}: {
+  searchParams: Promise<{ view?: string | string[]; search?: string | string[] }>;
+}) {
+  const query = await searchParams;
+  const view = typeof query.view === "string" ? query.view : query.view?.[0];
+  const initialView = view === "production" || view === "factories" ? view : "orders";
+  const initialSearch = typeof query.search === "string" ? query.search : query.search?.[0] ?? "";
+
   const session = await getAdminSessionFromCookies();
   if (!session || !can(session, "production.view")) {
     return <main className="p-8"><h1>Không có quyền xem điều hành sản xuất</h1><Link href="/admin/dashboard">Quay lại</Link></main>;
@@ -113,7 +122,7 @@ export default async function OperationsV9Page() {
     }));
     return grouped.map((job) => ({ ...base, ...job }));
   });
-  return <IntegratedProductionWorkspace jobs={jobs} documents={documents} orders={orders.map(o => ({
+  return <IntegratedProductionWorkspace initialView={initialView} initialSearch={initialSearch} jobs={jobs} documents={documents} orders={orders.map(o => ({
     id:o.id, orderNo:o.orderNo, customer:o.customerCompanyName??"", status:String(o.status),
     due:(o.deliveryExpectedAt??o.productionDueDate)?.toISOString()??null,
     items:o.items.map(i=>({id:i.id,sku:i.skuSnapshot??i.productNameSnapshot??i.id,name:i.productNameSnapshot??"",quantity:i.quantity,image:i.designImageUrl??null}))

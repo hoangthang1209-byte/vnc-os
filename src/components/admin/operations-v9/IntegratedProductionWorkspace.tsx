@@ -24,11 +24,11 @@ const STAGE_COLORS=["#687d99","#407bd4","#8466d3","#169c7a","#dd9a35","#c7627c",
 function color(stage:string) {const i=/cut|cắt/i.test(stage)?0:/print|in /i.test(stage)?1:/embroider|thêu/i.test(stage)?2:/sew|may/i.test(stage)?3:/qc|kiểm/i.test(stage)?4:/pack|đóng/i.test(stage)?5:6;return STAGE_COLORS[i];}
 const jobGroup=(j:Job,group:Group)=>group==="order"?j.orderNo:group==="sku"?j.orderNo+" · "+j.sku:group==="factory"?j.factoryId??"__none__":j.stage;
 
-export default function IntegratedProductionWorkspace({jobs,orders,factories,documents}:{jobs:Job[];orders:Order[];factories:Factory[];documents:Documents}) {
- const [section,setSection]=useState<Section>("orders");
+export default function IntegratedProductionWorkspace({jobs,orders,factories,documents,initialView="orders",initialSearch=""}:{jobs:Job[];orders:Order[];factories:Factory[];documents:Documents;initialView?:Section;initialSearch?:string}) {
+ const [section,setSection]=useState<Section>(initialView);
  const [group,setGroup]=useState<Group>("order");
  const [orderSearch,setOrderSearch]=useState("");
- const [productionSearch,setProductionSearch]=useState("");
+ const [productionSearch,setProductionSearch]=useState(initialSearch);
  const [factoryTab,setFactoryTab]=useState<"Schedule"|"Jobs"|"Capacity"|"Quality"|"Profile">("Schedule");
  const [orderFilter,setOrderFilter]=useState("all");
  const [stageFilter,setStageFilter]=useState("all");

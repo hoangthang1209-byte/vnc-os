@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, it } from "node:test";
 import {
@@ -61,6 +61,20 @@ describe("VNC OS V9 navigation contract (#294)", () => {
       items().find((item) => item.href === "/admin/operations-v9")?.requiredPermissions,
       ["canViewProduction"],
     );
+  });
+
+  it("retires the duplicate production dashboard but preserves writable legacy stages", () => {
+    const oldDashboard = path.join("src/app/(backend)/admin/production/page.tsx");
+    const legacyTimeline = path.join("src/app/(backend)/admin/manufacturing/production-timeline/page.tsx");
+    const newDashboard = path.join("src/app/(backend)/admin/operations-v9/page.tsx");
+    for (const file of [oldDashboard, legacyTimeline, newDashboard]) {
+      assert.ok(existsSync(file), `missing backwards-compatible production route: ${file}`);
+    }
+    const dashboardSource = readFileSync(oldDashboard, "utf8");
+    const timelineSource = readFileSync(legacyTimeline, "utf8");
+    assert.ok(dashboardSource.includes('redirect(`/admin/operations-v9?'), "legacy overview must redirect to canonical V9 workspace");
+    assert.ok(dashboardSource.includes('query.set("search"'), "search deep-link must be preserved");
+    assert.ok(timelineSource.includes("ItemProductionTimelineManager"), "stage write workflow must not be deleted");
   });
 
   it("exposes no dead routes or placeholder links", () => {

@@ -20,7 +20,7 @@ export default function VncCompanySettingsWorkspace({initial}:Props){
    <button type="button" id="vnc-tab-company" role="tab" aria-controls="vnc-panel-company" aria-selected={active==="company"} className={active==="company"?styles.active:""} onClick={()=>setActive("company")}>Pháp nhân & ngân hàng</button>
    <button type="button" id="vnc-tab-identity" role="tab" aria-controls="vnc-panel-identity" aria-selected={active==="identity"} className={active==="identity"?styles.active:""} onClick={()=>setActive("identity")}>Logo & favicon</button>
   </div>
-  <section id="vnc-panel-company" role="tabpanel" aria-labelledby="vnc-tab-company" hidden={active!=="company"} className={styles.panel}>
+  <section id="vnc-panel-company" role="tabpanel" aria-labelledby="vnc-tab-company" hidden={active!=="company"} className={styles.companyPanel}>
    <VncCompanyMasterData/>
   </section>
   <section id="vnc-panel-identity" role="tabpanel" aria-labelledby="vnc-tab-identity" hidden={active!=="identity"} className={styles.panel}>

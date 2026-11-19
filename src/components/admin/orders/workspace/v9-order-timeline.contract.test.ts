@@ -16,7 +16,8 @@ describe("V9 Order Timeline authorization affordances", () => {
   });
 
   it("offers production timeline only to production-authorized roles", () => {
-    assert.ok(source.includes('canViewProduction&&<Link href="/admin/manufacturing/production-timeline"'));
+    assert.ok(source.includes('canViewProduction&&<Link href={`/admin/manufacturing/production-timeline?order=${encodeURIComponent(order.id)}`}'));
+    assert.ok(source.includes('encodeURIComponent(order.id)'), "timeline must be scoped to the selected order");
     assert.ok(source.includes('onNavigateTab("qc")'));
   });
 });

@@ -32,11 +32,11 @@ type Props = {
 };
 type Mode = "style" | "market" | "all";
 const SIZE_KEYS = ["S", "M", "L", "XL", "XXL", "UNALLOCATED"] as const;
-const MARKET_LABELS: Record<string, string> = { KUL: "Kuala Lumpur", JKT: "Jakarta", MNL: "Manila", KHH: "Kaohsiung" };
+const MARKET_LABELS: Record<string, string> = { KUL: "Kuala Lumpur", JKT: "Jakarta", MNL: "Manila", KHH: "Kaohsiung", OTHER: "Không phân thị trường" };
 const format = (value: number) => value.toLocaleString("vi-VN");
 const getMarket = (item: OrderItemRecord) => {
   const token = item.skuSnapshot?.match(/-([A-Z]{3})$/)?.[1] ?? "";
-  return MARKET_LABELS[token] ? token : "OTHER";
+  return token in MARKET_LABELS && token !== "OTHER" ? token : "OTHER";
 };
 const styleKey = (item: OrderItemRecord) => item.skuSnapshot?.replace(/-([A-Z]{3})$/, "") || item.productNameSnapshot?.trim() || "Chưa đặt tên sản phẩm";
 const getThumbnail = (items: OrderItemRecord[]) => items.find(item => item.designImageUrl?.trim())?.designImageUrl?.trim() || null;
@@ -79,15 +79,15 @@ export default function OrderProductTable({
   order, bundle, itemMaterials, materialRows, loading, canViewProduction, canEditOrder, onRefreshOrder, productionApprovals = {},
 }: Props) {
   const [mode, setMode] = useState<Mode>("style");
-  const [selectedMarkets, setSelectedMarkets] = useState<string[]>(() => [...new Set(order.items.map(getMarket))].filter(code => code !== "OTHER"));
+  const [selectedMarkets, setSelectedMarkets] = useState<string[]>(() => [...new Set(order.items.map(getMarket))]);
   const [editor, setEditor] = useState<OrderSkuEditTarget | null>(null);
-  const availableMarkets = [...new Set(order.items.map(getMarket))].filter(code => code !== "OTHER");
+  const availableMarkets = [...new Set(order.items.map(getMarket))];
   const activeMarkets = selectedMarkets.filter(code => availableMarkets.includes(code));
   const toggleMarket = (code: string) => setSelectedMarkets(current => current.includes(code) ? current.filter(value => value !== code) : [...current, code]);
   const [search, setSearch] = useState("");
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
   const rows = order.items.filter(item => {
-    const matchesMarket = activeMarkets.includes(getMarket(item)) || (getMarket(item) === "OTHER" && activeMarkets.length === availableMarkets.length);
+    const matchesMarket = activeMarkets.includes(getMarket(item));
     const q = search.trim().toLowerCase();
     return matchesMarket && (!q || [item.skuSnapshot, item.productNameSnapshot, item.colorSnapshot, getMarket(item)]
       .some(value => (value ?? "").toLowerCase().includes(q)));
@@ -101,7 +101,7 @@ export default function OrderProductTable({
     return [...data.entries()];
   })();
   const unallocated = rows.reduce((total, item) => total + (matrix(item).sizes.get("UNALLOCATED") ?? 0), 0);
-  const marketCount = availableMarkets.length;
+  const marketCount = availableMarkets.filter(code => code !== "OTHER").length;
   const styleCount = new Set(order.items.map(styleKey)).size;
   if (loading) return <AdminInlineLoader message="Đang tải bảng sản phẩm và phân bổ size…" />;
 

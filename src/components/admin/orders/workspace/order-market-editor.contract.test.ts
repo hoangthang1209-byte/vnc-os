@@ -24,7 +24,8 @@ describe("Order V9 market selection & SKU editor", () => {
     assert.match(table, /level: "style"/);
     assert.match(table, /level: "sku"/);
     assert.match(editor, /<MediaPicker/);
-    assert.match(editor, /applyToStyle: isStyle/);
+    assert.match(editor, /applyToStyle: true/);
+    assert.match(editor, /applyToStyle: false/);
     assert.match(editor, /onSaved\(\)/);
     assert.match(shell, /onRefreshOrder=\{onRefreshOrder\}/);
     assert.match(parent, /onRefreshOrder=\{load\}/);

@@ -18,7 +18,7 @@ export async function GET(request:NextRequest){
  prisma.vncCommercialContract.findMany({orderBy:{createdAt:"desc"},take:100,
   select:{id:true,contractNo:true,status:true,language:true,title:true,currency:true,grandTotal:true,
    createdAt:true,issuedAt:true,customerId:true,orderId:true,buyer:true}}),
- prisma.vncLegalEntity.findMany({where:{isActive:true},select:{id:true,legalName:true,address:true,taxCode:true},take:100}),
+ prisma.vncLegalEntity.findMany({where:{isActive:true},select:{id:true,legalName:true,address:true,taxCode:true,bankAccounts:{where:{isActive:true},select:{id:true,bankName:true,accountNo:true,accountName:true,swift:true,currency:true},orderBy:{isDefault:"desc"}}},take:100}),
  prisma.customer.findMany({select:{id:true,name:true,legalName:true,address:true,taxCode:true,representativeName:true,representativeTitle:true},take:200,orderBy:{name:"asc"}}),
  ]);
  return send({contracts,entities,customers});

@@ -14,3 +14,5 @@
 .itemIdentity{display:flex;gap:9px;align-items:center;min-width:0}
 .itemDetails{min-width:0;overflow:hidden}
 @media(max-width:760px){.groupIdentity{min-width:240px}.thumbnail{width:44px;height:44px;flex-basis:44px}.thumbnailSmall{width:30px;height:30px;flex-basis:30px}.groupHeader{gap:8px}}
+
+.attachImage{font-size:10px;font-weight:700;color:#2866b8;text-decoration:none;line-height:1.25}.attachImage:hover{text-decoration:underline}

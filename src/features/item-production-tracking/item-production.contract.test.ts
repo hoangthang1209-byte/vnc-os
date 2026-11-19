@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { readFileSync, existsSync } from "node:fs";
 import { describe, it } from "node:test";
 
 function read(path: string) {
@@ -7,9 +7,11 @@ function read(path: string) {
 }
 
 describe("IA M1 item production tracking contracts", () => {
-  it("registers timeline route, nav, breadcrumb, and permissions", () => {
-    assert.match(read("src/lib/admin/admin-navigation.ts"), /production-timeline/);
-    assert.match(read("src/lib/admin/admin-navigation.ts"), /Lịch & tiến độ/);
+  it("preserves timeline route, contextual link, breadcrumbs and scoped permissions without duplicating V9 sidebar", () => {
+    assert.ok(existsSync("src/app/(backend)/admin/manufacturing/production-timeline/page.tsx"));
+    assert.match(read("src/components/admin/orders/workspace/V9OrderOverview.tsx"), /\/admin\/manufacturing\/production-timeline/);
+    assert.match(read("src/lib/admin/admin-navigation.ts"), /\/admin\/operations-v9/);
+    assert.doesNotMatch(read("src/lib/admin/admin-navigation.ts"), /href:\s*["']\/admin\/manufacturing\/production-timeline["']/);
     assert.match(read("src/lib/admin/admin-breadcrumbs.ts"), /production-timeline/);
     assert.match(read("src/features/auth/admin-permission-catalog.ts"), /manufacturing\.production\.view/);
     assert.match(read("src/features/auth/admin-permission-catalog.ts"), /manufacturing\.production\.update/);

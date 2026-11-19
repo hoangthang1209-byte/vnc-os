@@ -16,6 +16,8 @@ describe("VNC OS V9 lean order information architecture", () => {
     assert.match(shell, /<V9OrderOverview/);
     assert.match(shell, /<OrderExecutionControl/);
     assert.match(shell, /<OrderWorkspaceLowerSections/);
+    assert.match(shell, /<OrderCommercialCostStrip/);
+    assert.match(shell, /activeTab === "payment"/);
     assert.ok(shell.indexOf("<OrderProductTable") < shell.indexOf("<V9OrderOverview"));
     assert.doesNotMatch(shell, /<OrderWorkspaceSummaryCards/);
   });

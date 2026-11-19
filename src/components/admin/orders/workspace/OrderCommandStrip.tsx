@@ -7,7 +7,7 @@ type Props = { order: OrderDetailRecord; canViewFinancials: boolean };
 const number = (value: number) => value.toLocaleString("vi-VN");
 const marketCode = (sku: string | null) => sku?.match(/-(KUL|JKT|MNL|KHH)$/)?.[1];
 export default function OrderCommandStrip({ order, canViewFinancials }: Props) {
-  const stylesCount = new Set(order.items.map(item => item.skuSnapshot?.replace(/-[A-Z]{3}$/, "") || item.productNameSnapshot?.trim())).size;
+  const stylesCount = new Set(order.items.map(item => item.skuSnapshot?.replace(/-(KUL|JKT|MNL|KHH)$/, "") || item.productNameSnapshot?.trim())).size;
   const markets = new Set(order.items.map(item => marketCode(item.skuSnapshot)).filter(Boolean));
   const quantity = order.items.reduce((sum, item) => sum + item.quantity, 0);
   const unallocated = order.items.reduce((sum, item) => {

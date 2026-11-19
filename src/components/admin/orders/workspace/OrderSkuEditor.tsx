@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import MediaPicker from "@/components/admin/media/MediaPicker";
 import type { OrderItemRecord } from "@/features/orders/order.types";
 import styles from "./OrderSkuEditor.module.css";
@@ -8,7 +8,7 @@ import styles from "./OrderSkuEditor.module.css";
 export type OrderSkuEditTarget = { item: OrderItemRecord; level: "style" | "sku" };
 type Props = {
   orderId: string;
-  target: OrderSkuEditTarget | null;
+  target: OrderSkuEditTarget;
   onClose: () => void;
   onSaved: () => Promise<void> | void;
 };
@@ -22,19 +22,14 @@ const makeDraft = (item: OrderItemRecord): Draft => ({
 });
 
 export default function OrderSkuEditor({ orderId, target, onClose, onSaved }: Props) {
-  const [form, setForm] = useState<Draft | null>(null);
+  const [form, setForm] = useState<Draft>(() => makeDraft(target.item));
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  useEffect(() => {
-    setForm(target ? makeDraft(target.item) : null);
-    setError(null);
-  }, [target]);
-  if (!target || !form) return null;
   const { item, level } = target;
   const isStyle = level === "style";
 
   async function save() {
-    if (!form || busy) return;
+    if (busy) return;
     setBusy(true);
     setError(null);
     try {
@@ -71,7 +66,7 @@ export default function OrderSkuEditor({ orderId, target, onClose, onSaved }: Pr
           <div className={styles.media}>
             <strong>Ảnh thumbnail sản phẩm</strong>
             <p>Chọn từ thư viện ảnh VNC hoặc tải hình mới lên. Có thể dùng ảnh riêng cho từng city.</p>
-            <MediaPicker folder="products" usageType="auto" value={form.designImageUrl} onChange={url => setForm(current => current ? { ...current, designImageUrl: url } : current)}/>
+            <MediaPicker folder="products" usageType="auto" value={form.designImageUrl} onChange={url => setForm(current => ({ ...current, designImageUrl: url }))}/>
             <label className={styles.field}>URL ảnh (tùy chọn)
               <input value={form.designImageUrl} onChange={event => setForm({ ...form, designImageUrl: event.target.value })} placeholder="https://…"/>
             </label>

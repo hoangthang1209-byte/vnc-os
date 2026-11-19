@@ -119,10 +119,12 @@ export async function renderContractPdf(c:ContractPrint):Promise<Buffer>{
   style(7.4,true,C.muted).text(vi?"HỢP ĐỒNG THƯƠNG MẠI":"COMMERCIAL AGREEMENT",R-165,TOP+6,{width:165,align:"right",lineBreak:false});
   style(8,false,C.muted).text(c.contractNo,R-165,TOP+25,{width:165,align:"right",lineBreak:false});
   y=TOP+62;rule();y+=21;
-  const heading=vi?"HỢP ĐỒNG MUA BÁN HÀNG HÓA":"GOODS SALES AGREEMENT";
+  const heading=(c.title||"").trim()||(vi?"HỢP ĐỒNG MUA BÁN HÀNG HÓA":"GOODS SALES AGREEMENT");
   style(16,true,C.navy).text(heading,X,y,{width:W,align:"center"});y+=32;
   style(8.4,false,C.muted).text((vi?"Số hợp đồng: ":"Contract No.: ")+c.contractNo,X,y,{width:W,align:"center"});y+=16;
-  style(8.2,false,C.muted).text((vi?"Ngày ký: ":"Date of signing: ")+date(c.signedDate),X,y,{width:W,align:"center"});y+=25;
+  style(8.2,false,C.muted).text((vi?"Ngày ký: ":"Date of signing: ")+date(c.signedDate),X,y,{width:W,align:"center"});y+=16;
+  if(c.effectiveDate){style(8.2,false,C.muted).text((vi?"Hiệu lực từ: ":"Effective from: ")+date(c.effectiveDate),X,y,{width:W,align:"center"});y+=16;}
+  y+=9;
   rule();y+=13;
   t(vi?"Hai bên thống nhất các điều khoản thương mại sau đây:":"The parties agree to the following commercial terms:",8.3,false,C.muted,9);
   partyBlock(buyer,vi?"BÊN MUA / BÊN A":"BUYER / PARTY A","A");

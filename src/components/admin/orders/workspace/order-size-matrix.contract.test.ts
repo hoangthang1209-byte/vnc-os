@@ -21,6 +21,18 @@ describe("VNC OS V9 Order size matrix and demo factory Gantt", () => {
     assert.match(table, /getMarket\(item\)/);
   });
 
+  it("renders a thumbnail at each style header and SKU row without fake product images", () => {
+    assert.match(table, /const getThumbnail =/);
+    assert.match(table, /mode === "style" && <ProductThumbnail/);
+    assert.match(table, /<ProductThumbnail src=\{item\.designImageUrl/);
+    assert.match(table, /NO IMAGE/);
+    assert.match(table, /onError=\{\(\) => setBroken\(true\)\}/);
+    const css = read("src/components/admin/orders/workspace/OrderSizeMatrix.module.css");
+    assert.match(css, /\.groupHeader\{/);
+    assert.match(css, /\.thumbnailSmall\{/);
+    assert.match(css, /object-fit:cover/);
+  });
+
   it("uses compact header and prioritizes full-width table", () => {
     assert.match(sheet, /<OrderCommandStrip/);
     assert.match(sheet, /style=\{\{display:"block",minWidth:0\}\}/);

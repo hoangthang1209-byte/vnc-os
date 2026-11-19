@@ -3,6 +3,7 @@ import {prisma} from "@/lib/prisma";
 import {getAdminSessionFromRequest} from "@/lib/admin-auth/get-admin-session";
 import {can} from "@/features/auth/admin-permissions";
 import {renderContractPdf} from "@/features/documents/contract-pdf";
+import {renderLegacyContractPdf} from "@/features/documents/contract-pdf-legacy";
 export const runtime="nodejs";
 export async function GET(req:NextRequest,ctx:{params:Promise<{id:string}>}){
  const session=getAdminSessionFromRequest(req);
@@ -22,7 +23,8 @@ export async function GET(req:NextRequest,ctx:{params:Promise<{id:string}>}){
    deliveryDate:c.deliveryDate?.toISOString()??null,deliveryAddress:c.deliveryAddress,notes:c.notes
   }) as Record<string,unknown>;
   const d=(v:unknown)=>typeof v==="string"&&v?new Date(v):null;
-  const pdf=await renderContractPdf({
+  const render=c.status==="ISSUED"&&data.templateVersion!==2?renderLegacyContractPdf:renderContractPdf;
+  const pdf=await render({
    contractNo:String(data.contractNo),language:String(data.language),status:c.status,title:String(data.title),
    seller:data.seller,buyer:data.buyer,goods:data.goods,clauses:data.clauses,paymentTerms:data.paymentTerms,
    currency:String(data.currency),subtotal:String(data.subtotal),taxAmount:String(data.taxAmount),grandTotal:String(data.grandTotal),

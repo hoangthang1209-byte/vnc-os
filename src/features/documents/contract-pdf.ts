@@ -1,98 +1,191 @@
 import PDFDocument from "pdfkit";
-import {resolve as resolvePath} from "node:path";
 import {loadInvoiceInterFont} from "./inter-font";
-import {type ContractParty,type ContractItem,type ContractClause,type PaymentMilestone,party} from "./contract-fields";
-type ContractPrint={
+import {party,type ContractParty,type ContractItem,type ContractClause,type PaymentMilestone} from "./contract-fields";
+
+export type ContractPrint={
  contractNo:string;status:string;language:string;title:string;
  seller:unknown;buyer:unknown;goods:unknown;clauses:unknown;paymentTerms:unknown;
  currency:string;subtotal:string;taxAmount:string;grandTotal:string;
  signedDate:Date|null;deliveryDate:Date|null;effectiveDate:Date|null;
  deliveryAddress:string|null;notes:string|null;
 };
-const items=(v:unknown)=>Array.isArray(v)?v as ContractItem[]:[];
-const clauses=(v:unknown)=>Array.isArray(v)?v as ContractClause[]:[];
-const payments=(v:unknown)=>Array.isArray(v)?v as PaymentMilestone[]:[];
-const money=(n:number,currency:string)=>new Intl.NumberFormat(currency==="VND"?"vi-VN":"en-US",{minimumFractionDigits:currency==="VND"?0:2,maximumFractionDigits:currency==="VND"?0:2}).format(n);
-export async function renderContractPdf(contract:ContractPrint):Promise<Buffer>{
- const isVi=contract.language==="VI", seller=party(contract.seller),buyer=party(contract.buyer);
- const inter=await loadInvoiceInterFont();
- return await new Promise((resolve,reject)=>{
-  const pdf=new PDFDocument({size:"A4",margin:45,bufferPages:true});
-  pdf.registerFont("regular",inter??resolvePath(process.cwd(),"node_modules/dejavu-fonts-ttf/ttf/DejaVuSans.ttf"));
-  pdf.registerFont("bold",inter??resolvePath(process.cwd(),"node_modules/dejavu-fonts-ttf/ttf/DejaVuSans-Bold.ttf"));
-  const blocks:Buffer[]=[];pdf.on("data",(b:Buffer)=>blocks.push(b));pdf.on("end",()=>resolve(Buffer.concat(blocks)));pdf.on("error",reject);
-  const left=45,right=550,width=right-left,bottom=744;
-  let y=43;
-  const f=(bold=false,size=9,color="#243348")=>pdf.font(bold?"bold":"regular").fontSize(size).fillColor(color);
-  const measure=(s:string,w=width,size=9,bold=false)=>{f(bold,size);return pdf.heightOfString(s,{width:w});};
-  function page(){pdf.addPage();y=49;}
-  function guard(height:number){if(y+height>bottom)page();}
-  function text(value:string,size=9,bold=false,color="#243348",space=7,ind=0){
-   const s=value||"—",w=width-ind,h=measure(s,w,size,bold);guard(h+space);
-   f(bold,size,color).text(s,left+ind,y,{width:w});y+=h+space;
+const C={navy:"#17324D",ink:"#26394A",muted:"#607386",line:"#D6E0E8",pale:"#F1F5F8",white:"#FFFFFF",accent:"#27819A"};
+const list=<T>(x:unknown):T[]=>Array.isArray(x)?x as T[]:[];
+const fmt=(v:number,currency:string)=>new Intl.NumberFormat(currency==="VND"?"vi-VN":"en-US",{
+ minimumFractionDigits:currency==="VND"?0:2,maximumFractionDigits:currency==="VND"?0:2
+}).format(v);
+const date=(v:Date|null)=>v&&Number.isFinite(v.getTime())?v.toISOString().slice(0,10):"—";
+
+/** New contracts use V2; issued V1 snapshots keep their original renderer. */
+export async function renderContractPdf(c:ContractPrint):Promise<Buffer>{
+ const vi=c.language==="VI",seller=party(c.seller),buyer=party(c.buyer);
+ const goods=list<ContractItem>(c.goods),clauses=list<ContractClause>(c.clauses),milestones=list<PaymentMilestone>(c.paymentTerms);
+ const font=await loadInvoiceInterFont();
+ return new Promise((resolve,reject)=>{
+  const pdf=new PDFDocument({size:"A4",margins:{top:45,bottom:58,left:45,right:45},bufferPages:true,autoFirstPage:true});
+  pdf.registerFont("vn",font);pdf.registerFont("vn-bold",font);
+  const chunks:Buffer[]=[];pdf.on("data",(x:Buffer)=>chunks.push(x));pdf.on("error",reject);pdf.on("end",()=>resolve(Buffer.concat(chunks)));
+  const X=45,W=505,R=X+W,TOP=45,BOTTOM=753;
+  let y=TOP;
+  const style=(size=9,bold=false,color=C.ink)=>pdf.font(bold?"vn-bold":"vn").fontSize(size).fillColor(color);
+  const height=(value:string,w:number,size=9)=>{style(size);return pdf.heightOfString(value||" ",{width:w,lineGap:2});};
+  function rule(at=y){pdf.moveTo(X,at).lineTo(R,at).lineWidth(.7).strokeColor(C.line).stroke();}
+  function page(){
+   pdf.addPage();y=TOP+19;
+   style(8,true,C.navy).text("VNC  /  DOCUMENT CENTER",X,TOP,{width:300,lineBreak:false});
+   style(8,false,C.muted).text(c.contractNo,R-175,TOP,{width:175,align:"right",lineBreak:false});
+   rule(TOP+15);
   }
-  function heading(value:string){guard(44);y+=7;text(value,10,true,"#152e49",8);}
-  function line(){guard(13);pdf.moveTo(left,y).lineTo(right,y).strokeColor("#d3d9e2").lineWidth(.6).stroke();y+=11;}
-  function pair(p:ContractParty,tag:string){
-   heading(tag+"  "+p.name);
-   if(p.address)text((isVi?"Địa chỉ: ":"Address: ")+p.address,8.5);
-   if(p.taxId)text((isVi?"MST: ":"Tax ID: ")+p.taxId,8.5);
-   if(p.representative)text((isVi?"Đại diện: ":"Representative: ")+p.representative+(p.title?" — "+p.title:""),8.5);
-   if(p.email||p.phone)text([p.email,p.phone].filter(Boolean).join("  |  "),8.5);
-   if(p.bankName||p.accountNo)text((isVi?"Ngân hàng: ":"Bank: ")+[p.bankName,p.accountNo,p.accountName,p.swift].filter(Boolean).join(" | "),8.2);
+  function keep(h:number){if(y+h>BOTTOM)page();}
+  function t(value:string,size=9,bold=false,color=C.ink,after=8,indent=0){
+   const body=value||"—",w=W-indent;
+   // Long clauses paginate by wrapped text lines; never crop past the bottom.
+   style(size,bold,color);
+   const words=body.replace(/\r/g,"").split(/(\s+)/).filter(Boolean);
+   let line="";
+   const lines:string[]=[];
+   for(const token of words){
+    if(token.includes("\n")){for(const part of token.split("\n")){if(line){lines.push(line.trim());line="";}if(part.trim())lines.push(part.trim());}continue;}
+    const next=line+token;
+    if(pdf.widthOfString(next)>w&&line.trim()){lines.push(line.trim());line=token.trimStart();}else line=next;
+   }
+   if(line.trim())lines.push(line.trim());
+   if(!lines.length)lines.push(" ");
+   const lh=Math.max(13,height("Ag",w,size)+1);
+   for(const one of lines){keep(lh+2);style(size,bold,color).text(one,X+indent,y,{width:w,lineBreak:false});y+=lh;}
+   y+=after;
   }
-  f(true,14).text(isVi?"HỢP ĐỒNG MUA BÁN HÀNG HÓA":"GOODS SALES AGREEMENT",left,y,{width,align:"center"});y+=27;
-  f(false,9).text((isVi?"Số: ":"No.: ")+contract.contractNo,left,y,{width,align:"center"});y+=17;
-  if(contract.signedDate){f(false,8.5).text((isVi?"Ngày ký: ":"Date: ")+contract.signedDate.toISOString().slice(0,10),left,y,{width,align:"center"});y+=19;}
-  line();
-  pair(buyer,isVi?"BÊN A — BÊN MUA":"PARTY A — BUYER");
-  pair(seller,isVi?"BÊN B — BÊN BÁN":"PARTY B — SELLER");
-  line();
-  heading(isVi?"BẢNG HÀNG HÓA VÀ GIÁ TRỊ":"GOODS AND VALUE SCHEDULE");
-  const goods=items(contract.goods);
-  for(let i=0;i<goods.length;i++){
-   const it=goods[i]; const descr=`${i+1}. ${it.description}${it.specification?" — "+it.specification:""}`;
-   const h=measure(descr,width-95,8.3)+measure(`${it.quantity} ${it.unit}`,width-95,7.8)+13;
-   guard(h+6);
-   f(false,8.3).text(descr,left,y,{width:width-105});
-   f(true,8.2).text(money(it.quantity*it.unitPrice,contract.currency),right-99,y,{width:99,align:"right"});
-   y+=measure(descr,width-105,8.3)+3;
-   f(false,7.8,"#637184").text(`${it.quantity} ${it.unit} × ${money(it.unitPrice,contract.currency)} ${contract.currency}`,left+8,y,{width:width-110});
-   y+=measure(`${it.quantity} ${it.unit}`,width-110,7.8)+9;
+  function section(title:string,number?:string){
+   keep(42);y+=11;
+   pdf.rect(X,y,W,26).fill(C.pale);
+   pdf.rect(X,y,3,26).fill(C.accent);
+   style(9.1,true,C.navy).text((number?number+"  ":"")+title,X+13,y+8,{width:W-24,lineBreak:false});
+   y+=36;
   }
-  line();
-  text((isVi?"Tạm tính: ":"Subtotal: ")+money(Number(contract.subtotal),contract.currency)+" "+contract.currency,8.8,true);
-  text((isVi?"Thuế / VAT: ":"Tax / VAT: ")+money(Number(contract.taxAmount),contract.currency)+" "+contract.currency,8.8);
-  text((isVi?"TỔNG THANH TOÁN: ":"TOTAL CONTRACT VALUE: ")+money(Number(contract.grandTotal),contract.currency)+" "+contract.currency,10,true,"#122c4a",13);
-  heading(isVi?"LỊCH THANH TOÁN":"PAYMENT MILESTONE SCHEDULE");
-  for(const p of payments(contract.paymentTerms)){
-   text(`${p.label|| (isVi?"Đợt":"Milestone")} — ${p.percent}% (${money(Number(contract.grandTotal)*p.percent/100,contract.currency)} ${contract.currency})${p.due?" · "+p.due:""}`,8.5);
+  function labelValue(label:string,value:string,width=W){
+   if(!value)return;
+   const labelW=vi?106:105,contentW=width-labelW-10;
+   const h=Math.max(height(label,labelW,8),height(value,contentW,8.4))+7;
+   keep(h);
+   style(7.9,false,C.muted).text(label,X,y,{width:labelW});
+   style(8.4,true,C.ink).text(value,X+labelW,y,{width:contentW});
+   y+=h;
   }
-  if(contract.deliveryDate||contract.deliveryAddress){
-   heading(isVi?"GIAO HÀNG":"DELIVERY");
-   if(contract.deliveryDate)text((isVi?"Ngày dự kiến: ":"Expected date: ")+contract.deliveryDate.toISOString().slice(0,10),8.5);
-   if(contract.deliveryAddress)text((isVi?"Địa điểm: ":"Destination: ")+contract.deliveryAddress,8.5);
+  function partyBlock(info:ContractParty,heading:string,letter:string){
+   keep(85);y+=3;
+   pdf.roundedRect(X,y,27,27,5).fill(C.navy);
+   style(11,true,C.white).text(letter,X,y+7,{width:27,align:"center",lineBreak:false});
+   style(8.5,true,C.accent).text(heading,X+38,y+1,{width:W-38,lineBreak:false});
+   style(10,true,C.navy).text(info.name,X+38,y+14,{width:W-38});
+   y+=Math.max(40,height(info.name,W-38,10)+20);
+   labelValue(vi?"Địa chỉ":"Address",info.address);
+   labelValue(vi?"Mã số thuế":"Tax ID",info.taxId);
+   labelValue(vi?"Người đại diện":"Representative",info.representative);
+   labelValue(vi?"Chức danh":"Position",info.title);
+   if(info.phone)labelValue(vi?"Điện thoại":"Phone",info.phone);
+   if(info.email)labelValue("Email",info.email);
+   if(info.accountNo||info.bankName){
+    labelValue(vi?"Ngân hàng":"Bank",info.bankName);
+    labelValue(vi?"Tài khoản":"Account",info.accountNo);
+    if(info.accountName)labelValue(vi?"Thụ hưởng":"Beneficiary",info.accountName);
+    if(info.swift)labelValue("SWIFT",info.swift);
+   }
+   y+=5;
   }
-  for(const clause of clauses(contract.clauses)){
-   heading(clause.heading);
-   text(clause.body,8.3,false,"#273443",11);
+  function tableHeader(columns:{label:string;width:number}[]){
+   keep(28);pdf.rect(X,y,W,27).fill(C.navy);
+   let x=X;
+   for(const col of columns){style(7.1,true,C.white).text(col.label,x+5,y+9,{width:col.width-10,align:x===X?"center":"left",lineBreak:false});x+=col.width;}
+   y+=27;
   }
-  if(contract.notes){heading(isVi?"GHI CHÚ BỔ SUNG":"ADDITIONAL NOTES");text(contract.notes,8.3);}
-  guard(128);y+=20;line();
-  const half=width/2;
-  f(true,8.3).text(isVi?"ĐẠI DIỆN BÊN A (BÊN MUA)":"FOR THE BUYER",left,y,{width:half,align:"center"});
-  f(true,8.3).text(isVi?"ĐẠI DIỆN BÊN B (BÊN BÁN)":"FOR THE SELLER",left+half,y,{width:half,align:"center"});
-  y+=72;
-  f(true,8).text(buyer.representative||buyer.name,left,y,{width:half,align:"center"});
-  f(true,8).text(seller.representative||seller.name,left+half,y,{width:half,align:"center"});
-  const range=pdf.bufferedPageRange();
-  for(let p=0;p<range.count;p++){
-   pdf.switchToPage(range.start+p);
-   f(false,7,"#718096").text(`${contract.contractNo}  ·  ${isVi?"Hợp đồng thương mại":"Commercial contract"}`,left,778,{width:width-60});
-   f(false,7,"#718096").text(`${p+1}/${range.count}`,right-47,778,{width:47,align:"right"});
-   if(contract.status==="DRAFT"){
-    pdf.save();pdf.opacity(.13);pdf.translate(297,420).rotate(-35);
-    f(true,85,"#4f6077").text("DRAFT",-240,-45,{width:480,align:"center",lineBreak:false});
+  function tableRow(cells:string[],widths:number[],minH=30,emph=false){
+   const heights=cells.map((cell,i)=>height(cell,widths[i]-12,8));
+   const h=Math.max(minH,...heights.map(z=>z+13));
+   keep(h);
+   if(emph)pdf.rect(X,y,W,h).fill(C.pale);
+   else if(Math.round(y)%2===0)pdf.rect(X,y,W,h).fill("#FBFCFD");
+   let x=X;
+   for(let i=0;i<cells.length;i++){
+    if(i>0)pdf.moveTo(x,y).lineTo(x,y+h).lineWidth(.35).strokeColor(C.line).stroke();
+    style(8,emph,C.ink).text(cells[i],x+6,y+7,{width:widths[i]-12,align:i===0?"center":i>=3?"right":"left"});
+    x+=widths[i];
+   }
+   pdf.rect(X,y,W,h).lineWidth(.4).strokeColor(C.line).stroke();y+=h;
+  }
+  // Brand-led masthead. No official seals or legal certification are implied.
+  pdf.rect(X,TOP,5,46).fill(C.accent);
+  style(10.4,true,C.navy).text("VIETNAM CLOTHING",X+16,TOP+1,{width:270,lineBreak:false});
+  style(7.3,false,C.muted).text("MANUFACTURING  /  DOCUMENTS",X+16,TOP+19,{width:270,lineBreak:false});
+  style(7.4,true,C.muted).text(vi?"HỢP ĐỒNG THƯƠNG MẠI":"COMMERCIAL AGREEMENT",R-165,TOP+6,{width:165,align:"right",lineBreak:false});
+  style(8,false,C.muted).text(c.contractNo,R-165,TOP+25,{width:165,align:"right",lineBreak:false});
+  y=TOP+62;rule();y+=21;
+  const heading=vi?"HỢP ĐỒNG MUA BÁN HÀNG HÓA":"GOODS SALES AGREEMENT";
+  style(16,true,C.navy).text(heading,X,y,{width:W,align:"center"});y+=32;
+  style(8.4,false,C.muted).text((vi?"Số hợp đồng: ":"Contract No.: ")+c.contractNo,X,y,{width:W,align:"center"});y+=16;
+  style(8.2,false,C.muted).text((vi?"Ngày ký: ":"Date of signing: ")+date(c.signedDate),X,y,{width:W,align:"center"});y+=25;
+  rule();y+=13;
+  t(vi?"Hai bên thống nhất các điều khoản thương mại sau đây:":"The parties agree to the following commercial terms:",8.3,false,C.muted,9);
+  partyBlock(buyer,vi?"BÊN MUA / BÊN A":"BUYER / PARTY A","A");
+  rule();y+=11;
+  partyBlock(seller,vi?"BÊN BÁN / BÊN B":"SELLER / PARTY B","B");
+  section(vi?"DANH MỤC HÀNG HÓA VÀ GIÁ TRỊ":"GOODS AND CONTRACT VALUE","01");
+  const columns=vi?["STT","Sản phẩm / Quy cách","SL","ĐVT","Đơn giá","Thành tiền"]:["No.","Item / Specification","Qty","Unit","Unit price","Amount"];
+  const widths=[33,205,43,43,86,95],heads=columns.map((label,i)=>({label,width:widths[i]}));
+  tableHeader(heads);
+  goods.forEach((g,i)=>{
+   if(y+42>BOTTOM){page();tableHeader(heads);}
+   const item=[g.description,g.specification].filter(Boolean).join("\n");
+   tableRow([String(i+1),item,String(g.quantity),g.unit,fmt(g.unitPrice,c.currency),fmt(g.quantity*g.unitPrice,c.currency)],widths,36);
+  });
+  keep(103);y+=7;
+  function totalRow(label:string,value:string,highlight=false){
+   const h=highlight?29:22;keep(h);
+   if(highlight)pdf.roundedRect(R-260,y,260,h,5).fill(C.navy);
+   style(8.5,highlight,highlight?C.white:C.muted).text(label,R-250,y+7,{width:120});
+   style(highlight?10:8.5,true,highlight?C.white:C.navy).text(value,R-128,y+7,{width:115,align:"right"});
+   y+=h;
+  }
+  totalRow(vi?"Tạm tính":"Subtotal",fmt(Number(c.subtotal),c.currency));
+  totalRow(vi?"Thuế VAT":"Tax / VAT",fmt(Number(c.taxAmount),c.currency));
+  totalRow(vi?"TỔNG CỘNG":"TOTAL",fmt(Number(c.grandTotal),c.currency)+" "+c.currency,true);
+  section(vi?"LỊCH THANH TOÁN":"PAYMENT SCHEDULE","02");
+  tableHeader([{label:vi?"Đợt":"Stage",width:125},{label:vi?"Điều kiện / Thời hạn":"Terms / Due date",width:205},{label:vi?"Tỷ lệ":"Rate",width:65},{label:vi?"Số tiền":"Amount",width:110}]);
+  for(const p of milestones){
+   if(y+35>BOTTOM){page();tableHeader([{label:vi?"Đợt":"Stage",width:125},{label:vi?"Điều kiện / Thời hạn":"Terms / Due date",width:205},{label:vi?"Tỷ lệ":"Rate",width:65},{label:vi?"Số tiền":"Amount",width:110}]);}
+   tableRow([p.label,p.due,String(p.percent)+"%",fmt(Number(c.grandTotal)*p.percent/100,c.currency)],[125,205,65,110],33);
+  }
+  if(c.deliveryDate||c.deliveryAddress){
+   section(vi?"THÔNG TIN GIAO HÀNG":"DELIVERY DETAILS","03");
+   if(c.deliveryDate)labelValue(vi?"Ngày giao":"Delivery date",date(c.deliveryDate));
+   if(c.deliveryAddress)labelValue(vi?"Địa điểm":"Destination",c.deliveryAddress);
+  }
+  section(vi?"CÁC ĐIỀU KHOẢN THỎA THUẬN":"AGREED TERMS AND CONDITIONS");
+  for(const clause of clauses){
+   keep(38);y+=7;
+   t(clause.heading,9,true,C.navy,4);
+   for(const para of clause.body.split(/\n\s*\n/))t(para,8.4,false,C.ink,7,6);
+   y+=2;
+  }
+  if(c.notes){section(vi?"GHI CHÚ / PHỤ LỤC":"NOTES / ANNEX");t(c.notes,8.5);}
+  keep(165);y+=18;rule();y+=17;
+  const half=W/2;
+  pdf.rect(X,y,half-6,116).lineWidth(.6).strokeColor(C.line).stroke();
+  pdf.rect(X+half+6,y,half-6,116).lineWidth(.6).strokeColor(C.line).stroke();
+  style(8.7,true,C.navy).text(vi?"ĐẠI DIỆN BÊN A / BÊN MUA":"FOR THE BUYER",X+9,y+13,{width:half-24,align:"center"});
+  style(8.7,true,C.navy).text(vi?"ĐẠI DIỆN BÊN B / BÊN BÁN":"FOR THE SELLER",X+half+15,y+13,{width:half-24,align:"center"});
+  style(7.2,false,C.muted).text(vi?"Ký, ghi rõ họ tên và đóng dấu (nếu có)":"Signature / company stamp (if any)",X+9,y+32,{width:half-24,align:"center"});
+  style(7.2,false,C.muted).text(vi?"Ký, ghi rõ họ tên và đóng dấu (nếu có)":"Signature / company stamp (if any)",X+half+15,y+32,{width:half-24,align:"center"});
+  style(8.5,true,C.ink).text(buyer.representative||buyer.name,X+9,y+95,{width:half-24,align:"center"});
+  style(8.5,true,C.ink).text(seller.representative||seller.name,X+half+15,y+95,{width:half-24,align:"center"});
+  const pages=pdf.bufferedPageRange();
+  for(let i=0;i<pages.count;i++){
+   pdf.switchToPage(pages.start+i);
+   pdf.moveTo(X,775).lineTo(R,775).lineWidth(.65).strokeColor(C.line).stroke();
+   style(7,false,C.muted).text("VNC  •  "+c.contractNo,X,786,{width:330,lineBreak:false});
+   style(7,false,C.muted).text((vi?"Trang ":"Page ")+(i+1)+"/"+pages.count,R-90,786,{width:90,align:"right",lineBreak:false});
+   if(c.status==="DRAFT"){
+    pdf.save().opacity(.10).translate(298,420).rotate(-33);
+    style(75,true,C.navy).text("DRAFT",-190,-32,{width:380,align:"center",lineBreak:false});
     pdf.restore();
    }
   }

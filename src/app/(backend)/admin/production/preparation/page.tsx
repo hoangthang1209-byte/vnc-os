@@ -47,7 +47,7 @@ export default async function ProductionPreparationPage({
     .map(code => `PAT-BB2-${code}`);
   const [patterns, materialRequirements, deliveries] = await Promise.all([
     prisma.pattern.findMany({
-      where: { code: { in: patternCodes }, customerId: undefined },
+      where: { code: { in: patternCodes } },
       select: { id: true, code: true, status: true, version: true, baseSize: true,
         files: { select: { id: true, type: true } } },
     }),

@@ -57,6 +57,7 @@ export type OrderWorkspaceShellProps = {
   listBackHref: string;
   busy: boolean;
   canEditOrder: boolean;
+  onRefreshOrder: () => Promise<void>;
   canRecordPayment: boolean;
   showDeliveryForm: boolean;
   transitions: OrderStatus[];

@@ -77,6 +77,16 @@ describe("VNC OS V9 navigation contract (#294)", () => {
     assert.ok(timelineSource.includes("ItemProductionTimelineManager"), "stage write workflow must not be deleted");
   });
 
+  it("keeps the permission-scoped production task queue in the canonical V9 workspace", () => {
+    const workspace = readFileSync("src/components/admin/operations-v9/IntegratedProductionWorkspace.tsx", "utf8");
+    const queue = readFileSync("src/components/admin/operations-v9/OperationsV9ActionQueue.tsx", "utf8");
+    assert.match(workspace, /<OperationsV9ActionQueue/);
+    assert.match(queue, /\/api\/production\/dashboard/);
+    assert.match(queue, /V9ProductionActionQueue/);
+    assert.match(queue, /response\.ok/);
+    assert.match(queue, /controller\.abort/);
+  });
+
   it("exposes no dead routes or placeholder links", () => {
     for (const item of items()) {
       assert.equal(item.status, "active");

@@ -30,6 +30,7 @@ export default function ContractManager(){
  const [currentId,setCurrentId]=useState("");
  const [currentNo,setCurrentNo]=useState("");
  const [status,setStatus]=useState("DRAFT");
+ const [savedFormJson,setSavedFormJson]=useState(()=>JSON.stringify(newForm()));
  const [busy,setBusy]=useState(false);
  const [message,setMessage]=useState("");
  const [orderQuery,setOrderQuery]=useState("");
@@ -44,7 +45,8 @@ export default function ContractManager(){
   {key:"delivery",label:"03 · Thanh toán & giao hàng",short:"Thanh toán"},
   {key:"terms",label:"04 · Điều khoản & ký kết",short:"Điều khoản"}
  ] as const;
- const startNew=()=>{setForm(newForm());setCurrentId("");setCurrentNo("");setStatus("DRAFT");setActiveSection("parties");setView("editor");setMessage("");};
+ const dirty=view==="editor"&&status==="DRAFT"&&JSON.stringify(form)!==savedFormJson;
+ const startNew=()=>{const fresh=newForm();setForm(fresh);setSavedFormJson(JSON.stringify(fresh));setCurrentId("");setCurrentNo("");setStatus("DRAFT");setActiveSection("parties");setView("editor");setMessage("");};
  const filteredContracts=contracts.filter(c=>{
   const buyer=c.buyer&&typeof c.buyer==="object"&&"name" in c.buyer?String(c.buyer.name):"";
   return (statusFilter==="ALL"||c.status===statusFilter)&&
@@ -84,12 +86,13 @@ export default function ContractManager(){
    const j=await r.json();if(!r.ok)throw new Error(j.error||"Không tải được hợp đồng.");
    const c=j.contract;
    const derivedTax=Number(c.subtotal)>0?Number(c.taxAmount)/Number(c.subtotal)*100:0;
-   setForm({language:c.language==="EN"?"EN":"VI",title:c.title,
+   const loadedForm:ContractForm={language:c.language==="EN"?"EN":"VI",title:c.title,
     customerId:c.customerId||"",orderId:c.orderId||"",legalEntityId:c.legalEntityId||"",
     bankAccountId:c.bankAccountId||"",currency:c.currency,seller:c.seller,buyer:c.buyer,
     goods:c.goods,clauses:c.clauses,paymentTerms:c.paymentTerms,
     taxRate:derivedTax,signedDate:dateText(c.signedDate),effectiveDate:dateText(c.effectiveDate),
-    deliveryDate:dateText(c.deliveryDate),deliveryAddress:c.deliveryAddress||"",notes:c.notes||""});
+    deliveryDate:dateText(c.deliveryDate),deliveryAddress:c.deliveryAddress||"",notes:c.notes||""};
+   setForm(loadedForm);setSavedFormJson(JSON.stringify(loadedForm));
    setCurrentId(c.id);setCurrentNo(c.contractNo);setStatus(c.status);setView("editor");setActiveSection("parties");
    setMessage("Đã mở hợp đồng "+c.contractNo+".");
    window.scrollTo({top:0,behavior:"smooth"});
@@ -101,12 +104,13 @@ export default function ContractManager(){
    const target=currentId?"/api/admin/documents/contracts/"+encodeURIComponent(currentId):"/api/admin/documents/contracts";
    const r=await fetch(target,{method:currentId?"PATCH":"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(form)});
    const j=await r.json();if(!r.ok)throw new Error(j.error||"Không thể lưu.");
-   setCurrentId(j.id);setCurrentNo(j.contractNo);setStatus("DRAFT");setMessage("Đã lưu bản nháp "+j.contractNo+".");
+   setCurrentId(j.id);setCurrentNo(j.contractNo);setStatus("DRAFT");setSavedFormJson(JSON.stringify(form));setMessage("Đã lưu bản nháp "+j.contractNo+".");
    await refresh();
   }catch(e){setMessage(e instanceof Error?e.message:"Lưu thất bại.");}finally{setBusy(false);}
  }
  async function issue(){
   if(!currentId||!canEdit)return;
+  if(dirty){setMessage("Bạn đang có thay đổi chưa lưu. Hãy lưu bản nháp trước khi phát hành.");return;}
   if(!window.confirm("Phát hành hợp đồng "+currentNo+"? Nội dung sẽ bị khóa và PDF cuối không còn watermark DRAFT."))return;
   setBusy(true);try{
    const r=await fetch("/api/admin/documents/contracts/"+encodeURIComponent(currentId)+"/issue",{method:"POST"});
@@ -156,17 +160,18 @@ export default function ContractManager(){
  </div>;
  return <div className={s.workspaceRoot}>
   <div className={s.editorHeader}>
-   <div><button type="button" className={s.backLink} onClick={()=>setView("list")}>← Danh sách hợp đồng</button>
+   <div><button type="button" className={s.backLink} onClick={()=>{if(dirty&&!window.confirm("Hợp đồng có thay đổi chưa lưu. Rời khỏi bản nháp?"))return;setView("list");}}>← Danh sách hợp đồng</button>
     <div className={s.editorHeading}><h1>{currentNo||"Tạo hợp đồng mới"}</h1><span className={status==="ISSUED"?s.tagIssued:s.tagDraft}>{status==="ISSUED"?"Đã phát hành":"Bản nháp"}</span></div>
     <p>{form.title||"Hợp đồng mua bán"} · {form.language==="VI"?"Tiếng Việt":"English"}</p>
    </div>
    <div className={s.headerActions}>
     {currentId&&<a className={s.secondary} href={"/api/admin/documents/contracts/"+encodeURIComponent(currentId)+"/pdf"}>{status==="DRAFT"?"Tải bản nháp":"Tải PDF"}</a>}
     {canEdit&&<button type="button" className={s.primary} disabled={busy} onClick={()=>void save()}>{busy?"Đang lưu...":currentId?"Lưu thay đổi":"Lưu bản nháp"}</button>}
-    {currentId&&canEdit&&<button type="button" className={s.secondary} disabled={busy||readiness.some(x=>!x.ok)} onClick={()=>void issue()}>Phát hành</button>}
+    {currentId&&canEdit&&<button type="button" className={s.secondary} disabled={busy||dirty||readiness.some(x=>!x.ok)} onClick={()=>void issue()}>Phát hành</button>}
    </div>
   </div>
   {message&&<div className={s.notice} role="status">{message}</div>}
+  {dirty&&<div className={s.dirtyNotice} role="status">Bạn có thay đổi chưa lưu. Lưu bản nháp trước khi rời màn hình hoặc phát hành.</div>}
   <nav className={s.stepNav} aria-label="Các bước soạn hợp đồng">
    {steps.map((step,i)=><button key={step.key} type="button" aria-current={activeSection===step.key?"step":undefined} className={activeSection===step.key?s.stepActive:s.stepButton} onClick={()=>setActiveSection(step.key)}>
      <span className={s.stepNo}>{String(i+1).padStart(2,"0")}</span><span>{step.short}</span>

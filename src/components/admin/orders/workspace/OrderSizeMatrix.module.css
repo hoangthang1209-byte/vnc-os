@@ -16,3 +16,15 @@
 @media(max-width:760px){.groupIdentity{min-width:240px}.thumbnail{width:44px;height:44px;flex-basis:44px}.thumbnailSmall{width:30px;height:30px;flex-basis:30px}.groupHeader{gap:8px}}
 
 .attachImage{font-size:10px;font-weight:700;color:#2866b8;text-decoration:none;line-height:1.25}.attachImage:hover{text-decoration:underline}
+
+
+.marketSelector{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:11px 0 12px;border-top:1px solid #e9edf3}
+.marketSelectorLabel{font-size:10px;letter-spacing:.08em;font-weight:800;color:#65778e;margin-right:4px}
+.marketCheck{display:inline-flex;align-items:center;gap:7px;border:1px solid #d8e1ec;background:#fff;border-radius:7px;padding:7px 10px;cursor:pointer;color:#55677a;font-size:11px;font-weight:700;white-space:nowrap}
+.marketCheck input{width:14px;height:14px;accent-color:#245c94;cursor:pointer;margin:0}
+.marketCheckActive{background:#edf5ff;border-color:#9bbede;color:#194976}
+.marketAll{font:700 11px/1.2 inherit;color:#235a8d;border:1px solid #d2e0ee;background:#fff;padding:8px 11px;border-radius:7px;cursor:pointer}
+.marketHint{font-size:10px;color:#7c8da0}
+.rowActions{display:flex;align-items:center;gap:5px;flex-wrap:wrap}
+.rowActions button.action{cursor:pointer}
+button.attachImage{appearance:none;border:0;background:none;padding:0;cursor:pointer;text-align:left}

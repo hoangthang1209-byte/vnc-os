@@ -42,7 +42,7 @@ export async function PATCH(req:NextRequest,ctx:Context){
   const order=await prisma.order.findUnique({where:{id:data.orderId},select:{customerId:true}});
   if(!order||(order.customerId&&data.customerId&&order.customerId!==data.customerId))return NextResponse.json({error:"Đơn hàng không hợp lệ."},{status:400});
  }
- const changed=await prisma.vncCommercialContract.updateMany({where:{id,status:"DRAFT",issuedSnapshot:null},data:{
+ const changed=await prisma.vncCommercialContract.updateMany({where:{id,status:"DRAFT"},data:{
  language:data.language,title:data.title,currency:data.currency,customerId:data.customerId,orderId:data.orderId,
  legalEntityId:data.legalEntityId,bankAccountId:data.bankAccountId,
  seller:data.seller as unknown as Prisma.InputJsonValue,buyer:data.buyer as unknown as Prisma.InputJsonValue,

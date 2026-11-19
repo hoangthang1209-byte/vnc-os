@@ -33,7 +33,7 @@ export default async function ProductionPreparationPage({
   const order = await prisma.order.findFirst({
     where: { AND: [buildProductionPlanOrderWhere(session), { orderNo }] },
     select: {
-      id: true, orderNo: true, customerCompanyName: true, status: true,
+      id: true, orderNo: true, customerId: true, customerCompanyName: true, status: true,
       items: { select: { id: true, skuSnapshot: true, productNameSnapshot: true, quantity: true } },
     },
   });
@@ -47,7 +47,7 @@ export default async function ProductionPreparationPage({
     .map(code => `PAT-BB2-${code}`);
   const [patterns, materialRequirements, deliveries] = await Promise.all([
     prisma.pattern.findMany({
-      where: { code: { in: patternCodes } },
+      where: { code: { in: patternCodes }, customerId: order.customerId },
       select: { id: true, code: true, status: true, version: true, baseSize: true,
         files: { select: { id: true, type: true } } },
     }),

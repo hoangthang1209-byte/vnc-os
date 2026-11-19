@@ -38,7 +38,7 @@ const getMarket = (item: OrderItemRecord) => {
   const token = item.skuSnapshot?.match(/-([A-Z]{3})$/)?.[1] ?? "";
   return MARKET_LABELS[token] ? token : "OTHER";
 };
-const styleKey = (item: OrderItemRecord) => item.productNameSnapshot?.trim() || "Chưa đặt tên sản phẩm";
+const styleKey = (item: OrderItemRecord) => item.skuSnapshot?.replace(/-([A-Z]{3})$/, "") || item.productNameSnapshot?.trim() || "Chưa đặt tên sản phẩm";
 const getThumbnail = (items: OrderItemRecord[]) => items.find(item => item.designImageUrl?.trim())?.designImageUrl?.trim() || null;
 function ProductThumbnail({ src, label, small = false }: { src: string | null; label: string; small?: boolean }) {
   const [broken, setBroken] = useState(false);
@@ -147,10 +147,10 @@ export default function OrderProductTable({
             showGroup && <tr className={styles.groupRow} key={`g-${key}`}>
               <td colSpan={3} className={styles.groupIdentity}>
                 <div className={styles.groupHeader}>
-                  {mode === "style" && <ProductThumbnail src={getThumbnail(items)} label={key} />}
+                  {mode === "style" && <ProductThumbnail src={getThumbnail(items)} label={items[0]?.productNameSnapshot || key} />}
                   <div className={styles.groupDescription}>
-                    <button type="button" onClick={() => setCollapsed(current => ({ ...current, [key]: !current[key] }))} aria-expanded={!collapsed[key]}>{collapsed[key] ? "▸" : "▾"} {mode === "market" ? MARKET_LABELS[key] || key : key}</button>
-                    <span>{items.length} SKU {mode === "style" ? (getThumbnail(items) ? "· đã có ảnh mẫu" : "· chưa có ảnh mẫu") : ""}</span>
+                    <button type="button" onClick={() => setCollapsed(current => ({ ...current, [key]: !current[key] }))} aria-expanded={!collapsed[key]}>{collapsed[key] ? "▸" : "▾"} {mode === "market" ? MARKET_LABELS[key] || key : mode === "style" ? items[0]?.productNameSnapshot || key : key}</button>
+                    <span>{mode === "style" ? `${key} · ` : ""}{items.length} SKU {mode === "style" ? (getThumbnail(items) ? "· đã có ảnh mẫu" : "· chưa có ảnh mẫu") : ""}</span>
                     {mode === "style" && canEditOrder && <button type="button" className={styles.attachImage} onClick={() => setEditor({ item: items[0], level: "style" })}>✎ Chỉnh style / ảnh</button>}
                   </div>
                 </div>

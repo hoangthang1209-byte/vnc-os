@@ -48,7 +48,7 @@ export async function renderContractPdf(contract:ContractPrint):Promise<Buffer>{
   pair(buyer,isVi?"BÊN A — BÊN MUA":"PARTY A — BUYER");
   pair(seller,isVi?"BÊN B — BÊN BÁN":"PARTY B — SELLER");
   line();
-  heading(isVi?"ĐIỀU 1. HÀNG HÓA, SỐ LƯỢNG VÀ GIÁ TRỊ":"ARTICLE 1. GOODS, QUANTITY AND VALUE");
+  heading(isVi?"BẢNG HÀNG HÓA VÀ GIÁ TRỊ":"GOODS AND VALUE SCHEDULE");
   const goods=items(contract.goods);
   for(let i=0;i<goods.length;i++){
    const it=goods[i]; const descr=`${i+1}. ${it.description}${it.specification?" — "+it.specification:""}`;
@@ -64,7 +64,7 @@ export async function renderContractPdf(contract:ContractPrint):Promise<Buffer>{
   text((isVi?"Tạm tính: ":"Subtotal: ")+money(Number(contract.subtotal),contract.currency)+" "+contract.currency,8.8,true);
   text((isVi?"Thuế / VAT: ":"Tax / VAT: ")+money(Number(contract.taxAmount),contract.currency)+" "+contract.currency,8.8);
   text((isVi?"TỔNG THANH TOÁN: ":"TOTAL CONTRACT VALUE: ")+money(Number(contract.grandTotal),contract.currency)+" "+contract.currency,10,true,"#122c4a",13);
-  heading(isVi?"ĐIỀU 2. TIẾN ĐỘ THANH TOÁN":"ARTICLE 2. PAYMENT MILESTONES");
+  heading(isVi?"LỊCH THANH TOÁN":"PAYMENT MILESTONE SCHEDULE");
   for(const p of payments(contract.paymentTerms)){
    text(`${p.label|| (isVi?"Đợt":"Milestone")} — ${p.percent}% (${money(Number(contract.grandTotal)*p.percent/100,contract.currency)} ${contract.currency})${p.due?" · "+p.due:""}`,8.5);
   }

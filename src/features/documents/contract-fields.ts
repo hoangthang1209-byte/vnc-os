@@ -31,7 +31,7 @@ export const standardClauses=(language:ContractLanguage):ContractClause[]=>
 export const str=(v:unknown,max=1500):string=>typeof v==="string"?v.trim().slice(0,max):"";
 export const validDate=(v:unknown):Date|null=>{
  if(v===null||v===undefined||v==="")return null;
- if(typeof v!=="string"||!/^\\d{4}-\\d{2}-\\d{2}$/.test(v))throw new Error("Ngày tháng phải theo định dạng YYYY-MM-DD.");
+ if(typeof v!=="string"||!/^\d{4}-\d{2}-\d{2}$/.test(v))throw new Error("Ngày tháng phải theo định dạng YYYY-MM-DD.");
  const d=new Date(v+"T00:00:00.000Z");
  if(!Number.isFinite(d.getTime())||d.toISOString().slice(0,10)!==v)throw new Error("Ngày không hợp lệ.");
  return d;

@@ -199,16 +199,7 @@ export default function CrmCustomerDetailView({
         <span className={styles.customerCode}>CUSTOMER ACCOUNT · {customer.code}</span>
       </div>
       {message && <p className={`admin-message admin-message--${message.type}`} role="alert">{message.text}</p>}
-      {activeV9Tab === "overview" ? (
-        <V9CustomerOverview
-          customer={customer}
-          overview={overview}
-          onEdit={() => setActiveV9Tab("profile")}
-          onContact={() => setActiveV9Tab("contacts")}
-          onActivity={() => setActiveV9Tab("activity")}
-        />
-      ) : null}
-      <div className={styles.legacyToolbar}>
+      <div className={styles.legacyToolbar} role="group" aria-label="Điều hướng hồ sơ khách hàng">
         <strong>Workspace khách hàng</strong>
         {([
           ["overview", "Tổng quan"],
@@ -222,6 +213,15 @@ export default function CrmCustomerDetailView({
             onClick={() => setActiveV9Tab(tab)}>{label}</button>
         ))}
       </div>
+      {activeV9Tab === "overview" ? (
+        <V9CustomerOverview
+          customer={customer}
+          overview={overview}
+          onEdit={() => setActiveV9Tab("profile")}
+          onContact={() => setActiveV9Tab("contacts")}
+          onActivity={() => setActiveV9Tab("activity")}
+        />
+      ) : null}
       <div className={activeV9Tab === "advanced" ? undefined : styles.hiddenPanel}>
         <CustomerAccountWorkspace overview={overview} />
       </div>

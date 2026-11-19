@@ -122,7 +122,7 @@ export default function OrderItemFormRow({
       <div className={styles.itemCard__header}>
         <span className={styles.itemCard__index}>Dòng #{index + 1}</span>
         <div className={styles.itemCard__meta}>
-          <span>Tổng SL: {lineQuantity}</span>
+          <span>{lineQuantity.toLocaleString("vi-VN")} pcs</span>
           <span className={styles.itemCard__lineTotal}>
             Thành tiền: {formatOrderCurrency(lineTotal, currency)}
           </span>
@@ -237,18 +237,6 @@ export default function OrderItemFormRow({
         ) : null}
 
         <div className="admin-field">
-          <label className="admin-label" htmlFor={`order-item-unit-${index}`}>
-            Đơn vị
-          </label>
-          <input
-            id={`order-item-unit-${index}`}
-            className="admin-input"
-            value={item.unit ?? "cái"}
-            onChange={(e) => onChange({ unit: e.target.value })}
-          />
-        </div>
-
-        <div className="admin-field">
           <label className="admin-label" htmlFor={`order-item-price-${index}`}>
             Đơn giá
           </label>
@@ -259,6 +247,35 @@ export default function OrderItemFormRow({
             min="0"
             value={item.unitPrice ?? 0}
             onChange={(e) => onChange({ unitPrice: Number(e.target.value) || 0 })}
+          />
+        </div>
+
+      </div>
+
+      <details className={styles.itemMediaToggle}>
+        <summary><span>Ảnh sản phẩm</span>{item.designImageUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={item.designImageUrl} alt="Thumbnail sản phẩm" width={36} height={36} />
+        ) : <span className={styles.itemMediaEmpty}>Chưa có ảnh · Bấm để thêm</span>}</summary>
+        <MediaPicker
+          folder="products"
+          usageType="auto"
+          value={item.designImageUrl ?? null}
+          onChange={(url) => onChange({ designImageUrl: url })}
+        />
+      </details>
+
+      <OrderAdvancedSection title="Thông số và phân loại (mở khi cần)" forceOpen={revealAdvanced}>
+        <div className={styles.fieldGrid} style={{ marginTop: 12 }}>
+        <div className="admin-field">
+          <label className="admin-label" htmlFor={`order-item-unit-${index}`}>
+            Đơn vị
+          </label>
+          <input
+            id={`order-item-unit-${index}`}
+            className="admin-input"
+            value={item.unit ?? "cái"}
+            onChange={(e) => onChange({ unit: e.target.value })}
           />
         </div>
 
@@ -285,10 +302,7 @@ export default function OrderItemFormRow({
             onChange={(e) => onChange({ itemNote: e.target.value })}
           />
         </div>
-      </div>
 
-      <OrderAdvancedSection title="Thông tin nâng cao" forceOpen={revealAdvanced}>
-        <div className={styles.fieldGrid} style={{ marginTop: 12 }}>
           <div className="admin-field">
             <label className="admin-label" htmlFor={`order-item-variant-${index}`}>
               Biến thể catalog
@@ -486,18 +500,13 @@ export default function OrderItemFormRow({
             />
           </div>
 
-          <div className={`admin-field ${styles.fieldSpan2}`}>
-            <label className="admin-label">Hình thiết kế</label>
-            <MediaPicker
-              folder="general"
-              usageType="auto"
-              value={item.designImageUrl ?? null}
-              onChange={(url) => onChange({ designImageUrl: url })}
-            />
-          </div>
+
         </div>
 
-        {showVariantMatrix ? (
+      </OrderAdvancedSection>
+      {showVariantMatrix ? (
+        <div className={styles.itemSizeMatrix}>
+          <div className={styles.itemSizeMatrixTitle}>Bảng size & số lượng <span>Thông tin bắt buộc để lập kế hoạch sản xuất</span></div>
           <OrderItemVariantMatrixEditor
             variants={variantRows}
             colors={colors}
@@ -508,8 +517,8 @@ export default function OrderItemFormRow({
             onChange={(nextVariants) => onChange({ variants: nextVariants })}
             onAddCatalogColor={() => onAddColor()}
           />
-        ) : null}
-      </OrderAdvancedSection>
+        </div>
+      ) : null}
     </article>
   );
 }

@@ -66,6 +66,7 @@ export const adminNavigationSections: AdminNavigationSection[] = [
   ]) },
   { label:"FINANCE & DOCUMENTS", icon:"◉", platforms: domainItems([
     { label:"Invoice", href:"/admin/documents/invoices", status:"active", requiredPermissions:["canViewFinancials"] },
+    { label:"Hợp đồng / Contracts", href:"/admin/documents/contracts", status:"active", requiredPermissions:["canViewFinancials"] },
     { label:"Giao dịch ngân hàng", href:"/admin/bank-transactions", status:"active", requiredPermissions:["canViewFinancials"] },
   ]) },
   { label:"PRODUCTS & MULTI-SITE", icon:"▣", platforms: domainItems([

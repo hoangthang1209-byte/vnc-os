@@ -32,7 +32,7 @@ export default async function OperationsV9Page({
       where: { orderItem: { is: { AND: [orderItemScope, { order: { is: orderWhere } }] } } },
       take: 300, orderBy: { updatedAt: "desc" },
       select: {
-        id: true, orderItemId: true, orderedQuantity: true, plannedQuantity: true,
+        id: true, orderItemId: true, note: true, orderedQuantity: true, plannedQuantity: true,
         readyQuantity: true, riskStatus: true, productionStatus: true,
         progressPercent: true, promisedDeliveryDate: true,
         orderItem: { select: {
@@ -96,7 +96,7 @@ export default async function OperationsV9Page({
   };
   const jobs = trackings.flatMap((t) => {
     const base = {
-      trackingId: t.id, orderId: t.orderItem.order.id,
+      trackingId: t.id, demo: Boolean(t.note?.startsWith("DEMO ONLY")), orderId: t.orderItem.order.id,
       orderNo: t.orderItem.order.orderNo,
       customer: t.orderItem.order.customerCompanyName ?? "",
       orderItemId: t.orderItemId,

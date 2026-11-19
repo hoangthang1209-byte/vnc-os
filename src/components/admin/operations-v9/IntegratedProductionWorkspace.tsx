@@ -28,7 +28,7 @@ const jobGroup=(j:Job,group:Group)=>group==="order"?j.orderNo:group==="sku"?j.or
 export default function IntegratedProductionWorkspace({jobs,orders,factories,documents,initialView="orders",initialSearch=""}:{jobs:Job[];orders:Order[];factories:Factory[];documents:Documents;initialView?:Section;initialSearch?:string}) {
  const [section,setSection]=useState<Section>(initialView);
  const [group,setGroup]=useState<Group>("order");
- const [orderSearch,setOrderSearch]=useState("");
+ const [orderSearch,setOrderSearch]=useState(initialView === "orders" ? initialSearch : "");
  const [productionSearch,setProductionSearch]=useState(initialSearch);
  const [factoryTab,setFactoryTab]=useState<"Schedule"|"Jobs"|"Capacity"|"Quality"|"Profile">("Schedule");
  const [orderFilter,setOrderFilter]=useState("all");
@@ -148,13 +148,13 @@ export default function IntegratedProductionWorkspace({jobs,orders,factories,doc
   {header("VNC OS V9 · ORDERS & OPERATIONS","Order Portfolio","Danh sách đơn hàng kết nối SKU, Production Jobs và Factory",<button className="v9btn" onClick={()=>goProduction()}>Mở Production Timeline →</button>)}
   <div className="v9metrics">{metric("Đơn hàng",orders.length,"Đọc từ Orders")}{metric("SKU trong danh sách",orders.reduce((n,o)=>n+o.items.length,0),"Order Lines")}{metric("Đang có Production Jobs",uniqueOrders,"Có stage/batch")}{metric("Production Jobs",jobs.length,"Stage/batch được lập")}{metric("SKU cần chú ý",atRisk,"Theo trạng thái rủi ro",atRisk>0)}</div>
   <section className="v9panel v9panelpad"><div className="v9panelhead" style={{padding:"0 0 14px",marginBottom:14}}><strong>Order Directory</strong><span className="v9hint">Tối đa 200 đơn theo quyền · Read-only</span></div>
-  <div className="v9filters" style={{padding:"0 0 14px",borderBottom:0}}><input aria-label="Tìm đơn hàng" placeholder="⌕ Tìm mã đơn hàng, khách hàng hoặc SKU..." value={orderSearch} onChange={e=>setOrderSearch(e.target.value)}/></div>
+  <div className="v9filters" style={{padding:"0 0 14px",borderBottom:0}}><input aria-label="Tìm đơn hàng" placeholder="⌕ Tìm mã đơn hàng, khách hàng hoặc SKU..." value={orderSearch} onChange={e=>setOrderSearch(e.target.value)}/>{orderSearch.trim()&&<button type="button" className="v9btn" onClick={()=>setOrderSearch("")}>Xóa tìm kiếm</button>}</div>
   <div className="v9orders">{orders.filter(o=>[o.orderNo,o.customer,...o.items.map(i=>i.sku)].some(x=>x.toLowerCase().includes(orderSearch.toLowerCase()))).map(o=><div className="v9order" key={o.id}>
    <div className="v9ordertop"><div><div className="v9orderid">{o.orderNo}</div><div className="v9ordername">{o.customer||"Chưa có tên khách hàng"}</div><div className="v9orderstat">Deadline: {date(o.due)}</div></div><div className="v9orderbadges"><span className="v9pill">{o.status}</span><span className="v9pill">{o.items.length} SKU</span><span className="v9pill">{orderJobs(o.id).length} jobs</span></div></div>
    {selectedOrder===o.id&&orderItems(o)}
-   <div className="v9orderbottom"><button className="v9link" onClick={()=>setSelectedOrder(selectedOrder===o.id?null:o.id)}>{selectedOrder===o.id?"▾ Ẩn SKU":"▸ Xem SKU / Order Detail"}</button><button className="v9btn" onClick={()=>goProduction(o.id)}>Xem Production Gantt →</button></div>
+   <div className="v9orderbottom"><button className="v9link" onClick={()=>setSelectedOrder(selectedOrder===o.id?null:o.id)} aria-expanded={selectedOrder===o.id}>{selectedOrder===o.id?"▾ Ẩn SKU":"▸ Xem danh sách SKU"}</button><div className="v9actions"><Link className="v9btn" href={"/admin/orders/"+encodeURIComponent(o.id)}>Mở Order Detail</Link><button className="v9btn" onClick={()=>goProduction(o.id)}>Xem Production Gantt →</button></div></div>
   </div>)}</div>
-  {!orders.length&&<div className="v9empty">Chưa có đơn hàng trong phạm vi được phép xem.</div>}
+  {!orders.length?<div className="v9empty">Chưa có đơn hàng trong phạm vi được phép xem.</div>:!orders.some(o=>[o.orderNo,o.customer,...o.items.map(i=>i.sku)].some(x=>x.toLowerCase().includes(orderSearch.toLowerCase())))&&<div className="v9empty">Không tìm thấy đơn hàng phù hợp. Hãy thử mã đơn, khách hàng hoặc SKU khác.</div>}
   </section>
  </>}
  {section==="production"&&<>

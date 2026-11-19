@@ -189,6 +189,16 @@ export default function OrderWorkspaceShell(props: OrderWorkspaceShellProps) {
       />
 
       <OrderCommandStrip order={order} canViewFinancials={canViewFinancials} />
+      {canViewProduction && order.orderNo === "ORD-2026-000001" && (
+        <div style={{display:"flex",flexWrap:"wrap",gap:8,marginBottom:12,alignItems:"center"}}>
+          <Link href={`/admin/production/preparation?orderNo=${encodeURIComponent(order.orderNo)}`}
+            style={{display:"inline-flex",alignItems:"center",padding:"8px 12px",borderRadius:8,
+              background:"#112b47",color:"#fff",fontWeight:700,fontSize:12,textDecoration:"none"}}>
+            BOM · Rập · Sơ đồ cắt · Nhãn KUL/JKT
+          </Link>
+          <span style={{fontSize:11,color:"#8b5b23"}}>Định mức và sơ đồ cắt đang chờ kỹ thuật xác nhận</span>
+        </div>
+      )}
       <details className="order-workspace-secondary-summary" style={{ marginBottom: 10 }}>
         <summary className={styles.utilityDisclosure}>Connected Records / Order Timeline</summary>
         <V9OrderOverview order={order} canViewFinancials={canViewFinancials}

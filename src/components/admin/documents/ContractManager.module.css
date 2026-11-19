@@ -71,3 +71,5 @@
 .stepFooter span{font-size:11px;color:#728399}
 @media(max-width:1060px){.root{grid-template-columns:1fr}.sticky{position:static}.listToolbar{align-items:flex-start;flex-direction:column}.filterRow{width:100%}.searchInput{flex:1}}
 @media(max-width:680px){.documentHub,.workspaceRoot{padding:0 3px}.hubHeader,.editorHeader{flex-direction:column;gap:12px}.statsGrid{gap:8px}.statsGrid>div{padding:13px 11px}.statsGrid span{font-size:10px}.statsGrid strong{font-size:21px}.hubHeader h1,.editorHeading h1{font-size:21px}.cols{grid-template-columns:1fr}.panel{padding:16px}.stepNav{overflow-x:auto}.stepButton,.stepActive{min-width:130px}.contractTable{min-width:750px}.filterRow{flex-direction:column}.searchInput{min-width:0}.headerActions{width:100%;justify-content:flex-start}}
+
+.dirtyNotice{padding:10px 14px;margin:0 0 15px;border-radius:9px;background:#fff8ed;color:#8f5e1d;border:1px solid #edd9b9;font-size:11px;font-weight:650}

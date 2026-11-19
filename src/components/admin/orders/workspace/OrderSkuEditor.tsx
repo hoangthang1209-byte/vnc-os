@@ -41,7 +41,7 @@ export default function OrderSkuEditor({ orderId, target, onClose, onSaved }: Pr
       const response = await fetch(`/api/orders/${encodeURIComponent(orderId)}/items/${encodeURIComponent(item.id)}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...form, applyToStyle: isStyle }),
+        body: JSON.stringify(isStyle ? { productNameSnapshot: form.productNameSnapshot, designImageUrl: form.designImageUrl, applyToStyle: true } : { ...form, applyToStyle: false }),
       });
       const payload = await response.json() as { message?: string };
       if (!response.ok) throw new Error(payload.message || "Không thể lưu SKU");
@@ -61,13 +61,13 @@ export default function OrderSkuEditor({ orderId, target, onClose, onSaved }: Pr
           <button type="button" className={styles.close} onClick={onClose} disabled={busy} aria-label="Đóng">×</button>
         </header>
         <div className={styles.body}>
-          {isStyle && <div className={styles.notice}>Thay đổi sẽ áp dụng cho mọi SKU thuộc cùng mã style, bao gồm ảnh đại diện. Nếu hình in khác theo thị trường, hãy chỉnh lại thumbnail từng SKU sau đó.</div>}
+          {isStyle && <div className={styles.notice}>Tên và ảnh style sẽ áp dụng cho mọi thị trường. Ghi chú, quy cách, màu riêng từng SKU được giữ nguyên để tránh ghi đè deadline và thông tin kỹ thuật của từng city.</div>}
           <label className={styles.field}>Tên sản phẩm / Style
             <input value={form.productNameSnapshot} onChange={event => setForm({ ...form, productNameSnapshot: event.target.value })} maxLength={450}/>
           </label>
-          <label className={styles.field}>Màu sắc / Color
+          {!isStyle && <label className={styles.field}>Màu sắc / Color
             <input value={form.colorSnapshot} onChange={event => setForm({ ...form, colorSnapshot: event.target.value })} maxLength={450}/>
-          </label>
+          </label>}
           <div className={styles.media}>
             <strong>Ảnh thumbnail sản phẩm</strong>
             <p>Chọn từ thư viện ảnh VNC hoặc tải hình mới lên. Có thể dùng ảnh riêng cho từng city.</p>
@@ -76,12 +76,12 @@ export default function OrderSkuEditor({ orderId, target, onClose, onSaved }: Pr
               <input value={form.designImageUrl} onChange={event => setForm({ ...form, designImageUrl: event.target.value })} placeholder="https://…"/>
             </label>
           </div>
-          <label className={styles.field}>Mô tả / Specification
+          {!isStyle && <label className={styles.field}>Mô tả / Specification
             <textarea rows={3} value={form.description} onChange={event => setForm({ ...form, description: event.target.value })} maxLength={4000}/>
-          </label>
-          <label className={styles.field}>Ghi chú kỹ thuật
+          </label>}
+          {!isStyle && <label className={styles.field}>Ghi chú kỹ thuật
             <textarea rows={3} value={form.itemNote} onChange={event => setForm({ ...form, itemNote: event.target.value })} maxLength={4000}/>
-          </label>
+          </label>}
           <div className={styles.notice}>Số lượng, phân size và mã SKU được giữ nguyên để bảo toàn Production Job, BOM và QC. Các nghiệp vụ thay đổi số lượng dùng chức năng riêng.</div>
           {error && <p className={styles.error} role="alert">{error}</p>}
         </div>

@@ -32,13 +32,14 @@ type Props = {
 };
 type Mode = "style" | "market" | "all";
 const SIZE_KEYS = ["S", "M", "L", "XL", "XXL", "UNALLOCATED"] as const;
-const MARKET_LABELS: Record<string, string> = { KUL: "Kuala Lumpur", JKT: "Jakarta", MNL: "Manila", KHH: "Kaohsiung", OTHER: "Không phân thị trường" };
+const MARKET_LABELS: Record<string, string> = { KUL: "MALAY · Malaysia", JKT: "INDO · Indonesia", MNL: "PHIL · Philippines", KHH: "TAIWAN · Taiwan", OTHER: "Chưa phân thị trường" };
 const format = (value: number) => value.toLocaleString("vi-VN");
 const getMarket = (item: OrderItemRecord) => {
   const token = item.skuSnapshot?.match(/-([A-Z]{3})$/)?.[1] ?? "";
   return token in MARKET_LABELS && token !== "OTHER" ? token : "OTHER";
 };
-const styleKey = (item: OrderItemRecord) => item.skuSnapshot?.replace(/-([A-Z]{3})$/, "") || item.productNameSnapshot?.trim() || "Chưa đặt tên sản phẩm";
+// Market is an allocation dimension, not a product identity. Keep persisted IDs and SKU snapshots unchanged.
+const styleKey = (item: OrderItemRecord) => item.skuSnapshot?.replace(/-(KUL|JKT|MNL|KHH)$/, "") || item.productNameSnapshot?.trim() || "Chưa đặt tên sản phẩm";
 const getThumbnail = (items: OrderItemRecord[]) => items.find(item => item.designImageUrl?.trim())?.designImageUrl?.trim() || null;
 function ProductThumbnail({ src, label, small = false, onAttach }: { src: string | null; label: string; small?: boolean; onAttach?: () => void }) {
   const [broken, setBroken] = useState(false);
@@ -86,7 +87,8 @@ export default function OrderProductTable({
   const activeMarkets = selectedMarkets.filter(code => availableMarkets.includes(code));
   const toggleMarket = (code: string) => setSelectedMarkets(current => current.includes(code) ? current.filter(value => value !== code) : [...current, code]);
   const [search, setSearch] = useState("");
-  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
+  const [expanded, setExpanded] = useState<string[]>([]);
+  const toggleExpanded = (key: string) => setExpanded(current => current.includes(key) ? current.filter(id => id !== key) : [...current, key]);
   const rows = order.items.filter(item => {
     const matchesMarket = activeMarkets.includes(getMarket(item));
     const q = search.trim().toLowerCase();
@@ -111,32 +113,32 @@ export default function OrderProductTable({
   if (loading) return <AdminInlineLoader message="Đang tải bảng sản phẩm và phân bổ size…" />;
 
   return <section className={styles.sheet} aria-label="Order items and size matrix" data-testid="order-size-matrix">
-    {missingImageStyles > 0 && <div className={styles.thumbnailAlert} role="status">Thiếu ảnh thumbnail: <strong>{missingImageStyles}/{styleCount} mẫu</strong> · {missingImageSkus}/{order.items.length} SKU. {canEditOrder ? "Bấm trực tiếp vào ô THÊM ẢNH để chọn ảnh từ thư viện hoặc tải lên. Ảnh cấp mẫu có thể áp dụng cho tất cả thị trường." : "Liên hệ người phụ trách đơn hàng để cập nhật ảnh."}</div>}
+    {missingImageStyles > 0 && <div className={styles.thumbnailAlert} role="status"><strong>{missingImageStyles} mẫu chưa có ảnh</strong> · {missingImageSkus} phân bổ cần thumbnail. {canEditOrder ? "Bấm vào ảnh để thêm." : ""}</div>}
     <div className={styles.heading}>
       <div>
-        <div className={styles.eyebrow}>ORDER ITEMS / SIZE MATRIX</div>
+        <div className={styles.eyebrow}>CHI TIẾT SẢN PHẨM</div>
         <h2>Danh sách sản phẩm</h2>
-        <p>{styleCount} mẫu · {order.items.length} dòng SKU · {marketCount || "—"} thị trường</p>
+        <p>{styleCount} mẫu sản phẩm · {marketCount || "—"} thị trường · {order.items.length} dòng phân bổ</p>
       </div>
       <div className={styles.controls}>
         <label className={styles.srOnly} htmlFor="order-matrix-search">Tìm theo sản phẩm, SKU hoặc thị trường</label>
         <input id="order-matrix-search" value={search} onChange={event => setSearch(event.target.value)} placeholder="Tìm tên hàng, SKU…" className={styles.search} />
 
         <div className={styles.segment} role="group" aria-label="Chế độ nhóm sản phẩm">
-          {([["style", "Theo mẫu"], ["market", "Theo thị trường"], ["all", "Tất cả"]] as const).map(([value, label]) =>
+          {([["style", "Gộp SKU"], ["market", "Theo thị trường"], ["all", "Chi tiết"]] as const).map(([value, label]) =>
             <button type="button" key={value} aria-pressed={mode === value} className={mode === value ? styles.selected : ""} onClick={() => setMode(value)}>{label}</button>)}
         </div>
       </div>
     </div>
     <div className={styles.marketSelector} role="group" aria-label="Chọn thị trường để cộng số lượng">
-      <span className={styles.marketSelectorLabel}>TỔNG HỢP THỊ TRƯỜNG</span>
+      <span className={styles.marketSelectorLabel}>THỊ TRƯỜNG</span>
       <button type="button" className={styles.marketAll} onClick={() => setSelectedMarkets([...availableMarkets])}>Chọn tất cả</button>
       {availableMarkets.map(code => <label key={code} className={`${styles.marketCheck} ${activeMarkets.includes(code) ? styles.marketCheckActive : ""}`}><input type="checkbox" checked={activeMarkets.includes(code)} onChange={() => toggleMarket(code)}/><span>{code} · {MARKET_LABELS[code]}</span></label>)}
-      <span className={styles.marketHint}>{activeMarkets.length}/{availableMarkets.length} thị trường · số lượng cộng theo style & size</span>
+      <span className={styles.marketHint}>{activeMarkets.length} đang chọn · cộng số lượng theo từng size</span>
     </div>
     <div className={styles.miniStats}>
       <span><strong>{format(rows.reduce((sum, item) => sum + item.quantity, 0))}</strong> pcs đang hiển thị</span>
-      <span><strong>{rows.length}</strong> SKU lines</span>
+      <span><strong>{new Set(rows.map(styleKey)).size}</strong> SKU chung · {rows.length} phân bổ</span>
       <span className={unallocated ? styles.warning : ""}><strong>{format(unallocated)}</strong> pcs chưa phân size (đã chọn)</span>
     </div>
     <div className={styles.scroll} role="region" tabIndex={0} aria-label="Bảng sản phẩm cuộn ngang">
@@ -155,9 +157,12 @@ export default function OrderProductTable({
                 <div className={styles.groupHeader}>
                   {mode === "style" && <ProductThumbnail key={getThumbnail(items) ?? "empty"} src={getThumbnail(items)} label={items[0]?.productNameSnapshot || key} onAttach={canEditOrder ? () => setEditor({ item: items[0], level: "style" }) : undefined} />}
                   <div className={styles.groupDescription}>
-                    <button type="button" onClick={() => setCollapsed(current => ({ ...current, [key]: !current[key] }))} aria-expanded={!collapsed[key]}>{collapsed[key] ? "▸" : "▾"} {mode === "market" ? MARKET_LABELS[key] || key : mode === "style" ? items[0]?.productNameSnapshot || key : key}</button>
-                    <span>{mode === "style" ? `${key} · ` : ""}{items.length} SKU {mode === "style" ? (getThumbnail(items) ? "· đã có ảnh mẫu" : "· chưa có ảnh mẫu") : ""}</span>
-                    {mode === "style" && canEditOrder && <button type="button" className={styles.attachImage} onClick={() => setEditor({ item: items[0], level: "style" })}>✎ Chỉnh style / ảnh</button>}
+                    <strong>{mode === "market" ? MARKET_LABELS[key] || key : items[0]?.productNameSnapshot || key}</strong>
+                    <small>{mode === "style" ? key : `${items.length} dòng sản phẩm`}</small>
+                    <div className={styles.groupActions}>
+                      {mode === "style" && canEditOrder && <button type="button" className={styles.attachImage} onClick={() => setEditor({ item: items[0], level: "style" })}>Sửa mẫu / ảnh</button>}
+                      <button type="button" onClick={() => toggleExpanded(key)} aria-expanded={expanded.includes(key)}>{expanded.includes(key) ? "Ẩn phân bổ" : `Chi tiết ${items.length} thị trường`}</button>
+                    </div>
                   </div>
                 </div>
               </td>
@@ -166,7 +171,7 @@ export default function OrderProductTable({
               <td className={styles.numeric}>{sumSizes(items, "UNALLOCATED") ? <strong className={styles.warning}>{format(sumSizes(items, "UNALLOCATED"))}</strong> : "—"}</td>
               <td className={styles.total}>{format(items.reduce((sum, item) => sum + item.quantity, 0))}</td><td colSpan={3} />
             </tr>,
-            ...(!collapsed[key] || mode === "all" ? items.map(item => {
+            ...(expanded.includes(key) || mode === "all" ? items.map(item => {
               const index = order.items.findIndex(row => row.id === item.id) + 1;
               const current = matrix(item);
               const exec = findExecutionBundleForItem(bundle, item.id);
@@ -181,7 +186,7 @@ export default function OrderProductTable({
                 <td className={styles.stickyNumber}>{index}</td>
                 <td className={styles.stickyName}><div className={styles.itemIdentity}>
                   <ProductThumbnail key={item.designImageUrl || item.id} src={item.designImageUrl?.trim() || null} label={item.productNameSnapshot || item.skuSnapshot || "SKU"} small onAttach={canEditOrder ? () => setEditor({ item, level: "sku" }) : undefined} />
-                  <div className={styles.itemDetails}><strong>{item.productNameSnapshot || "Unnamed item"}</strong><small>{item.skuSnapshot || "SKU pending"}</small></div>
+                  <div className={styles.itemDetails}><strong>{item.productNameSnapshot || "Unnamed item"}</strong><small>{styleKey(item)}</small></div>
                 </div></td>
                 <td><span className={styles.market}>{getMarket(item)}</span></td>
                 {SIZE_KEYS.slice(0, 5).map(size => <td className={styles.numeric} key={size}>{current.sizes.get(size) ? format(current.sizes.get(size)!) : "—"}</td>)}
@@ -198,7 +203,7 @@ export default function OrderProductTable({
       </table>
     </div>
     {!rows.length && <div className={styles.empty}>Không tìm thấy sản phẩm phù hợp với bộ lọc.</div>}
-    <div className={styles.foot}>Các ô tổng chỉ cộng những thị trường được tick, không chỉnh sửa số lượng lưu trong đơn. Cột FREE dành cho hàng không chia size; UNALLOCATED là số lượng chưa phân bổ. Kéo ngang bảng để xem toàn bộ công đoạn.</div>
+    <div className={styles.foot}>SKU chung không chứa thị trường khi hiển thị. Chọn nhiều thị trường để cộng size trên cùng một dòng mẫu. Mở “Chi tiết thị trường” để xem hoặc sửa từng phân bổ; mã liên kết nội bộ và dữ liệu gốc được giữ nguyên.</div>
     {editor && <OrderSkuEditor key={`${editor.item.id}-${editor.level}`} orderId={order.id} target={editor} onClose={() => setEditor(null)} onSaved={async () => { if (onRefreshOrder) await onRefreshOrder(); }} />}
   </section>;
 }

@@ -191,7 +191,7 @@ export default function OrderWorkspaceShell(props: OrderWorkspaceShellProps) {
       />
 
       <OrderCommandStrip order={order} canViewFinancials={canViewFinancials} />
-      {canViewProduction && /BB2|BIGBANG/i.test([order.orderNo, order.customerCompanyName ?? ""].join(" ")) && (
+      {canViewProduction && (
         <div style={{ marginBottom: 12 }}>
           <Link
             href={`/admin/production/preparation?orderNo=${encodeURIComponent(order.orderNo)}`}

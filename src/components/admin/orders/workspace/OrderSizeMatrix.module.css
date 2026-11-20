@@ -28,3 +28,9 @@
 .rowActions{display:flex;align-items:center;gap:5px;flex-wrap:wrap}
 .rowActions button.action{cursor:pointer}
 button.attachImage{appearance:none;border:0;background:none;padding:0;cursor:pointer;text-align:left}
+
+/* Explicit upload affordance: product photos are absent until linked to a SKU/style. */
+.thumbnailAction{border:0;background:transparent;padding:0;display:inline-flex;cursor:pointer;border-radius:9px;flex:0 0 auto}
+.thumbnailAction:hover .thumbnail{border-color:#2b6fc7;box-shadow:0 0 0 2px rgba(43,111,199,.12)}
+.thumbnailAction:focus-visible{outline:2px solid #2866b8;outline-offset:3px}
+.thumbnailAlert{margin-bottom:12px;padding:10px 12px;border:1px solid #e7c985;border-radius:9px;background:#fffaf0;color:#79541b;font-size:12px;line-height:1.5}

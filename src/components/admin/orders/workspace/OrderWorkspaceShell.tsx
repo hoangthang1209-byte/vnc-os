@@ -191,6 +191,20 @@ export default function OrderWorkspaceShell(props: OrderWorkspaceShellProps) {
       />
 
       <OrderCommandStrip order={order} canViewFinancials={canViewFinancials} />
+      {canViewProduction && (
+        <div style={{ marginBottom: 12 }}>
+          <Link
+            href={`/admin/production/preparation?orderNo=${encodeURIComponent(order.orderNo)}`}
+            className="admin-btn admin-btn--secondary admin-btn--small"
+          >
+            BOM · Rập · Sơ đồ cắt · Nhãn KUL/JKT
+          </Link>
+          <span style={{ marginLeft: 8, fontSize: 11, color: "#8b5b23" }}>
+            Chuẩn bị sản xuất · kiểm tra định mức trước khi phát hành
+          </span>
+        </div>
+      )}
+
       <div className={`admin-crm-360-tabs order-workspace-tabs ${styles.tabs}`} role="tablist" aria-label="Order sections">
         {visibleTabs.map((tab) => (
           <button

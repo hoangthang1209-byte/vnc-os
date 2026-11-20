@@ -40,19 +40,20 @@ const getMarket = (item: OrderItemRecord) => {
 };
 const styleKey = (item: OrderItemRecord) => item.skuSnapshot?.replace(/-([A-Z]{3})$/, "") || item.productNameSnapshot?.trim() || "Chưa đặt tên sản phẩm";
 const getThumbnail = (items: OrderItemRecord[]) => items.find(item => item.designImageUrl?.trim())?.designImageUrl?.trim() || null;
-function ProductThumbnail({ src, label, small = false }: { src: string | null; label: string; small?: boolean }) {
+function ProductThumbnail({ src, label, small = false, onAttach }: { src: string | null; label: string; small?: boolean; onAttach?: () => void }) {
   const [broken, setBroken] = useState(false);
   const safeSource = src && (/^https:\/\//i.test(src) || src.startsWith("/") && !src.startsWith("//")) ? src : null;
   const visible = safeSource && !broken;
-  return (
+  const thumbnail = (
     <span className={`${styles.thumbnail} ${small ? styles.thumbnailSmall : ""}`} title={visible ? `Ảnh sản phẩm: ${label}` : "Chưa có ảnh sản phẩm"}>
       {visible ? (
         // Order artwork URLs are managed in OrderItem.designImageUrl; avoid Next image remote-domain assumptions.
         // eslint-disable-next-line @next/next/no-img-element
         <img src={safeSource} alt={`Thumbnail ${label}`} loading="lazy" onError={() => setBroken(true)} />
-      ) : <span className={styles.thumbnailEmpty} aria-label="Chưa có ảnh sản phẩm">NO IMAGE</span>}
+      ) : <span className={styles.thumbnailEmpty} aria-label="Chưa có ảnh sản phẩm">THÊM ẢNH</span>}
     </span>
   );
+  return onAttach ? <button type="button" className={styles.thumbnailAction} onClick={onAttach} title={`Chọn hoặc thay ảnh cho ${label}`}>{thumbnail}</button> : thumbnail;
 }
 const normalizedSize = (value: string | null) => {
   const size = (value || "").trim().toUpperCase();
@@ -103,9 +104,14 @@ export default function OrderProductTable({
   const unallocated = rows.reduce((total, item) => total + (matrix(item).sizes.get("UNALLOCATED") ?? 0), 0);
   const marketCount = availableMarkets.filter(code => code !== "OTHER").length;
   const styleCount = new Set(order.items.map(styleKey)).size;
+  const missingImageStyles = [...new Set(order.items.map(styleKey))].filter(key =>
+    !order.items.some(item => styleKey(item) === key && Boolean(item.designImageUrl?.trim()))
+  ).length;
+  const missingImageSkus = order.items.filter(item => !item.designImageUrl?.trim()).length;
   if (loading) return <AdminInlineLoader message="Đang tải bảng sản phẩm và phân bổ size…" />;
 
   return <section className={styles.sheet} aria-label="Order items and size matrix" data-testid="order-size-matrix">
+    {missingImageStyles > 0 && <div className={styles.thumbnailAlert} role="status">Thiếu ảnh thumbnail: <strong>{missingImageStyles}/{styleCount} mẫu</strong> · {missingImageSkus}/{order.items.length} SKU. {canEditOrder ? "Bấm trực tiếp vào ô THÊM ẢNH để chọn ảnh từ thư viện hoặc tải lên. Ảnh cấp mẫu có thể áp dụng cho tất cả thị trường." : "Liên hệ người phụ trách đơn hàng để cập nhật ảnh."}</div>}
     <div className={styles.heading}>
       <div>
         <div className={styles.eyebrow}>ORDER ITEMS / SIZE MATRIX</div>
@@ -147,7 +153,7 @@ export default function OrderProductTable({
             showGroup && <tr className={styles.groupRow} key={`g-${key}`}>
               <td colSpan={3} className={styles.groupIdentity}>
                 <div className={styles.groupHeader}>
-                  {mode === "style" && <ProductThumbnail src={getThumbnail(items)} label={items[0]?.productNameSnapshot || key} />}
+                  {mode === "style" && <ProductThumbnail key={getThumbnail(items) ?? "empty"} src={getThumbnail(items)} label={items[0]?.productNameSnapshot || key} onAttach={canEditOrder ? () => setEditor({ item: items[0], level: "style" }) : undefined} />}
                   <div className={styles.groupDescription}>
                     <button type="button" onClick={() => setCollapsed(current => ({ ...current, [key]: !current[key] }))} aria-expanded={!collapsed[key]}>{collapsed[key] ? "▸" : "▾"} {mode === "market" ? MARKET_LABELS[key] || key : mode === "style" ? items[0]?.productNameSnapshot || key : key}</button>
                     <span>{mode === "style" ? `${key} · ` : ""}{items.length} SKU {mode === "style" ? (getThumbnail(items) ? "· đã có ảnh mẫu" : "· chưa có ảnh mẫu") : ""}</span>
@@ -174,7 +180,7 @@ export default function OrderProductTable({
               return <tr key={item.id}>
                 <td className={styles.stickyNumber}>{index}</td>
                 <td className={styles.stickyName}><div className={styles.itemIdentity}>
-                  <ProductThumbnail src={item.designImageUrl?.trim() || null} label={item.productNameSnapshot || item.skuSnapshot || "SKU"} small />
+                  <ProductThumbnail key={item.designImageUrl || item.id} src={item.designImageUrl?.trim() || null} label={item.productNameSnapshot || item.skuSnapshot || "SKU"} small onAttach={canEditOrder ? () => setEditor({ item, level: "sku" }) : undefined} />
                   <div className={styles.itemDetails}><strong>{item.productNameSnapshot || "Unnamed item"}</strong><small>{item.skuSnapshot || "SKU pending"}</small></div>
                 </div></td>
                 <td><span className={styles.market}>{getMarket(item)}</span></td>

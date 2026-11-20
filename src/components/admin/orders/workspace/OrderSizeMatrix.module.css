@@ -7,7 +7,7 @@
 .groupDescription button{line-height:1.35;white-space:normal;overflow-wrap:anywhere}
 .groupDescription>span{color:#687d94;font-size:10px;font-weight:600}
 .thumbnail{width:52px;height:52px;flex:0 0 52px;display:inline-flex;align-items:center;justify-content:center;border-radius:8px;border:1px solid #d7e0eb;background:#f6f8fb;overflow:hidden}
-.thumbnail img{display:block;width:100%;height:100%;object-fit:cover}
+.thumbnail img{display:block;width:100%;height:100%;object-fit:contain;object-position:center;background:#fff}
 .thumbnailSmall{width:34px;height:34px;flex-basis:34px;border-radius:6px}
 .thumbnailEmpty{display:flex;justify-content:center;align-items:center;min-width:100%;min-height:100%;color:#8392a8;background:repeating-linear-gradient(135deg,#f8fafc,#f8fafc 8px,#edf2f7 8px,#edf2f7 9px);font-size:8px;letter-spacing:.02em;font-weight:800;text-align:center}
 .thumbnailSmall .thumbnailEmpty{font-size:6px}
@@ -34,3 +34,12 @@ button.attachImage{appearance:none;border:0;background:none;padding:0;cursor:poi
 .thumbnailAction:hover .thumbnail{border-color:#2b6fc7;box-shadow:0 0 0 2px rgba(43,111,199,.12)}
 .thumbnailAction:focus-visible{outline:2px solid #2866b8;outline-offset:3px}
 .thumbnailAlert{margin-bottom:12px;padding:10px 12px;border:1px solid #e7c985;border-radius:9px;background:#fffaf0;color:#79541b;font-size:12px;line-height:1.5}
+
+/* Final HTML UI alignment: tighter matrix, thumbnail truly contained within the cell. */
+.heading{gap:10px;padding-bottom:10px}.heading h2{font-size:17px}.eyebrow{font-size:9px;letter-spacing:.085em}
+.marketSelector{padding:8px 0 10px;gap:6px}.marketCheck{padding:7px 9px;border-radius:7px}.miniStats{padding:9px 0;gap:14px}
+.scroll{border-radius:8px;border-color:#e3e9f1}.table th{padding:9px 8px;background:#f7f9fc}.table td{padding:9px 8px}
+.groupRow td{background:#f1f5fb!important;border-color:#e1e9f3;padding-top:9px;padding-bottom:9px}
+.groupHeader{min-height:52px}.groupDescription>span{font-size:10px}.thumbnail{background:#fff}
+.thumbnailAlert{padding:8px 11px;font-size:11px;margin-bottom:10px}
+@media(max-width:760px){.heading{gap:8px}.scroll{max-height:70vh}}

@@ -25,6 +25,14 @@ describe("Production Planning → Factory Execution wiring",()=>{
     assert.match(batchService,/SUPPLIER_REASSIGNED/);
     assert.match(batchService,/PLANNED_DATES_CHANGED/);
   });
+  it("can start an unstarted factory stage and drill into any applicable stage",()=>{
+    assert.match(batchPanel,/batch\.stages\.find\(s => s\.status === "NOT_STARTED"\)/);
+    assert.match(batchPanel,/Bắt đầu công đoạn/);
+    assert.match(batchPanel,/batch\.stages\.filter\(stage => stage\.status !== "SKIPPED"\)/);
+    const drawer=read("src/components/admin/item-production/ItemProductionBatchStageDrawer.tsx");
+    assert.match(drawer,/runAction\("START"\)/);
+    assert.match(drawer,/runAction\("PROGRESS_UPDATE"\)/);
+  });
   it("scopes Factory Execution batches before taking any rows",()=>{
     const page=read("src/app/(backend)/admin/production/factory-execution/page.tsx");
     assert.match(page,/buildProductionPlanOrderWhere\(session\)/);

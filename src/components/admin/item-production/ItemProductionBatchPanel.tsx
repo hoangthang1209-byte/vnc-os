@@ -22,6 +22,10 @@ type BatchRow = {
   riskStatus: ItemProductionRiskStatus;
   currentStageKey: string | null;
   plannedEndAt: string | null;
+  plannedStartAt: string | null;
+  notes: string | null;
+  picEmployeeId: string | null;
+  supplierId: string | null;
   lastProgressAt: string | null;
   supplier: { id: string; name: string; code: string } | null;
   picEmployee: { id: string; fullName: string; employeeCode: string } | null;
@@ -65,6 +69,9 @@ export default function ItemProductionBatchPanel({ productionItemId, onClose, on
   });
   const [showCreate, setShowCreate] = useState(false);
   const [pending, setPending] = useState(false);
+  const [suppliers, setSuppliers] = useState<Array<{ id: string; code: string; name: string }>>([]);
+  const [employees, setEmployees] = useState<Array<{ id: string; fullName: string }>>([]);
+  const [editBatchId, setEditBatchId] = useState<string | null>(null);
   const [batchStageTarget, setBatchStageTarget] = useState<{ batchId: string; stageId: string } | null>(null);
   const [form, setForm] = useState({
     plannedQuantity: 0,
@@ -74,6 +81,19 @@ export default function ItemProductionBatchPanel({ productionItemId, onClose, on
     plannedEndAt: "",
     notes: "",
   });
+
+  useEffect(() => {
+    let active = true;
+    void Promise.all([
+      fetch("/api/production-suppliers?activeOnly=true&pageSize=1000").then(async r => { if (!r.ok) throw new Error("Không tải được danh sách xưởng"); return r.json(); }),
+      fetch("/api/employees?active=1&role=PRODUCTION&limit=200").then(async r => { if (!r.ok) throw new Error("Không tải được danh sách phụ trách"); return r.json(); }),
+    ]).then(([factoryData, employeeData]) => {
+      if (!active) return;
+      setSuppliers(factoryData.items ?? []);
+      setEmployees(employeeData.employees ?? []);
+    }).catch(err => { if (active) setError(err instanceof Error ? err.message : "Không tải được danh mục phân công"); });
+    return () => { active = false; };
+  }, []);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -132,10 +152,53 @@ export default function ItemProductionBatchPanel({ productionItemId, onClose, on
       if (!res.ok) throw new Error(json.message ?? "Tạo lô thất bại");
       toast.success("Đã tạo lô sản xuất");
       setShowCreate(false);
+      setForm(f => ({ ...f, supplierId: "", picEmployeeId: "", plannedStartAt: "", plannedEndAt: "", notes: "" }));
       onUpdated();
       await load();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Tạo lô thất bại");
+    } finally {
+      setPending(false);
+    }
+  }
+
+  function beginEdit(batch: BatchRow) {
+    setEditBatchId(batch.id);
+    setShowCreate(false);
+    setForm({
+      plannedQuantity: batch.plannedQuantity,
+      supplierId: batch.supplierId ?? batch.supplier?.id ?? "",
+      picEmployeeId: batch.picEmployeeId ?? batch.picEmployee?.id ?? "",
+      plannedStartAt: batch.plannedStartAt?.slice(0, 10) ?? "",
+      plannedEndAt: batch.plannedEndAt?.slice(0, 10) ?? "",
+      notes: batch.notes ?? "",
+    });
+  }
+
+  async function saveBatchAssignment() {
+    if (!editBatchId) return;
+    setPending(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/manufacturing/production-batches/${editBatchId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          supplierId: form.supplierId || null,
+          picEmployeeId: form.picEmployeeId || null,
+          plannedStartAt: form.plannedStartAt || null,
+          plannedEndAt: form.plannedEndAt || null,
+          notes: form.notes || null,
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.message ?? "Không thể lưu phân công xưởng");
+      toast.success("Đã cập nhật xưởng và kế hoạch lô");
+      setEditBatchId(null);
+      onUpdated();
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Không thể lưu phân công");
     } finally {
       setPending(false);
     }
@@ -162,6 +225,35 @@ export default function ItemProductionBatchPanel({ productionItemId, onClose, on
   }
 
   const availableAfterCreate = allocation.unallocatedQuantity - form.plannedQuantity;
+  const invalidDates = Boolean(form.plannedStartAt && form.plannedEndAt && form.plannedEndAt < form.plannedStartAt);
+  const assignmentFields = (
+    <>
+      <label className="admin-label">Xưởng / nhà cung cấp
+        <select className="admin-input" value={form.supplierId} onChange={e => setForm(f => ({ ...f, supplierId: e.target.value }))}>
+          <option value="">Chưa phân công</option>
+          {suppliers.map(factory => <option key={factory.id} value={factory.id}>{factory.code} · {factory.name}</option>)}
+        </select>
+      </label>
+      <label className="admin-label">Người phụ trách
+        <select className="admin-input" value={form.picEmployeeId} onChange={e => setForm(f => ({ ...f, picEmployeeId: e.target.value }))}>
+          <option value="">Chưa phân công</option>
+          {employees.map(person => <option key={person.id} value={person.id}>{person.fullName}</option>)}
+        </select>
+      </label>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 9 }}>
+        <label className="admin-label">Ngày bắt đầu dự kiến
+          <input className="admin-input" type="date" value={form.plannedStartAt} onChange={e => setForm(f => ({ ...f, plannedStartAt: e.target.value }))} />
+        </label>
+        <label className="admin-label">Ngày hoàn thành dự kiến
+          <input className="admin-input" type="date" value={form.plannedEndAt} onChange={e => setForm(f => ({ ...f, plannedEndAt: e.target.value }))} />
+        </label>
+      </div>
+      {invalidDates && <p className="admin-error" role="alert">Ngày kết thúc phải sau hoặc bằng ngày bắt đầu.</p>}
+      <label className="admin-label">Ghi chú bàn giao / kế hoạch
+        <textarea className="admin-input" rows={2} value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} />
+      </label>
+    </>
+  );
 
   return (
     <div className="prod-plan-drawer-overlay" role="presentation" onClick={onClose}>
@@ -249,16 +341,24 @@ export default function ItemProductionBatchPanel({ productionItemId, onClose, on
                   <div className="admin-field-hint">
                     Sau khi tạo còn: {Math.max(0, availableAfterCreate)}
                   </div>
-                  <label className="admin-label">
-                    Ghi chú
-                    <textarea className="admin-input" rows={2} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
-                  </label>
-                  <AdminLoadingButton pending={pending} variant="primary" onClick={() => void createBatch()}>
+                  {assignmentFields}
+                  <AdminLoadingButton pending={pending} disabled={invalidDates || !Number.isInteger(form.plannedQuantity) || form.plannedQuantity < 1 || form.plannedQuantity > allocation.unallocatedQuantity} variant="primary" onClick={() => void createBatch()}>
                     Tạo lô
                   </AdminLoadingButton>
                 </div>
               </section>
             ) : null}
+
+            {editBatchId && <section className="admin-section-card" style={{ margin: 0 }}>
+              <h3 className="admin-subtitle">Cập nhật phân công xưởng · {batches.find(b => b.id === editBatchId)?.code}</h3>
+              <div style={{ display: "grid", gap: 9 }}>
+                {assignmentFields}
+                <div style={{ display: "flex", gap: 8 }}>
+                  <AdminLoadingButton pending={pending} disabled={invalidDates} variant="primary" onClick={() => void saveBatchAssignment()}>Lưu phân công</AdminLoadingButton>
+                  <button type="button" className="admin-btn admin-btn--secondary" onClick={() => setEditBatchId(null)}>Hủy</button>
+                </div>
+              </div>
+            </section>}
 
             <section className="admin-section-card" style={{ margin: 0 }}>
               <h3 className="admin-subtitle" style={{ marginTop: 0 }}>
@@ -318,6 +418,7 @@ export default function ItemProductionBatchPanel({ productionItemId, onClose, on
                           </StatusBadge>
                         </div>
                         <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                          {(batch.status === "DRAFT" || batch.status === "ACTIVE") && <button type="button" className="admin-btn admin-btn--secondary admin-btn--small" disabled={pending} onClick={() => beginEdit(batch)}>Phân công / lịch</button>}
                           {batch.status === "DRAFT" ? (
                             <AdminLoadingButton pending={pending} onClick={() => void batchAction(batch.id, "activate")}>
                               Kích hoạt

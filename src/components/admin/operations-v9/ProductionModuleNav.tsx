@@ -7,6 +7,7 @@ import styles from "./ProductionModuleNav.module.css";
 const items = [
   { label: "Master Gantt", href: "/admin/operations-v9", match: "/admin/operations-v9" },
   { label: "Kế hoạch SX", href: "/admin/production/plan", match: "/admin/production/plan" },
+  { label: "Factory Execution", href: "/admin/production/factory-execution", match: "/admin/production/factory-execution" },
   { label: "Tiến độ", href: "/admin/manufacturing/production-timeline", match: "/admin/manufacturing/production-timeline" },
   { label: "Production Board", href: "/admin/production/board", match: "/admin/production/board" },
   { label: "Tech Pack", href: "/admin/tech-pack", match: "/admin/tech-pack" },

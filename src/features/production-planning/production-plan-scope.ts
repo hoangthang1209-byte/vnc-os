@@ -78,7 +78,8 @@ export function buildAssignedJobFilter(
 
 export function productionOrderStatusesWhere(): Prisma.OrderWhereInput {
   return {
-    status: { in: ["CONFIRMED", "IN_PRODUCTION", "READY_TO_SHIP"] },
+    // Planning may start while the order is NEW; real stage progress still requires the existing approval gates.
+    status: { in: ["NEW", "CONFIRMED", "IN_PRODUCTION", "READY_TO_SHIP"] },
   };
 }
 

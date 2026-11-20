@@ -370,7 +370,7 @@ export default function ItemProductionBatchPanel({ productionItemId, onClose, on
                 <div style={{ display: "grid", gap: 10 }}>
                   {batches.map((batch) => {
                     const progress = Number(batch.progressPercent);
-                    const activeStage = batch.stages.find((s) => s.status === "IN_PROGRESS" || s.status === "BLOCKED");
+                    const activeStage = batch.stages.find((s) => s.status === "IN_PROGRESS" || s.status === "BLOCKED") ?? batch.stages.find(s => s.status === "NOT_STARTED");
                     return (
                       <div
                         key={batch.id}
@@ -417,6 +417,17 @@ export default function ItemProductionBatchPanel({ productionItemId, onClose, on
                             {ITEM_PRODUCTION_RISK_LABELS[batch.riskStatus]}
                           </StatusBadge>
                         </div>
+                        {batch.status === "ACTIVE" && (
+                          <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
+                            {batch.stages.filter(stage => stage.status !== "SKIPPED").map(stage => (
+                              <button type="button" key={stage.id}
+                                className="admin-btn admin-btn--secondary admin-btn--small"
+                                onClick={() => setBatchStageTarget({ batchId: batch.id, stageId: stage.id })}>
+                                {stage.labelSnapshot} · {stage.status === "COMPLETED" ? "Đã xong" : stage.status === "NOT_STARTED" ? "Chưa bắt đầu" : stage.status}
+                              </button>
+                            ))}
+                          </div>
+                        )}
                         <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                           {(batch.status === "DRAFT" || batch.status === "ACTIVE") && <button type="button" className="admin-btn admin-btn--secondary admin-btn--small" disabled={pending} onClick={() => beginEdit(batch)}>Phân công / lịch</button>}
                           {batch.status === "DRAFT" ? (
@@ -425,12 +436,9 @@ export default function ItemProductionBatchPanel({ productionItemId, onClose, on
                             </AdminLoadingButton>
                           ) : null}
                           {batch.status === "ACTIVE" && activeStage ? (
-                            <button
-                              type="button"
-                              className="admin-btn admin-btn--secondary admin-btn--small"
-                              onClick={() => setBatchStageTarget({ batchId: batch.id, stageId: activeStage.id })}
-                            >
-                              Cập nhật công đoạn
+                            <button type="button" className="admin-btn admin-btn--secondary admin-btn--small"
+                              onClick={() => setBatchStageTarget({ batchId: batch.id, stageId: activeStage.id })}>
+                              {activeStage.status === "NOT_STARTED" ? "Bắt đầu công đoạn" : "Cập nhật công đoạn"}
                             </button>
                           ) : null}
                           {batch.status === "ACTIVE" ? (

@@ -9,6 +9,9 @@ export const metadata = adminPageMetadata("Chuẩn bị sản xuất · BOM / R�
 export const dynamic = "force-dynamic";
 
 const num = (n: number) => n.toLocaleString("vi-VN");
+const MARKETS = ["KUL", "JKT", "MNL", "KHH"] as const;
+type MarketCode = typeof MARKETS[number];
+const MARKET_LABEL: Record<MarketCode, string> = { KUL: "Malaysia · KUL", JKT: "Indonesia · JKT", MNL: "Philippines · MNL", KHH: "Taiwan · KHH" };
 const styleNumber = (sku: string | null) => sku?.match(/^SKU-BB2-(\d{3})-(KUL|JKT|MNL|KHH)$/)?.[1] ?? "";
 const marketNumber = (sku: string | null) => sku?.match(/-(KUL|JKT|MNL|KHH)$/)?.[1] ?? "";
 const pill = "inline-flex rounded-md border border-slate-200 bg-slate-50 px-2 py-1 text-xs font-semibold text-slate-600";
@@ -41,7 +44,7 @@ export default async function ProductionPreparationPage({
     return <main className="p-8"><h1>Không tìm thấy đơn hàng trong phạm vi truy cập</h1><Link href="/admin/orders">Mở Orders</Link></main>;
   }
 
-  const marketItems = order.items.filter(i => ["KUL", "JKT"].includes(marketNumber(i.skuSnapshot)));
+  const marketItems = order.items.filter(i => MARKETS.includes(marketNumber(i.skuSnapshot) as MarketCode));
   const itemIds = marketItems.map(i => i.id);
   const patternCodes = [...new Set(marketItems.map(i => styleNumber(i.skuSnapshot)).filter(Boolean))]
     .map(code => `PAT-BB2-${code}`);
@@ -64,17 +67,23 @@ export default async function ProductionPreparationPage({
   ]);
 
   const byPattern = new Map(patterns.map(p => [p.code, p]));
-  const grouped = new Map<string, { name: string; kul: number; jkt: number }>();
+  type StyleRow = { name: string; quantities: Record<MarketCode, number> };
+  const grouped = new Map<string, StyleRow>();
   for (const item of marketItems) {
     const style = styleNumber(item.skuSnapshot);
-    if (!style) continue;
-    const row = grouped.get(style) ?? { name: item.productNameSnapshot || "Unnamed style", kul: 0, jkt: 0 };
-    if (marketNumber(item.skuSnapshot) === "KUL") row.kul += item.quantity;
-    else row.jkt += item.quantity;
+    const market = marketNumber(item.skuSnapshot) as MarketCode;
+    if (!style || !MARKETS.includes(market)) continue;
+    const row = grouped.get(style) ?? {
+      name: item.productNameSnapshot || "Unnamed style",
+      quantities: { KUL: 0, JKT: 0, MNL: 0, KHH: 0 },
+    };
+    row.quantities[market] += item.quantity;
     grouped.set(style, row);
   }
-  const totalKul = [...grouped.values()].reduce((s, x) => s + x.kul, 0);
-  const totalJkt = [...grouped.values()].reduce((s, x) => s + x.jkt, 0);
+  const totals = Object.fromEntries(MARKETS.map(market => [
+    market,
+    [...grouped.values()].reduce((sum, row) => sum + row.quantities[market], 0),
+  ])) as Record<MarketCode, number>;
   const missingBom = itemIds.length - new Set(materialRequirements.map(r => r.orderItemId)).size;
   const missingPatternFiles = patternCodes.length - patterns.filter(p => p.files.length > 0).length;
   const bomCoveredItems = new Set(materialRequirements.map(r => r.orderItemId));
@@ -83,7 +92,7 @@ export default async function ProductionPreparationPage({
     <nav className="text-xs text-slate-500"><Link className="hover:underline" href={`/admin/orders/${order.id}`}>Đơn hàng</Link> / Chuẩn bị sản xuất</nav>
     <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
       <div className="flex flex-wrap items-start justify-between gap-4">
-        <div><p className="text-xs font-bold uppercase tracking-widest text-slate-500">Pre-production readiness · KUL / JKT</p>
+        <div><p className="text-xs font-bold uppercase tracking-widest text-slate-500">Pre-production readiness · 4 markets</p>
           <h1 className="mt-1 text-2xl font-bold tracking-tight">BOM · Quản lý rập · Sơ đồ cắt</h1>
           <p className="mt-1 text-sm text-slate-500">{orderNo} · {order.customerCompanyName} · trạng thái đơn: {order.status}</p></div>
         <div className="flex flex-wrap gap-2">
@@ -92,10 +101,9 @@ export default async function ProductionPreparationPage({
           <Link className="rounded-lg bg-slate-900 px-3 py-2 text-sm font-semibold text-white hover:bg-slate-700" href={`/admin/orders/${order.id}`}>Chi tiết đơn</Link>
         </div>
       </div>
-      <div className="mt-5 grid grid-cols-2 gap-3 md:grid-cols-5">
+      <div className="mt-5 grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-7">
         {[
-          ["Malaysia · KUL", num(totalKul) + " pcs"],
-          ["Indonesia · JKT", num(totalJkt) + " pcs"],
+          ...MARKETS.map(market => [MARKET_LABEL[market], num(totals[market]) + " pcs"]),
           ["Styles", String(grouped.size)],
           ["SKU thiếu BOM", String(missingBom)],
           ["Styles thiếu file rập", String(missingPatternFiles)],
@@ -109,10 +117,10 @@ export default async function ProductionPreparationPage({
     </section>
 
     <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-      <div className="border-b border-slate-200 px-4 py-3"><h2 className="font-bold">13 style — rập & định mức theo từng thị trường</h2>
+      <div className="border-b border-slate-200 px-4 py-3"><h2 className="font-bold">{grouped.size} style — rập & định mức theo từng thị trường</h2>
         <p className="text-xs text-slate-500">Một hồ sơ rập theo style; mỗi thị trường vẫn giữ số lượng SKU độc lập.</p></div>
       <div className="overflow-x-auto"><table className="min-w-[900px] w-full border-collapse">
-        <thead><tr><th className={th}>Style / Pattern</th><th className={th}>Malaysia</th><th className={th}>Indonesia</th>
+        <thead><tr><th className={th}>Style / Pattern</th>{MARKETS.map(market => <th key={market} className={th}>{market}</th>)}
           <th className={th}>Tổng</th><th className={th}>File rập</th><th className={th}>Sơ đồ cắt</th><th className={th}>BOM</th><th className={th}>Thao tác</th></tr></thead>
         <tbody>{[...grouped.entries()].sort((a,b) => a[0].localeCompare(b[0])).map(([code,v]) => {
           const pat = byPattern.get(`PAT-BB2-${code}`);
@@ -122,8 +130,8 @@ export default async function ProductionPreparationPage({
           const hasFile = Boolean(pat?.files.length);
           return <tr key={code}>
             <td className={td}><strong className="block text-slate-900">{v.name}</strong><span className="font-mono text-xs text-slate-500">PAT-BB2-{code}</span></td>
-            <td className={td+" tabular-nums"}>{num(v.kul)}</td><td className={td+" tabular-nums"}>{num(v.jkt)}</td>
-            <td className={td+" font-bold tabular-nums"}>{num(v.kul+v.jkt)}</td>
+            {MARKETS.map(market => <td key={market} className={td+" tabular-nums"}>{num(v.quantities[market])}</td>)}
+            <td className={td+" font-bold tabular-nums"}>{num(MARKETS.reduce((sum, market) => sum + v.quantities[market], 0))}</td>
             <td className={td}><span className={pill}>{hasFile ? "Đã có file" : "Chưa tải lên"}</span></td>
             <td className={td}><span className={pill}>Chưa giác duyệt</span></td>
             <td className={td}><span className={pill}>{styleBomComplete ? `${bomCount} dòng định mức` : bomCount ? `Thiếu BOM ở SKU khác (${bomCount} dòng)` : "Chưa lập định mức"}</span></td>
@@ -134,7 +142,7 @@ export default async function ProductionPreparationPage({
     </section>
 
     <section className="rounded-xl border border-slate-200 bg-white p-4">
-      <h2 className="font-bold">Nhãn xuất hàng KUL / JKT</h2>
+      <h2 className="font-bold">Đóng gói & giao hàng · 4 thị trường</h2>
       <div className="mt-3 grid gap-3 md:grid-cols-2">
         {deliveries.map(d => <div className="rounded-lg border border-slate-200 p-3" key={d.id}>
           <div className="flex items-center justify-between gap-2"><strong className="font-mono text-sm">{d.executionCode}</strong><span className={pill}>{d.status}</span></div>
@@ -143,7 +151,8 @@ export default async function ProductionPreparationPage({
           <p className="text-xs text-slate-500">Đã xuất: {num(d.items.reduce((sum,i) => sum + Number(i.dispatchedQuantity),0))} pcs</p>
         </div>)}
       </div>
-      <p className="mt-3 text-xs text-slate-500">Các nhãn này mới là allocation DRAFT, không phải vận đơn hoặc xác nhận hoàn tất đóng gói.</p>
+      {!deliveries.length && <p className="mt-3 text-sm text-slate-500">Chưa tạo kế hoạch đóng gói hoặc chuyến giao hàng cho đơn này. Không suy diễn trạng thái giao hàng từ số lượng đã đặt.</p>}
+      <p className="mt-3 text-xs text-slate-500">Các kế hoạch này không phải vận đơn hoặc xác nhận hoàn tất đóng gói; chỉ hiển thị số lượng được ghi nhận trong hệ thống.</p>
     </section>
   </main>;
 }

@@ -9,3 +9,20 @@
 .root :global(.order-workspace-secondary-summary){margin-bottom:10px!important}
 .root :global(.order-workspace-secondary-summary>summary){font-size:12px!important;line-height:1.4!important;padding:11px 14px!important;background:#fff;color:#586b81}
 @media(max-width:700px){.root :global(.order-workspace-header){padding:13px}.tabs{padding:7px;gap:4px}.tabs :global(.admin-crm-360-tab){padding:8px!important}.panel{padding:12px}}
+
+/* V9 Lean IA: one compact header / one data-focused workspace / drill-down in Info. */
+.root{background:transparent;--order-compact-gap:10px}
+.breadcrumb{padding-bottom:8px}
+.root :global(.order-workspace-header){padding:10px 14px;margin-bottom:9px;box-shadow:none;border-radius:8px}
+.root :global(.order-workspace-header__code){font-size:16px}
+.root :global(.order-workspace-header__meta){display:flex;gap:8px;flex-wrap:wrap;font-size:10px}
+.tabs{border:0;border-bottom:1px solid #e3e9f0;border-radius:0;padding:3px 0;gap:3px;background:transparent}
+.tabs :global(.admin-crm-360-tab){padding:8px 12px!important;border-radius:6px!important;font-size:12px!important;font-weight:650!important}
+.tabs :global(.admin-crm-360-tab.is-active){color:#234f81!important;background:#ecf3fa!important;border-color:transparent!important}
+.panel{padding:12px 14px;margin-top:8px;border-radius:8px;box-shadow:none}
+.infoFlow{display:grid;grid-template-columns:minmax(0,1fr);gap:10px;margin-bottom:10px}
+.compactDetails{min-width:0;border:1px solid #e0e7ef;border-radius:8px;overflow:hidden;background:white}
+.compactDetails>summary{font-size:12px;font-weight:650;cursor:pointer;padding:11px 14px;color:#415770;background:#f9fbfd}
+.compactDetails[open]>summary{border-bottom:1px solid #e6edf4}
+.compactDetails> :not(summary){margin:10px}
+@media(max-width:760px){.panel{padding:10px}.root :global(.order-workspace-header){padding:10px}.tabs{overflow-x:auto}}

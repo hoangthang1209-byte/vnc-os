@@ -26,3 +26,17 @@
 .compactDetails[open]>summary{border-bottom:1px solid #e6edf4}
 .compactDetails> :not(summary){margin:10px}
 @media(max-width:760px){.panel{padding:10px}.root :global(.order-workspace-header){padding:10px}.tabs{overflow-x:auto}}
+
+/* Final HTML visual system — compact PO detail without altering functional sections. */
+.root{background:transparent;color:#1d324b}
+.breadcrumb{font-size:11px;padding-bottom:10px;color:#8291a2}
+.root :global(.order-workspace-header){border-color:#e3e9f1;border-radius:10px;padding:14px 17px;margin-bottom:9px;background:#fff}
+.root :global(.order-workspace-header__code){font-size:18px;font-weight:800;color:#182f4a}
+.root :global(.order-workspace-header__meta){font-size:11px;gap:9px;color:#71849b}
+.tabs{padding:3px 0 6px;gap:4px;border-bottom:1px solid #e0e7f0;scrollbar-width:thin}
+.tabs :global(.admin-crm-360-tab){padding:9px 13px!important;border-radius:7px!important;color:#61748b!important}
+.tabs :global(.admin-crm-360-tab.is-active){background:#e9f1fc!important;color:#1e55a0!important;border-color:#c9daf1!important}
+.panel{background:#fff;border:1px solid #e3e9f1;border-radius:10px;padding:15px 16px;margin-top:10px}
+.productionDisclosure{background:#fafbfc;border:1px solid #e6ebf2;border-radius:8px;margin-top:10px}
+.productionDisclosure summary{font-size:12px;color:#536780}
+@media(max-width:760px){.panel{padding:11px}.root :global(.order-workspace-header){padding:12px}}

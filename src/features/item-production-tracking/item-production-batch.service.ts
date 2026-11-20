@@ -50,6 +50,14 @@ async function writeBatchAudit(
   });
 }
 
+export function assertBatchDates(start?: string | null, end?: string | null) {
+  if (start && !Number.isFinite(Date.parse(start))) throw new Error("Ngày bắt đầu sản xuất không hợp lệ.");
+  if (end && !Number.isFinite(Date.parse(end))) throw new Error("Ngày hoàn thành sản xuất không hợp lệ.");
+  if (start && end && Date.parse(end) < Date.parse(start)) {
+    throw new Error("Ngày hoàn thành dự kiến không thể trước ngày bắt đầu.");
+  }
+}
+
 async function validateSupplier(tx: Prisma.TransactionClient, supplierId: string | null | undefined) {
   if (!supplierId) return;
   const supplier = await tx.productionSupplier.findUnique({
@@ -204,9 +212,10 @@ export async function createBatch(input: {
   name?: string | null;
   adminUserId?: string | null;
 }) {
-  if (!Number.isFinite(input.plannedQuantity) || input.plannedQuantity <= 0) {
-    throw new Error("Số lượng lô phải lớn hơn 0.");
+  if (!Number.isSafeInteger(input.plannedQuantity) || input.plannedQuantity <= 0) {
+    throw new Error("Số lượng lô phải là số nguyên dương.");
   }
+  assertBatchDates(input.plannedStartAt, input.plannedEndAt);
 
   return prisma.$transaction(async (tx) => {
     const tracking = await tx.itemProductionTracking.findUnique({
@@ -289,11 +298,17 @@ export async function updateBatch(
     adminUserId?: string | null;
   },
 ) {
+  assertBatchDates(patch.plannedStartAt, patch.plannedEndAt);
   return prisma.$transaction(async (tx) => {
     const batch = await tx.itemProductionBatch.findUnique({
       where: { id: batchId },
       include: { stages: true, itemProductionTracking: { include: { batches: true } } },
     });
+    if (batch) {
+      const start = patch.plannedStartAt === undefined ? batch.plannedStartAt?.toISOString() : patch.plannedStartAt;
+      const end = patch.plannedEndAt === undefined ? batch.plannedEndAt?.toISOString() : patch.plannedEndAt;
+      assertBatchDates(start, end);
+    }
     if (!batch) throw new Error("Không tìm thấy lô sản xuất");
     if (batch.status === "CANCELLED" || batch.status === "COMPLETED") {
       throw new Error("Không thể chỉnh sửa lô đã hoàn tất hoặc đã hủy.");
@@ -304,8 +319,8 @@ export async function updateBatch(
     }
 
     if (patch.plannedQuantity !== undefined) {
-      if (!Number.isFinite(patch.plannedQuantity) || patch.plannedQuantity <= 0) {
-        throw new Error("Số lượng lô phải lớn hơn 0.");
+      if (!Number.isSafeInteger(patch.plannedQuantity) || patch.plannedQuantity <= 0) {
+        throw new Error("Số lượng lô phải là số nguyên dương.");
       }
       const otherBatches = batch.itemProductionTracking.batches.filter((b) => b.id !== batchId);
       const otherAlloc = computeAllocatedQuantity(otherBatches);

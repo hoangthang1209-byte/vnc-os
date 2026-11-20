@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import OperationsV9ActionQueue from "./OperationsV9ActionQueue";
+import ProductionModuleNav from "./ProductionModuleNav";
 
 type Job = { id:string; trackingId:string; orderId:string; orderNo:string; customer:string; demo?:boolean;
   orderItemId:string; sku:string; name:string; image:string|null; ordered:number;

@@ -16,7 +16,7 @@ export default async function OperationsV9Page({
 }) {
   const query = await searchParams;
   const view = typeof query.view === "string" ? query.view : query.view?.[0];
-  const initialView = view === "production" || view === "factories" ? view : "orders";
+  const initialView = view === "orders" || view === "factories" ? view : "production";
   const initialSearch = typeof query.search === "string" ? query.search : query.search?.[0] ?? "";
 
   const session = await getAdminSessionFromCookies();

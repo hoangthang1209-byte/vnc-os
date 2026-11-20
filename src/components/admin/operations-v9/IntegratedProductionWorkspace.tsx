@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import OperationsV9ActionQueue from "./OperationsV9ActionQueue";
+import ProductionModuleNav from "./ProductionModuleNav";
 
 type Job = { id:string; trackingId:string; orderId:string; orderNo:string; customer:string; demo?:boolean;
   orderItemId:string; sku:string; name:string; image:string|null; ordered:number;
@@ -17,15 +18,17 @@ type Documents = { techPacks:{id:string;itemId:string;code:string;title:string;v
  files:{id:string;itemId:string;type:string;title:string;version:number;status:string}[];
  qc:{id:string;itemId:string;status:string;inspected:number;passed:number;defective:number}[] };
 type Section = "orders"|"production"|"factories";
-type Group = "order"|"sku"|"factory"|"stage";
+type Group = "order"|"sku"|"factory"|"stage"|"market";
+const jobMarket=(sku:string)=>sku.match(/-(KUL|JKT|MNL|KHH)$/)?.[1]??"OTHER";
+const marketNames:Record<string,string>={KUL:"MALAY",JKT:"INDO",MNL:"PHIL",KHH:"TAIWAN",OTHER:"Chưa phân thị trường"};
 type DocTab = "Tech Pack"|"Artwork"|"BOM"|"QC"|"Files";
 const date = (s:string|null)=>s?new Date(s).toLocaleDateString("vi-VN"):"Chưa lập lịch";
 const day=86400000;
 const STAGE_COLORS=["#687d99","#407bd4","#8466d3","#169c7a","#dd9a35","#c7627c","#1692a6"];
 function color(stage:string) {const i=/cut|cắt/i.test(stage)?0:/print|in /i.test(stage)?1:/embroider|thêu/i.test(stage)?2:/sew|may/i.test(stage)?3:/qc|kiểm/i.test(stage)?4:/pack|đóng/i.test(stage)?5:6;return STAGE_COLORS[i];}
-const jobGroup=(j:Job,group:Group)=>group==="order"?j.orderNo:group==="sku"?j.orderNo+" · "+j.sku:group==="factory"?j.factoryId??"__none__":j.stage;
+const jobGroup=(j:Job,group:Group)=>group==="order"?j.orderNo:group==="sku"?j.orderNo+" · "+j.sku:group==="factory"?j.factoryId??"__none__":group==="market"?jobMarket(j.sku):j.stage;
 
-export default function IntegratedProductionWorkspace({jobs,orders,factories,documents,initialView="orders",initialSearch=""}:{jobs:Job[];orders:Order[];factories:Factory[];documents:Documents;initialView?:Section;initialSearch?:string}) {
+export default function IntegratedProductionWorkspace({jobs,orders,factories,documents,initialView="production",initialSearch=""}:{jobs:Job[];orders:Order[];factories:Factory[];documents:Documents;initialView?:Section;initialSearch?:string}) {
  const [section,setSection]=useState<Section>(initialView);
  const [group,setGroup]=useState<Group>("order");
  const [orderSearch,setOrderSearch]=useState("");
@@ -33,23 +36,25 @@ export default function IntegratedProductionWorkspace({jobs,orders,factories,doc
  const [factoryTab,setFactoryTab]=useState<"Schedule"|"Jobs"|"Capacity"|"Quality"|"Profile">("Schedule");
  const [orderFilter,setOrderFilter]=useState("all");
  const [stageFilter,setStageFilter]=useState("all");
+ const [marketFilter,setMarketFilter]=useState("all");
  const [riskFilter,setRiskFilter]=useState("all");
  const [expanded,setExpanded]=useState<string[]>([]);
  const [selectedOrder,setSelectedOrder]=useState<string|null>(null);
  const [selectedFactory,setSelectedFactory]=useState<string|null>(null);
  const [selectedJob,setSelectedJob]=useState<string|null>(null);
  const [docTab,setDocTab]=useState<DocTab>("Tech Pack");
- const [horizon,setHorizon]=useState(90);
+ const [horizon,setHorizon]=useState(35);
  const [timeOffset,setTimeOffset]=useState(0);
  const [factoryFilter,setFactoryFilter]=useState("all");
  const factoriesById=useMemo(()=>new Map(factories.map(f=>[f.id,f])),[factories]);
  const filteredJobs=useMemo(()=>jobs.filter(j=>{
   if(orderFilter!=="all"&&j.orderId!==orderFilter)return false;
   if(stageFilter!=="all"&&j.stage!==stageFilter)return false;
+  if(marketFilter!=="all"&&jobMarket(j.sku)!==marketFilter)return false;
   if(riskFilter==="risk"&&j.risk==="ON_TRACK")return false;
   const q=productionSearch.trim().toLowerCase();
   return !q||[j.orderNo,j.sku,j.name,j.stage,j.batch??"",factoriesById.get(j.factoryId??"")?.name??""].some(t=>t.toLowerCase().includes(q));
- }),[jobs,orderFilter,stageFilter,riskFilter,productionSearch,factoriesById]);
+ }),[jobs,orderFilter,stageFilter,marketFilter,riskFilter,productionSearch,factoriesById]);
  const grouped=useMemo(()=>{const m=new Map<string,Job[]>();for(const j of filteredJobs){const k=jobGroup(j,group);m.set(k,[...(m.get(k)??[]),j]);}return [...m.entries()].sort((a,b)=>a[0].localeCompare(b[0]));},[filteredJobs,group]);
  const openFactory=factories.find(f=>f.id===selectedFactory);
  const openJob=jobs.find(j=>j.id===selectedJob);
@@ -103,7 +108,7 @@ export default function IntegratedProductionWorkspace({jobs,orders,factories,doc
  .v9filters input,.v9filters select{font:inherit;background:#fff;color:var(--ink);min-width:120px;padding:9px;border:1px solid #d6e0ea;border-radius:8px;max-width:100%}
  .v9filters input{min-width:170px;flex:1}.v9filters .v9btn{font-size:11px;padding:9px}
  .v9legend{display:flex;flex-wrap:wrap;gap:14px;padding:11px 17px;color:var(--muted);font-size:10px}.v9legend i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:5px}
- .v9ganttwrap{overflow-x:auto}.v9gantt{min-width:1190px}.v9grow{display:grid;grid-template-columns:230px 960px;border-bottom:1px solid #edf0f5;min-height:39px;align-items:stretch}
+ .v9ganttwrap{overflow:auto;max-height:70vh}.v9gantt{width:max-content;min-width:1190px}.v9grow{display:grid;grid-template-columns:230px 960px;border-bottom:1px solid #edf0f5;min-height:43px;align-items:stretch}
  .v9glabel{text-align:left;border:0;background:transparent;display:flex;align-items:center;gap:7px;padding:10px 13px;font-weight:650;font-size:11px;color:#2b405a;cursor:pointer;overflow:hidden}
  .v9glabel>span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.v9subrow .v9glabel{font-weight:500;padding-left:28px;color:#60738a}
  .v9gridcell{position:relative;height:100%;min-height:39px;background:repeating-linear-gradient(90deg,transparent,transparent calc(var(--cell) - 1px),#e6ecf3 calc(var(--cell) - 1px),#e6ecf3 var(--cell))}
@@ -137,13 +142,39 @@ export default function IntegratedProductionWorkspace({jobs,orders,factories,doc
  .v9doctabs button.active{background:#192b47;color:white}.v9docline{padding:11px;border:1px solid #e8edf4;border-radius:8px;margin-bottom:8px;font-size:12px}
  @media(max-width:1200px){.v9metrics{grid-template-columns:repeat(3,minmax(0,1fr))}.v9factorygrid{grid-template-columns:repeat(2,minmax(0,1fr))}}
  @media(max-width:760px){.vncops{padding:10px}.v9localnav{padding:8px}.v9navitem{width:auto;padding:9px}.v9navhint{width:100%;margin-left:0}.v9head h1{font-size:22px}.v9head{align-items:flex-start;flex-direction:column}.v9metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.v9twocol{grid-template-columns:1fr}.v9factorygrid{grid-template-columns:1fr}}
- `}</style>
+ 
+  /* Demo Final: calm, compact command center with pinned Gantt labels. */
+  .vncops{background:#f4f6f9;border:1px solid #e3e8f0;border-radius:12px;padding:16px;font-family:var(--font-geist-sans),Inter,system-ui,sans-serif}
+  .v9localnav{border-radius:10px;box-shadow:none;padding:6px;margin-bottom:13px;gap:5px}
+  .v9navitem{background:transparent;padding:10px 15px;font-weight:700}
+  .v9navitem.active{background:#234eaa;color:white}
+  .v9head{margin:3px 0 15px;align-items:flex-end}
+  .v9head h1{font-size:23px;letter-spacing:-.6px}
+  .v9metrics{gap:9px;margin-bottom:12px}
+  .v9metric{min-height:78px;padding:12px 14px;border-radius:10px;gap:3px;box-shadow:none}
+  .v9metric strong{font-size:23px}
+  .v9panel{border-radius:10px;box-shadow:none;margin-bottom:12px}
+  .v9panelhead{padding:13px 15px}
+  .v9filters{padding:11px 13px;gap:7px}
+  .v9filters .v9btn{padding:8px 10px}
+  .v9legend{padding:9px 13px;gap:12px}
+  .v9ganttwrap{border-top:1px solid #edf1f7;scrollbar-color:#aabbd1 #f3f6fb}
+  .v9ghead{position:sticky;top:0;z-index:5}
+  .v9glabel{position:sticky;left:0;z-index:3;background:#fff;border-right:1px solid #e8edf4}
+  .v9ghead .v9glabel{background:#eef3fb}
+  .v9grow:hover .v9glabel{background:#f4f8fe}
+  .v9gridcell{min-height:43px}
+  .v9bar{top:9px;height:25px;border-radius:5px;padding:5px 7px;box-shadow:0 1px 3px #1c395522}
+  .v9bar:focus-visible,.v9btn:focus-visible,.v9glabel:focus-visible{outline:2px solid #557bd1;outline-offset:2px}
+  .v9drawer{width:min(570px,100%);padding:24px}
+  @media(max-width:760px){.vncops{padding:9px}.v9head h1{font-size:21px}.v9metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.v9metric{min-height:71px}.v9navhint{display:none}}
+`}</style>
  <div className="v9shell">
  <nav className="v9localnav" aria-label="Các màn hình của Điều hành sản xuất V9">
-  <button type="button" className={"v9navitem "+(section==="orders"?"active":"")} onClick={()=>setSection("orders")}>Đơn hàng & SKU</button>
-  <button type="button" className={"v9navitem "+(section==="production"?"active":"")} onClick={()=>setSection("production")}>Tiến độ & Gantt</button>
+  <button type="button" className={"v9navitem "+(section==="production"?"active":"")} onClick={()=>setSection("production")}>▦ Master Gantt</button>
+  <button type="button" className={"v9navitem "+(section==="orders"?"active":"")} onClick={()=>setSection("orders")}>PO / SKU</button>
   <button type="button" className={"v9navitem "+(section==="factories"?"active":"")} onClick={()=>setSection("factories")}>Factory Management</button>
-  <span className="v9navhint">Các tính năng chỉnh sửa vẫn nằm trong trang nghiệp vụ hiện có.</span>
+  <span className="v9navhint">Project → PO → Production → QC → Shipment</span>
  </nav>
  <main className="v9content">
  {section==="orders"&&<>
@@ -160,16 +191,16 @@ export default function IntegratedProductionWorkspace({jobs,orders,factories,doc
   </section>
  </>}
  {section==="production"&&<>
-  {header("VNC OS V9 · OPERATIONS COMMAND","Production Control Center","Master timeline theo Order, SKU, công đoạn và Factory — dữ liệu VNC OS thực",
-    <><Link href="/admin/manufacturing/production-timeline" className="v9btn">Cập nhật tiến độ</Link><button className="v9btn primary" disabled title="Chức năng tạo Job mới cần API và quyền ghi">＋ Tạo Production Job</button></>)}
+  {header("OPERATIONS / MASTER PRODUCTION GANTT","Production Control Center","Timeline tổng hợp PO · SKU · Factory · công đoạn, từ dữ liệu theo phân quyền",
+    <><Link href="/admin/production/plan" className="v9btn primary">＋ Lập kế hoạch</Link><Link href="/admin/manufacturing/production-timeline" className="v9btn">Cập nhật tiến độ</Link></>)}
   <div className="v9metrics">{metric("Đơn có lịch sản xuất",uniqueOrders,"Có stage/batch")}{metric("SKU đang theo dõi",uniqueItems,"Có record sản xuất")}{metric("Production Jobs",jobs.length,"Nhóm stage / batch")}{metric("Jobs có rủi ro",jobs.filter(j=>j.risk!=="ON_TRACK").length,"Theo tracking",true)}{metric("Factory được giao",activeFactories,"Theo Supplier hiện có")}</div>
   <section className="v9panel">
-   <div className="v9panelhead"><div><strong>Master Production Timeline</strong><div className="v9hint">Chọn góc nhìn để điều phối toàn bộ portfolio</div></div><div className="v9switches">{([["order","Theo đơn hàng"],["sku","Theo SKU"],["factory","Theo Factory"],["stage","Theo công đoạn"]] as const).map(([id,label])=><button key={id} className={"v9switch "+(group===id?"active":"")} onClick={()=>{setGroup(id);setExpanded([]);}}>{label}</button>)}</div></div>
-   <div className="v9filters"><input aria-label="Tìm Production Jobs" placeholder="⌕ Tìm SKU / Factory / công đoạn..." value={productionSearch} onChange={e=>setProductionSearch(e.target.value)}/><select aria-label="Lọc đơn hàng" value={orderFilter} onChange={e=>setOrderFilter(e.target.value)}><option value="all">Tất cả đơn hàng</option>{orders.map(o=><option value={o.id} key={o.id}>{o.orderNo}</option>)}</select><select aria-label="Lọc công đoạn" value={stageFilter} onChange={e=>setStageFilter(e.target.value)}><option value="all">Tất cả công đoạn</option>{[...new Set(jobs.map(j=>j.stage))].sort().map(k=><option key={k}>{k}</option>)}</select><select aria-label="Lọc rủi ro" value={riskFilter} onChange={e=>setRiskFilter(e.target.value)}><option value="all">Mọi trạng thái</option><option value="risk">Nguy cơ trễ</option></select><select aria-label="Ngày hiển thị" value={horizon} onChange={e=>setHorizon(Number(e.target.value))}><option value={14}>14 ngày</option><option value={21}>21 ngày</option><option value={35}>35 ngày</option><option value={60}>60 ngày</option><option value={90}>90 ngày</option><option value={120}>120 ngày</option></select><button className="v9btn" onClick={()=>setTimeOffset(o=>o-14)}>← 14 ngày</button><button className="v9btn" onClick={()=>setTimeOffset(0)}>Hôm nay</button><button className="v9btn" onClick={()=>setTimeOffset(o=>o+14)}>14 ngày →</button><button className="v9btn" onClick={()=>setExpanded([])}>Thu gọn</button><button className="v9btn" onClick={()=>setExpanded(grouped.map(x=>x[0]))}>Mở rộng</button><span className="v9hint">{filteredJobs.length} jobs</span></div>
+   <div className="v9panelhead"><div><strong>Master Production Timeline</strong><div className="v9hint">Chọn góc nhìn để điều phối toàn bộ portfolio</div></div><div className="v9switches">{([["order","Theo PO"],["sku","Theo SKU"],["market","Theo thị trường"],["factory","Theo xưởng"],["stage","Theo công đoạn"]] as const).map(([id,label])=><button key={id} className={"v9switch "+(group===id?"active":"")} onClick={()=>{setGroup(id);setExpanded([]);}}>{label}</button>)}</div></div>
+   <div className="v9filters"><input aria-label="Tìm Production Jobs" placeholder="⌕ Tìm SKU / Factory / công đoạn..." value={productionSearch} onChange={e=>setProductionSearch(e.target.value)}/><select aria-label="Lọc đơn hàng" value={orderFilter} onChange={e=>setOrderFilter(e.target.value)}><option value="all">Tất cả đơn hàng</option>{orders.map(o=><option value={o.id} key={o.id}>{o.orderNo}</option>)}</select><select aria-label="Lọc thị trường" value={marketFilter} onChange={e=>setMarketFilter(e.target.value)}><option value="all">Tất cả thị trường</option>{[...new Set(jobs.map(j=>jobMarket(j.sku)))].sort().map(code=><option value={code} key={code}>{marketNames[code]??code}</option>)}</select><select aria-label="Lọc công đoạn" value={stageFilter} onChange={e=>setStageFilter(e.target.value)}><option value="all">Tất cả công đoạn</option>{[...new Set(jobs.map(j=>j.stage))].sort().map(k=><option key={k}>{k}</option>)}</select><select aria-label="Lọc rủi ro" value={riskFilter} onChange={e=>setRiskFilter(e.target.value)}><option value="all">Mọi trạng thái</option><option value="risk">Nguy cơ trễ</option></select><select aria-label="Ngày hiển thị" value={horizon} onChange={e=>setHorizon(Number(e.target.value))}><option value={14}>14 ngày</option><option value={21}>21 ngày</option><option value={35}>35 ngày</option><option value={60}>60 ngày</option><option value={90}>90 ngày</option><option value={120}>120 ngày</option></select><button className="v9btn" onClick={()=>setTimeOffset(o=>o-14)}>← 2 tuần</button><button className="v9btn" onClick={()=>setTimeOffset(0)}>Hôm nay</button><button className="v9btn" onClick={()=>setTimeOffset(o=>o+14)}>2 tuần →</button><button className="v9btn" onClick={()=>setExpanded([])}>Thu gọn</button><button className="v9btn" onClick={()=>setExpanded(grouped.map(x=>x[0]))}>Mở rộng</button><span className="v9hint">{filteredJobs.length} jobs</span></div>
    <div className="v9legend">{["Cắt","In","Thêu","May","QC","Đóng gói","Khác"].map((s,i)=><span key={s}><i style={{background:STAGE_COLORS[i]}}/>{s}</span>)}</div>
    <div className="v9ganttwrap"><div className="v9gantt">
     <div className="v9grow v9ghead"><div className="v9glabel">ĐƠN HÀNG / SKU / JOB</div><div className="v9gridcell" style={{["--cell" as string]:cell+"px",height:34}}>{Array.from({length:horizon},(_,i)=>(horizon<=35||i%7===0)&&<div className="v9day" key={i} style={{left:i*cell,width:horizon>35?cell*7:cell}}>{new Date(base+i*day).toLocaleDateString("vi-VN",{day:"2-digit",month:"2-digit"})}</div>)}</div></div>
-    {grouped.map(([key,rows])=><div key={key}><div className="v9grow"><button className="v9glabel" title={key} onClick={()=>setExpanded(a=>a.includes(key)?a.filter(k=>k!==key):[...a,key])}><span>{expanded.includes(key)?"▾":"▸"} {group==="factory"?factoriesById.get(key)?.name??"Chưa gán Factory":key} ({rows.length})</span></button><div className="v9gridcell" style={{["--cell" as string]:cell+"px"}}>{rows.map(timeline)}</div></div>{expanded.includes(key)&&rows.map(j=><div className="v9grow v9subrow" key={j.id}><button className="v9glabel" onClick={()=>setSelectedJob(j.id)} title={j.sku+" / "+j.stage}><span>{j.sku} · {j.stage}</span></button><div className="v9gridcell" style={{["--cell" as string]:cell+"px"}}>{timeline(j)}</div></div>)}</div>)}
+    {grouped.map(([key,rows])=><div key={key}><div className="v9grow"><button className="v9glabel" title={key} onClick={()=>setExpanded(a=>a.includes(key)?a.filter(k=>k!==key):[...a,key])}><span>{expanded.includes(key)?"▾":"▸"} {group==="factory"?factoriesById.get(key)?.name??"Chưa gán Factory":group==="market"?marketNames[key]??key:key} ({rows.length})</span></button><div className="v9gridcell" style={{["--cell" as string]:cell+"px"}}>{rows.map(timeline)}</div></div>{expanded.includes(key)&&rows.map(j=><div className="v9grow v9subrow" key={j.id}><button className="v9glabel" onClick={()=>setSelectedJob(j.id)} title={j.sku+" / "+j.stage}><span>{j.sku} · {j.stage}</span></button><div className="v9gridcell" style={{["--cell" as string]:cell+"px"}}>{timeline(j)}</div></div>)}</div>)}
     {(group==="order"||group==="sku")&&orders.filter(o=>(orderFilter==="all"||orderFilter===o.id)&&!orderJobs(o.id).length&&(!productionSearch||[o.orderNo,o.customer,...o.items.map(i=>i.sku)].some(x=>x.toLowerCase().includes(productionSearch.toLowerCase())))).map(o=>
       <div className="v9grow" key={"unplanned-"+o.id}>
         <button className="v9glabel" onClick={()=>{setSection("orders");setSelectedOrder(o.id);}} title="Chưa có Production Stage">

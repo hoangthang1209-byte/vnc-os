@@ -33,7 +33,7 @@ describe("VNC OS V9 Order size matrix and demo factory Gantt", () => {
     const css = read("src/components/admin/orders/workspace/OrderSizeMatrix.module.css");
     assert.match(css, /\.groupHeader\{/);
     assert.match(css, /\.thumbnailSmall\{/);
-    assert.match(css, /object-fit:cover/);
+    assert.match(css, /object-fit:contain/);
   });
 
   it("uses compact header and prioritizes full-width table", () => {

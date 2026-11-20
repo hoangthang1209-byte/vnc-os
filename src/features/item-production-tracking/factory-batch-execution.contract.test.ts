@@ -25,6 +25,15 @@ describe("Production Planning → Factory Execution wiring",()=>{
     assert.match(batchService,/SUPPLIER_REASSIGNED/);
     assert.match(batchService,/PLANNED_DATES_CHANGED/);
   });
+  it("scopes Factory Execution batches before taking any rows",()=>{
+    const page=read("src/app/(backend)/admin/production/factory-execution/page.tsx");
+    assert.match(page,/buildProductionPlanOrderWhere\(session\)/);
+    assert.match(page,/buildAssignedJobFilter\(session\)/);
+    assert.match(page,/AND: \[scopedItem, \{ order: \{ is: scopedOrder \} \}\]/);
+    assert.match(page,/take: 300/);
+    assert.match(page,/itemProductionTracking\.orderItemId/);
+    assert.match(read("src/components/admin/operations-v9/ProductionModuleNav.tsx"),/\/admin\/production\/factory-execution/);
+  });
   it("rejects fractional allocations and reversed dates server-side",()=>{
     assert.match(batchService,/Number\.isSafeInteger\(input\.plannedQuantity\)/);
     assert.match(batchService,/Number\.isSafeInteger\(patch\.plannedQuantity\)/);

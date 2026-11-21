@@ -329,6 +329,14 @@ export async function updateBatch(
       if (patch.plannedQuantity > available) {
         throw new Error("Số lượng lô vượt quá số lượng còn có thể phân bổ.");
       }
+      // Do not invalidate already recorded physical custody by shrinking the batch.
+      const dispatched = await tx.factoryHandoverEvent.aggregate({
+        where: { batchId, type: "VNC_DISPATCH" },
+        _sum: { quantity: true },
+      });
+      if (patch.plannedQuantity < (dispatched._sum.quantity ?? 0)) {
+        throw new Error("Không thể giảm số lượng lô thấp hơn số lượng VNC đã bàn giao.");
+      }
       const maxCompleted = maxCompletedQuantity(batch.stages);
       if (patch.plannedQuantity < maxCompleted) {
         throw new Error("Không thể giảm số lượng lô thấp hơn số lượng đã hoàn thành.");

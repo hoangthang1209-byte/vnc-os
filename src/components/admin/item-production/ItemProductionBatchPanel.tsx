@@ -10,6 +10,7 @@ import {
 } from "@/features/item-production-tracking/labels";
 import type { ItemProductionBatchStatus, ItemProductionRiskStatus } from "@prisma/client";
 import ItemProductionBatchStageDrawer from "@/components/admin/item-production/ItemProductionBatchStageDrawer";
+import FactoryHandoverPanel from "@/components/admin/item-production/FactoryHandoverPanel";
 
 type BatchRow = {
   id: string;
@@ -73,6 +74,7 @@ export default function ItemProductionBatchPanel({ productionItemId, onClose, on
   const [employees, setEmployees] = useState<Array<{ id: string; fullName: string }>>([]);
   const [editBatchId, setEditBatchId] = useState<string | null>(null);
   const [batchStageTarget, setBatchStageTarget] = useState<{ batchId: string; stageId: string } | null>(null);
+  const [handoverBatchId, setHandoverBatchId] = useState<string | null>(null);
   const [form, setForm] = useState({
     plannedQuantity: 0,
     supplierId: "",
@@ -430,6 +432,7 @@ export default function ItemProductionBatchPanel({ productionItemId, onClose, on
                         )}
                         <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                           {(batch.status === "DRAFT" || batch.status === "ACTIVE") && <button type="button" className="admin-btn admin-btn--secondary admin-btn--small" disabled={pending} onClick={() => beginEdit(batch)}>Phân công / lịch</button>}
+                          <button type="button" className="admin-btn admin-btn--secondary admin-btn--small" onClick={() => setHandoverBatchId(batch.id)}>Giao nhận VNC ↔ Xưởng</button>
                           {batch.status === "DRAFT" ? (
                             <AdminLoadingButton pending={pending} onClick={() => void batchAction(batch.id, "activate")}>
                               Kích hoạt
@@ -460,6 +463,8 @@ export default function ItemProductionBatchPanel({ productionItemId, onClose, on
             </section>
           </div>
         )}
+
+        {handoverBatchId && <FactoryHandoverPanel batchId={handoverBatchId} onClose={() => setHandoverBatchId(null)} />}
 
         {batchStageTarget ? (
           <ItemProductionBatchStageDrawer

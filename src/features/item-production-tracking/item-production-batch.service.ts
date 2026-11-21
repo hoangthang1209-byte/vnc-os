@@ -6,6 +6,7 @@ import type {
   Prisma,
 } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { reconcileFactoryHandover } from "@/features/item-production-tracking/factory-handover-balance";
 import {
   ITEM_PRODUCTION_DEFAULT_WEIGHTS,
   ITEM_PRODUCTION_STAGE_LABELS,
@@ -352,6 +353,8 @@ export async function updateBatch(
     }
 
     if (patch.supplierId !== undefined && patch.supplierId !== batch.supplierId) {
+      const existingHandover = await tx.factoryHandoverEvent.count({ where: { batchId } });
+      if (existingHandover > 0) throw new Error("Lô đã có giao nhận thực tế: không được đổi xưởng. Hãy đối soát và lập lô khác.");
       await writeBatchAudit(tx, {
         batchId,
         action: batch.supplierId ? "SUPPLIER_REASSIGNED" : "SUPPLIER_ASSIGNED",
@@ -463,6 +466,11 @@ export async function completeBatch(batchId: string, adminUserId?: string | null
     });
     if (!batch) throw new Error("Không tìm thấy lô sản xuất");
     if (batch.status !== "ACTIVE") throw new Error("Chỉ có thể hoàn tất lô đang hoạt động.");
+    const custody = await tx.factoryHandoverEvent.findMany({ where: { batchId }, select: { type: true, quantity: true } });
+    if (custody.length > 0) {
+      const t = reconcileFactoryHandover(batch.plannedQuantity, custody);
+      if (t.vncReceived !== t.dispatched) throw new Error("Không thể hoàn tất lô khi còn hàng chưa nhận lại từ xưởng.");
+    }
     const applicable = batch.stages.filter((s) => s.isApplicable && s.status !== "SKIPPED");
     const unfinished = applicable.filter((s) => s.status !== "COMPLETED");
     if (unfinished.length > 0) {
@@ -492,6 +500,8 @@ export async function cancelBatch(batchId: string, note?: string, adminUserId?: 
     if (!batch) throw new Error("Không tìm thấy lô sản xuất");
     if (batch.status === "CANCELLED") throw new Error("Lô đã được hủy.");
     if (batch.status === "COMPLETED") throw new Error("Không thể hủy lô đã hoàn tất.");
+    const existingHandover = await tx.factoryHandoverEvent.count({ where: { batchId } });
+    if (existingHandover > 0) throw new Error("Không thể hủy lô đã phát sinh giao nhận thực tế.");
     const hasProgress = batch.stages.some(
       (s) => s.completedQuantity > 0 || s.status === "IN_PROGRESS" || s.status === "BLOCKED",
     );

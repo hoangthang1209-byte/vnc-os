@@ -2,18 +2,21 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAdminPermission } from "@/lib/permissions/require-admin-permission";
 import { createPackingCarton, listPackingCartons } from "@/features/orders/packing-carton.service";
 import { ProductionExecutionValidationError } from "@/features/orders/production-quantity";
+import { canAccessPackingOrder } from "@/features/orders/packing-access";
 
 type Ctx = { params: Promise<{ id: string }> };
 export async function GET(req: NextRequest, context: Ctx) {
   const permission = await requireAdminPermission({ platform: "commercial", action: "view", request: req });
   if (!permission.ok) return permission.response;
   const { id } = await context.params;
+  if (!(await canAccessPackingOrder(req,id))) return NextResponse.json({ message: "Không có quyền truy cập đơn" },{ status: 403 });
   return NextResponse.json({ cartons: await listPackingCartons(id) });
 }
 export async function POST(req: NextRequest, context: Ctx) {
   const permission = await requireAdminPermission({ platform: "commercial", action: "update", request: req });
   if (!permission.ok) return permission.response;
   const { id } = await context.params;
+  if (!(await canAccessPackingOrder(req,id))) return NextResponse.json({ message: "Không có quyền truy cập đơn" },{ status: 403 });
   try {
     const body = await req.json() as Record<string, unknown>;
     const carton = await createPackingCarton(id, {

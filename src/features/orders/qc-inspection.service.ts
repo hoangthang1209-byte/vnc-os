@@ -304,6 +304,35 @@ export async function updateQcInspection(
     expectedQuantity,
   );
 
+  // The Lean Ops factory custody ledger is authoritative for physical receipt.
+  // Legacy orders without tracking continue through their existing QC workflow.
+  if (nextStatus === "PASSED" || nextStatus === "PASSED_WITH_NOTE") {
+    const trackings = await prisma.itemProductionTracking.findMany({
+      where: { orderItem: { orderId, ...(orderItemId ? { id: orderItemId } : {}) } },
+      select: {
+        orderItemId: true,
+        batches: { select: {
+          handoverEvents: { where: { type: "VNC_RECEIVE" }, select: { quantity: true } },
+        } },
+      },
+    });
+    if (trackings.length > 0) {
+      if (!orderItemId) {
+        throw new ProductionExecutionValidationError(
+          "Đơn sản xuất theo lô cần QC cho từng SKU; không thể duyệt QC tổng đơn.",
+        );
+      }
+      const physicallyReceived = trackings.reduce((total, tracking) =>
+        total + tracking.batches.reduce((sum, batch) =>
+          sum + batch.handoverEvents.reduce((q, event) => q + event.quantity, 0), 0), 0);
+      if (inspectedQuantity.gt(physicallyReceived) || passedQuantity.gt(physicallyReceived)) {
+        throw new ProductionExecutionValidationError(
+          `QC không được vượt số lượng VNC đã nhận lại từ xưởng (${physicallyReceived} sản phẩm).`,
+        );
+      }
+    }
+  }
+
   const data: Prisma.OrderQcInspectionUpdateInput = {
     inspectedQuantity,
     passedQuantity,

@@ -4,55 +4,7 @@ import { prisma } from "@/lib/prisma";
 import type { AdminSessionUser } from "@/features/auth/admin-session.types";
 import { buildAssignedJobFilter, buildProductionPlanOrderWhere } from "@/features/production-planning/production-plan-scope";
 
-const ORDER: FactoryHandoverEventType[] = ["VNC_DISPATCH", "FACTORY_RECEIVE", "FACTORY_RETURN", "VNC_RECEIVE"];
-
-export type HandoverTotals = {
-  dispatched: number;
-  factoryReceived: number;
-  factoryReturned: number;
-  vncReceived: number;
-  awaitingFactory: number;
-  withFactory: number;
-  returning: number;
-};
-
-export function reconcileHandover(
-  planned: number,
-  entries: Array<{ type: FactoryHandoverEventType; quantity: number }>,
-): HandoverTotals {
-  const amounts = Object.fromEntries(ORDER.map(type => [type, 0])) as Record<FactoryHandoverEventType, number>;
-  for (const entry of entries) {
-    if (!ORDER.includes(entry.type) || !Number.isSafeInteger(entry.quantity) || entry.quantity <= 0) {
-      throw new Error("Nhật ký giao nhận có dữ liệu không hợp lệ.");
-    }
-    amounts[entry.type] += entry.quantity;
-  }
-  const dispatched = amounts.VNC_DISPATCH;
-  const factoryReceived = amounts.FACTORY_RECEIVE;
-  const factoryReturned = amounts.FACTORY_RETURN;
-  const vncReceived = amounts.VNC_RECEIVE;
-  if (dispatched > planned || factoryReceived > dispatched || factoryReturned > factoryReceived || vncReceived > factoryReturned) {
-    throw new Error("Số lượng bàn giao không khớp với lô sản xuất.");
-  }
-  return {
-    dispatched, factoryReceived, factoryReturned, vncReceived,
-    awaitingFactory: dispatched - factoryReceived,
-    withFactory: factoryReceived - factoryReturned,
-    returning: factoryReturned - vncReceived,
-  };
-}
-
-export function validateHandoverEvent(
-  planned: number,
-  existing: Array<{ type: FactoryHandoverEventType; quantity: number }>,
-  input: { type: FactoryHandoverEventType; quantity: number },
-): HandoverTotals {
-  if (!ORDER.includes(input.type)) throw new Error("Loại giao nhận không hợp lệ.");
-  if (!Number.isSafeInteger(input.quantity) || input.quantity <= 0) {
-    throw new Error("Số lượng giao nhận phải là số nguyên dương.");
-  }
-  return reconcileHandover(planned, [...existing, input]);
-}
+import { FACTORY_HANDOVER_TYPES, reconcileFactoryHandover, validateFactoryHandover } from "./factory-handover-balance";
 
 function scope(session: AdminSessionUser): Prisma.ItemProductionBatchWhereInput {
   const item = buildAssignedJobFilter(session) ?? {};
@@ -71,7 +23,7 @@ export async function getFactoryHandover(session: AdminSessionUser, batchId: str
     },
   });
   if (!batch) throw new Error("NOT_FOUND");
-  return { batch, totals: reconcileHandover(batch.plannedQuantity, batch.handoverEvents) };
+  return { batch, totals: reconcileFactoryHandover(batch.plannedQuantity, batch.handoverEvents) };
 }
 
 export async function recordFactoryHandover(
@@ -79,7 +31,7 @@ export async function recordFactoryHandover(
   batchId: string,
   input: { type: FactoryHandoverEventType; quantity: number; reference?: string; note?: string },
 ) {
-  if (!ORDER.includes(input.type)) throw new Error("Loại giao nhận không hợp lệ.");
+  if (!FACTORY_HANDOVER_TYPES.includes(input.type)) throw new Error("Loại giao nhận không hợp lệ.");
   if (!Number.isSafeInteger(input.quantity) || input.quantity <= 0) throw new Error("Số lượng phải là số nguyên dương.");
   if (input.reference && input.reference.length > 100) throw new Error("Mã chứng từ quá dài.");
   if (input.note && input.note.length > 2000) throw new Error("Ghi chú quá dài.");
@@ -95,7 +47,7 @@ export async function recordFactoryHandover(
     if (!batch.supplierId) throw new Error("Cần phân công xưởng trước khi bàn giao.");
     if (batch.status !== "ACTIVE") throw new Error("Chỉ ghi giao nhận cho lô đang hoạt động.");
     const events = await tx.factoryHandoverEvent.findMany({ where: { batchId }, select: { type: true, quantity: true } });
-    const totals = validateHandoverEvent(batch.plannedQuantity, events, input);
+    const totals = validateFactoryHandover(batch.plannedQuantity, events, input);
     const event = await tx.factoryHandoverEvent.create({
       data: {
         batchId,

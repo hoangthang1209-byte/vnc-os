@@ -17,5 +17,19 @@ describe("QC → Shipment execution safety", () => {
     assert.match(shipment, /status: \{ in: \["PASSED", "PASSED_WITH_NOTE"\] \}/);
     assert.match(shipment, /Shipment vượt số lượng QC đạt/);
     assert.match(shipment, /status: "DISPATCHED"/);
+    assert.match(shipment, /Shipment vượt số lượng đã đóng carton/);
+    assert.match(shipment, /Chuyến mới phải bắt đầu ở trạng thái nháp/);
+    assert.match(shipment, /Phải dùng thao tác Dispatch/);
+  });
+  it("cartons seal only against approved QC and cannot be unsealed after dispatch",()=>{
+    const service=readFileSync("src/features/orders/packing-carton.service.ts","utf8");
+    const schema=readFileSync("prisma/schema.prisma","utf8");
+    const api=readFileSync("src/app/api/orders/[id]/packing-cartons/route.ts","utf8");
+    assert.match(service,/FOR UPDATE/);
+    assert.match(service,/status: "SEALED"/);
+    assert.match(service,/Carton vượt số lượng QC đạt/);
+    assert.match(service,/Không thể mở carton khi số lượng đã xuất/);
+    assert.match(schema,/model OrderPackingCarton/);
+    assert.match(api,/canAccessPackingOrder/);
   });
 });

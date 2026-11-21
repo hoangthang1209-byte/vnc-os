@@ -30,6 +30,10 @@ export async function createPackingCarton(orderId: string, input: {
   return prisma.$transaction(async tx => {
     const item = await tx.orderItem.findFirst({ where: { orderId, id: input.orderItemId } });
     if (!item) throw new ProductionExecutionValidationError("SKU không thuộc đơn hàng.");
+    const variantsInItem = await tx.orderItemVariant.count({ where: { orderItemId: item.id } });
+    if (variantsInItem > 0 && !input.orderItemVariantId) {
+      throw new ProductionExecutionValidationError("SKU có size/variant cần chọn đúng biến thể trước khi đóng carton.");
+    }
     if (input.orderItemVariantId) {
       const variant = await tx.orderItemVariant.findFirst({ where: { id: input.orderItemVariantId, orderItemId: item.id } });
       if (!variant) throw new ProductionExecutionValidationError("Size/variant không thuộc SKU.");
@@ -64,6 +68,18 @@ export async function setPackingCartonSealed(orderId: string, cartonId: string, 
       });
       if (new Decimal((sealed._sum.quantity ?? 0) + carton.quantity).gt(approved)) {
         throw new ProductionExecutionValidationError("Carton vượt số lượng QC đạt theo SKU.");
+      }
+      if (carton.orderItemVariantId) {
+        const variant = await tx.orderItemVariant.findUnique({
+          where: { id: carton.orderItemVariantId }, select: { quantity: true },
+        });
+        const variantSealed = await tx.orderPackingCarton.aggregate({
+          where: { orderId, orderItemVariantId: carton.orderItemVariantId, status: "SEALED" },
+          _sum: { quantity: true },
+        });
+        if (!variant || (variantSealed._sum.quantity ?? 0) + carton.quantity > variant.quantity) {
+          throw new ProductionExecutionValidationError("Carton vượt số lượng đặt của size/variant.");
+        }
       }
     } else {
       const shipped = await tx.orderDeliveryExecutionItem.aggregate({

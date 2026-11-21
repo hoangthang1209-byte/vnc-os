@@ -423,7 +423,7 @@ export async function createDeliveryExecution(
         expectedDeliveryAt: input.expectedDeliveryAt
           ? new Date(input.expectedDeliveryAt)
           : order.deliveryExpectedAt,
-        dispatchedAt: status === "DISPATCHED" || status === "IN_TRANSIT" ? new Date() : null,
+        dispatchedAt: null, // Physical dispatch is only set by the guarded dispatch action.
         totalDispatchedQuantity: totals.dispatched,
         totalDeliveredQuantity: new Decimal(0),
         totalReturnedQuantity: new Decimal(0),

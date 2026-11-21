@@ -35,6 +35,7 @@ export async function recordFactoryHandover(
   if (!Number.isSafeInteger(input.quantity) || input.quantity <= 0) throw new Error("Số lượng phải là số nguyên dương.");
   if (input.reference && input.reference.length > 100) throw new Error("Mã chứng từ quá dài.");
   if (input.note && input.note.length > 2000) throw new Error("Ghi chú quá dài.");
+  if (!input.reference?.trim() && !input.note?.trim()) throw new Error("Cần nhập mã chứng từ hoặc ghi chú xác nhận giao nhận.");
   return prisma.$transaction(async tx => {
     // Serializes concurrent custody events for the same batch before checking balances.
     const locked = await tx.$queryRaw<Array<{ id: string }>>`SELECT "id" FROM "ItemProductionBatch" WHERE "id" = ${batchId} FOR UPDATE`;

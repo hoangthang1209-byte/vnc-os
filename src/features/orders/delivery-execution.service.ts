@@ -392,6 +392,9 @@ export async function createDeliveryExecution(
   const totals = sumItemQuantities(parsedItems);
   const executionCode = await generateDeliveryExecutionCode();
   const status = input.status ?? "DRAFT";
+  if (status !== "DRAFT" && status !== "READY_TO_DISPATCH") {
+    throw new ProductionExecutionValidationError("Chuyến mới phải bắt đầu ở trạng thái nháp hoặc sẵn sàng xuất.");
+  }
 
   const carrierName =
     input.carrierNameSnapshot?.trim() ||
@@ -461,6 +464,9 @@ export async function updateDeliveryExecution(
   if (!existing) throw new ProductionExecutionValidationError("Không tìm thấy chuyến giao hàng.");
   if (!["DRAFT", "READY_TO_DISPATCH"].includes(existing.status)) {
     throw new ProductionExecutionValidationError("Chỉ có thể chỉnh sửa chuyến ở trạng thái nháp hoặc sẵn sàng xuất.");
+  }
+  if (input.status !== undefined && input.status !== "DRAFT" && input.status !== "READY_TO_DISPATCH") {
+    throw new ProductionExecutionValidationError("Phải xác nhận xuất hàng qua thao tác Dispatch, không thể bỏ qua kiểm soát QC/Packing.");
   }
 
   const row = await prisma.$transaction(async (tx) => {
@@ -604,6 +610,19 @@ export async function dispatchDeliveryExecution(
         if (shipped.gt(qcPassed.get(itemId) ?? new Decimal(0))) {
           throw new ProductionExecutionValidationError(
             "Shipment vượt số lượng QC đạt hoặc SKU chưa có QC được duyệt.",
+          );
+        }
+      }
+      const packed = await tx.orderPackingCarton.groupBy({
+        by: ["orderItemId"],
+        where: { orderId, status: "SEALED" },
+        _sum: { quantity: true },
+      });
+      const sealedByItem = new Map(packed.map(p => [p.orderItemId, p._sum.quantity ?? 0]));
+      for (const [itemId, shipped] of used) {
+        if (shipped.gt(sealedByItem.get(itemId) ?? 0)) {
+          throw new ProductionExecutionValidationError(
+            "Shipment vượt số lượng đã đóng carton (SEALED) theo SKU.",
           );
         }
       }

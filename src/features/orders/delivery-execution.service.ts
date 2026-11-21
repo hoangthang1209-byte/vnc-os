@@ -658,6 +658,13 @@ export async function updateDeliveryExecutionStatus(
   });
   if (!existing) throw new ProductionExecutionValidationError("Không tìm thấy chuyến giao hàng.");
 
+  if (status === "DISPATCHED") {
+    throw new ProductionExecutionValidationError("Phải dùng thao tác Dispatch để kiểm tra QC/Packing trước khi xuất.");
+  }
+  if (["DRAFT", "READY_TO_DISPATCH"].includes(existing.status) &&
+      !["DRAFT", "READY_TO_DISPATCH", "CANCELLED"].includes(status)) {
+    throw new ProductionExecutionValidationError("Chuyến chưa xuất không thể chuyển thẳng sang giao hàng.");
+  }
   if (status === "CANCELLED" && !["DRAFT", "READY_TO_DISPATCH"].includes(existing.status)) {
     throw new ProductionExecutionValidationError("Chỉ có thể hủy chuyến ở trạng thái nháp hoặc sẵn sàng xuất.");
   }

@@ -333,31 +333,6 @@ export async function updateQcInspection(
     }
   }
 
-  // Do not revoke QC quantity that is already sealed or commercially dispatched.
-  // Both packing and shipping consume the approved SKU quantity.
-  if (orderItemId) {
-    const [sealed, dispatched] = await Promise.all([
-      prisma.orderPackingCarton.aggregate({
-        where: { orderId, orderItemId, status: "SEALED" }, _sum: { quantity: true },
-      }),
-      prisma.orderDeliveryExecutionItem.aggregate({
-        where: { orderItemId, deliveryExecution: {
-          orderId, status: { notIn: ["DRAFT", "READY_TO_DISPATCH", "CANCELLED"] },
-        } }, _sum: { dispatchedQuantity: true },
-      }),
-    ]);
-    const reserved = Math.max(
-      sealed._sum.quantity ?? 0,
-      Number(dispatched._sum.dispatchedQuantity ?? 0),
-    );
-    if (reserved > 0 &&
-        (!(nextStatus === "PASSED" || nextStatus === "PASSED_WITH_NOTE") ||
-          passedQuantity.lt(reserved))) {
-      throw new ProductionExecutionValidationError(
-        `Không thể giảm hoặc hủy QC đạt: đã có ${reserved} sản phẩm được đóng hoặc xuất.`,
-      );
-    }
-  }
 
   const data: Prisma.OrderQcInspectionUpdateInput = {
     inspectedQuantity,
@@ -384,6 +359,33 @@ export async function updateQcInspection(
 
   const prevStatus = qc.status;
   const updated = await prisma.$transaction(async (tx) => {
+    await tx.$queryRaw`SELECT "id" FROM "Order" WHERE "id" = ${orderId} FOR UPDATE`;
+  // Do not revoke QC quantity that is already sealed or commercially dispatched.
+  // Both packing and shipping consume the approved SKU quantity.
+  if (orderItemId) {
+    const [sealed, dispatched] = await Promise.all([
+      tx.orderPackingCarton.aggregate({
+        where: { orderId, orderItemId, status: "SEALED" }, _sum: { quantity: true },
+      }),
+      tx.orderDeliveryExecutionItem.aggregate({
+        where: { orderItemId, deliveryExecution: {
+          orderId, status: { notIn: ["DRAFT", "READY_TO_DISPATCH", "CANCELLED"] },
+        } }, _sum: { dispatchedQuantity: true },
+      }),
+    ]);
+    const reserved = Math.max(
+      sealed._sum.quantity ?? 0,
+      Number(dispatched._sum.dispatchedQuantity ?? 0),
+    );
+    if (reserved > 0 &&
+        (!(nextStatus === "PASSED" || nextStatus === "PASSED_WITH_NOTE") ||
+          passedQuantity.lt(reserved))) {
+      throw new ProductionExecutionValidationError(
+        `Không thể giảm hoặc hủy QC đạt: đã có ${reserved} sản phẩm được đóng hoặc xuất.`,
+      );
+    }
+  }
+
     const row = await tx.orderQcInspection.update({
       where: { id: qc!.id },
       data,

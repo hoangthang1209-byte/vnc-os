@@ -41,5 +41,8 @@ describe("VNC ↔ Factory physical custody ledger",()=>{
     assert.match(api,/requireProductionUpdate/);
     assert.match(api,/can\(auth\.session, "production\.update"\)/);
     assert.match(panel,/FactoryHandoverPanel/);
+    const batchService=readFileSync("src/features/item-production-tracking/item-production-batch.service.ts","utf8");
+    assert.match(batchService,/Không thể giảm số lượng lô thấp hơn số lượng VNC đã bàn giao/);
+    assert.match(batchService,/type: "VNC_DISPATCH"/);
   });
 });

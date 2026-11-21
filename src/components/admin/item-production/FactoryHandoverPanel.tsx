@@ -15,8 +15,8 @@ type Payload = {
 };
 const actions: Array<{ value: FactoryHandoverType; label: string }> = [
   { value: "VNC_DISPATCH", label: "VNC xuất giao cho xưởng" },
-  { value: "FACTORY_RECEIVE", label: "Xưởng xác nhận nhận" },
-  { value: "FACTORY_RETURN", label: "Xưởng trả hàng về VNC" },
+  { value: "FACTORY_RECEIVE", label: "Ghi xác nhận xưởng đã nhận" },
+  { value: "FACTORY_RETURN", label: "Ghi xác nhận xưởng trả hàng" },
   { value: "VNC_RECEIVE", label: "VNC xác nhận nhận lại" },
 ];
 
@@ -54,7 +54,7 @@ export default function FactoryHandoverPanel({ batchId, onClose }: { batchId: st
     FACTORY_RETURN: totals.withFactory,
     VNC_RECEIVE: totals.returning,
   } : { VNC_DISPATCH: 0, FACTORY_RECEIVE: 0, FACTORY_RETURN: 0, VNC_RECEIVE: 0 };
-  const canRecord = Boolean(data && data.batch.status === "ACTIVE" && Number.isSafeInteger(quantity) && quantity > 0 && quantity <= remaining[type] && !pending);
+  const canRecord = Boolean(data && data.batch.status === "ACTIVE" && Number.isSafeInteger(quantity) && quantity > 0 && quantity <= remaining[type] && Boolean(reference.trim() || note.trim()) && !pending);
   async function submit() {
     if (!canRecord) return;
     setPending(true); setError("");
@@ -102,7 +102,7 @@ export default function FactoryHandoverPanel({ batchId, onClose }: { batchId: st
           <label className="admin-label">Số lượng (pcs)
             <input className="admin-input" type="number" min={1} max={remaining[type]} step={1} value={quantity} onChange={e=>setQuantity(Number(e.target.value))} />
           </label>
-          <label className="admin-label">Mã phiếu / chứng từ bàn giao
+          <label className="admin-label">Mã phiếu / chứng từ bàn giao (hoặc ghi chú xác nhận)
             <input className="admin-input" maxLength={100} value={reference} onChange={e=>setReference(e.target.value)} placeholder="Ví dụ: BG-2026-001" />
           </label>
           <label className="admin-label">Ghi chú

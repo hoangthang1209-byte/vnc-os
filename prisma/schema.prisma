@@ -4410,6 +4410,7 @@ model Order {
   materialStockAdjustments     MaterialStockAdjustment[] @relation("OrderMaterialStockAdjustments")
   purchaseRequestItems         PurchaseRequestItem[]
   productionStages             OrderProductionStage[]
+  packingCartons               OrderPackingCarton[]
   qcInspections                OrderQcInspection[]
   qcEvidence                   OrderQcEvidence[]
   deliveryExecutions           OrderDeliveryExecution[]
@@ -4607,6 +4608,7 @@ model OrderItem {
   variants                    OrderItemVariant[]
   productionFiles             OrderProductionFile[]
   productionStages            OrderProductionStage[]
+  packingCartons              OrderPackingCarton[]
   qcInspections               OrderQcInspection[]
   materialRequirements        OrderItemMaterialRequirement[]
   deliveryExecutionItems      OrderDeliveryExecutionItem[]
@@ -4640,6 +4642,7 @@ model OrderItemVariant {
   updatedAt              DateTime                     @updatedAt
   orderItem              OrderItem                    @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
   color                  Color?                       @relation(fields: [colorId], references: [id], onDelete: SetNull)
+  packingCartons         OrderPackingCarton[]
   deliveryExecutionItems OrderDeliveryExecutionItem[]
 
   @@index([orderItemId])
@@ -5287,6 +5290,35 @@ model OrderDeliveryExecution {
   @@index([status])
   @@index([deliveryCarrierId])
   @@index([assignedEmployeeId])
+}
+
+enum PackingCartonStatus {
+  DRAFT
+  SEALED
+}
+
+model OrderPackingCarton {
+  id                  String              @id @default(cuid())
+  orderId             String
+  orderItemId         String
+  orderItemVariantId  String?
+  cartonCode          String
+  quantity            Int
+  status              PackingCartonStatus @default(DRAFT)
+  marketCode          String?
+  sizeSnapshot        String?
+  note                String?             @db.Text
+  sealedAt            DateTime?
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+
+  order              Order             @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderItem          OrderItem         @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
+  orderItemVariant   OrderItemVariant? @relation(fields: [orderItemVariantId], references: [id], onDelete: SetNull)
+
+  @@unique([orderId, cartonCode])
+  @@index([orderItemId, status])
+  @@index([orderItemVariantId])
 }
 
 model OrderDeliveryExecutionItem {

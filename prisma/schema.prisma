@@ -6300,6 +6300,7 @@ model ItemProductionBatch {
   updatedByAdminUser     AdminUser?                      @relation("BatchUpdatedBy", fields: [updatedByAdminUserId], references: [id], onDelete: SetNull)
   stages                 ItemProductionBatchStage[]
   auditEntries           ItemProductionBatchAuditEntry[]
+  handoverEvents         FactoryHandoverEvent[]
 
   @@unique([itemProductionTrackingId, code])
   @@index([itemProductionTrackingId])
@@ -6368,6 +6369,30 @@ model ItemProductionBatchProgressEntry {
   @@index([batchStageId, happenedAt])
   @@index([createdByAdminUserId])
   @@index([eventType])
+}
+
+/** Physical custody ledger. Not a QC or manufacturing progress record. */
+enum FactoryHandoverEventType {
+  VNC_DISPATCH
+  FACTORY_RECEIVE
+  FACTORY_RETURN
+  VNC_RECEIVE
+}
+
+model FactoryHandoverEvent {
+  id                 String                   @id @default(cuid())
+  batchId            String
+  type               FactoryHandoverEventType
+  quantity           Int
+  reference          String?
+  note               String?                  @db.Text
+  createdByAdminUserId String?
+  createdAt          DateTime                 @default(now())
+
+  batch ItemProductionBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+
+  @@index([batchId, createdAt])
+  @@index([batchId, type])
 }
 
 model ItemProductionBatchAuditEntry {

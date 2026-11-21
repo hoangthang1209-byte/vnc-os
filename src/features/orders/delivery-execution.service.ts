@@ -561,6 +561,53 @@ export async function dispatchDeliveryExecution(
   }
 
   const row = await prisma.$transaction(async (tx) => {
+    // Serialize shipments for this order to prevent parallel over-dispatch.
+    await tx.$queryRaw`SELECT "id" FROM "Order" WHERE "id" = ${orderId} FOR UPDATE`;
+    const trackingCount = await tx.itemProductionTracking.count({
+      where: { orderItem: { orderId } },
+    });
+    if (trackingCount > 0) {
+      // For orders executed through factories, shipment is never allowed to
+      // fall back to ordered quantity when item-level QC is missing.
+      const qcRows = await tx.orderQcInspection.findMany({
+        where: { orderId, orderItemId: { not: null },
+          status: { in: ["PASSED", "PASSED_WITH_NOTE"] } },
+        select: { orderItemId: true, passedQuantity: true },
+      });
+      const qcPassed = new Map<string, Decimal>();
+      for (const qc of qcRows) {
+        if (!qc.orderItemId) continue;
+        qcPassed.set(qc.orderItemId,
+          (qcPassed.get(qc.orderItemId) ?? new Decimal(0)).plus(qc.passedQuantity));
+      }
+      const alreadyDispatched = await tx.orderDeliveryExecutionItem.findMany({
+        where: { orderItemId: { not: null }, deliveryExecution: {
+          orderId, id: { not: executionId },
+          status: { notIn: ["DRAFT", "READY_TO_DISPATCH", "CANCELLED"] },
+        } },
+        select: { orderItemId: true, dispatchedQuantity: true },
+      });
+      const used = new Map<string, Decimal>();
+      for (const item of alreadyDispatched) {
+        if (!item.orderItemId) continue;
+        used.set(item.orderItemId,
+          (used.get(item.orderItemId) ?? new Decimal(0)).plus(item.dispatchedQuantity));
+      }
+      for (const item of existing.items) {
+        if (!item.orderItemId) {
+          throw new ProductionExecutionValidationError("Shipment phải liên kết SKU đơn hàng.");
+        }
+        used.set(item.orderItemId,
+          (used.get(item.orderItemId) ?? new Decimal(0)).plus(item.dispatchedQuantity));
+      }
+      for (const [itemId, shipped] of used) {
+        if (shipped.gt(qcPassed.get(itemId) ?? new Decimal(0))) {
+          throw new ProductionExecutionValidationError(
+            "Shipment vượt số lượng QC đạt hoặc SKU chưa có QC được duyệt.",
+          );
+        }
+      }
+    }
     const updated = await tx.orderDeliveryExecution.update({
       where: { id: executionId },
       data: {

@@ -392,6 +392,9 @@ export async function createDeliveryExecution(
   const totals = sumItemQuantities(parsedItems);
   const executionCode = await generateDeliveryExecutionCode();
   const status = input.status ?? "DRAFT";
+  if (status !== "DRAFT" && status !== "READY_TO_DISPATCH") {
+    throw new ProductionExecutionValidationError("Chuyến mới phải bắt đầu ở trạng thái nháp hoặc sẵn sàng xuất.");
+  }
 
   const carrierName =
     input.carrierNameSnapshot?.trim() ||
@@ -420,7 +423,7 @@ export async function createDeliveryExecution(
         expectedDeliveryAt: input.expectedDeliveryAt
           ? new Date(input.expectedDeliveryAt)
           : order.deliveryExpectedAt,
-        dispatchedAt: status === "DISPATCHED" || status === "IN_TRANSIT" ? new Date() : null,
+        dispatchedAt: null, // Physical dispatch is only set by the guarded dispatch action.
         totalDispatchedQuantity: totals.dispatched,
         totalDeliveredQuantity: new Decimal(0),
         totalReturnedQuantity: new Decimal(0),
@@ -461,6 +464,9 @@ export async function updateDeliveryExecution(
   if (!existing) throw new ProductionExecutionValidationError("Không tìm thấy chuyến giao hàng.");
   if (!["DRAFT", "READY_TO_DISPATCH"].includes(existing.status)) {
     throw new ProductionExecutionValidationError("Chỉ có thể chỉnh sửa chuyến ở trạng thái nháp hoặc sẵn sàng xuất.");
+  }
+  if (input.status !== undefined && input.status !== "DRAFT" && input.status !== "READY_TO_DISPATCH") {
+    throw new ProductionExecutionValidationError("Phải xác nhận xuất hàng qua thao tác Dispatch, không thể bỏ qua kiểm soát QC/Packing.");
   }
 
   const row = await prisma.$transaction(async (tx) => {
@@ -561,6 +567,66 @@ export async function dispatchDeliveryExecution(
   }
 
   const row = await prisma.$transaction(async (tx) => {
+    // Serialize shipments for this order to prevent parallel over-dispatch.
+    await tx.$queryRaw`SELECT "id" FROM "Order" WHERE "id" = ${orderId} FOR UPDATE`;
+    const trackingCount = await tx.itemProductionTracking.count({
+      where: { orderItem: { orderId } },
+    });
+    if (trackingCount > 0) {
+      // For orders executed through factories, shipment is never allowed to
+      // fall back to ordered quantity when item-level QC is missing.
+      const qcRows = await tx.orderQcInspection.findMany({
+        where: { orderId, orderItemId: { not: null },
+          status: { in: ["PASSED", "PASSED_WITH_NOTE"] } },
+        select: { orderItemId: true, passedQuantity: true },
+      });
+      const qcPassed = new Map<string, Decimal>();
+      for (const qc of qcRows) {
+        if (!qc.orderItemId) continue;
+        qcPassed.set(qc.orderItemId,
+          (qcPassed.get(qc.orderItemId) ?? new Decimal(0)).plus(qc.passedQuantity));
+      }
+      const alreadyDispatched = await tx.orderDeliveryExecutionItem.findMany({
+        where: { orderItemId: { not: null }, deliveryExecution: {
+          orderId, id: { not: executionId },
+          status: { notIn: ["DRAFT", "READY_TO_DISPATCH", "CANCELLED"] },
+        } },
+        select: { orderItemId: true, dispatchedQuantity: true },
+      });
+      const used = new Map<string, Decimal>();
+      for (const item of alreadyDispatched) {
+        if (!item.orderItemId) continue;
+        used.set(item.orderItemId,
+          (used.get(item.orderItemId) ?? new Decimal(0)).plus(item.dispatchedQuantity));
+      }
+      for (const item of existing.items) {
+        if (!item.orderItemId) {
+          throw new ProductionExecutionValidationError("Shipment phải liên kết SKU đơn hàng.");
+        }
+        used.set(item.orderItemId,
+          (used.get(item.orderItemId) ?? new Decimal(0)).plus(item.dispatchedQuantity));
+      }
+      for (const [itemId, shipped] of used) {
+        if (shipped.gt(qcPassed.get(itemId) ?? new Decimal(0))) {
+          throw new ProductionExecutionValidationError(
+            "Shipment vượt số lượng QC đạt hoặc SKU chưa có QC được duyệt.",
+          );
+        }
+      }
+      const packed = await tx.orderPackingCarton.groupBy({
+        by: ["orderItemId"],
+        where: { orderId, status: "SEALED" },
+        _sum: { quantity: true },
+      });
+      const sealedByItem = new Map(packed.map(p => [p.orderItemId, p._sum.quantity ?? 0]));
+      for (const [itemId, shipped] of used) {
+        if (shipped.gt(sealedByItem.get(itemId) ?? 0)) {
+          throw new ProductionExecutionValidationError(
+            "Shipment vượt số lượng đã đóng carton (SEALED) theo SKU.",
+          );
+        }
+      }
+    }
     const updated = await tx.orderDeliveryExecution.update({
       where: { id: executionId },
       data: {
@@ -592,6 +658,13 @@ export async function updateDeliveryExecutionStatus(
   });
   if (!existing) throw new ProductionExecutionValidationError("Không tìm thấy chuyến giao hàng.");
 
+  if (status === "DISPATCHED") {
+    throw new ProductionExecutionValidationError("Phải dùng thao tác Dispatch để kiểm tra QC/Packing trước khi xuất.");
+  }
+  if (["DRAFT", "READY_TO_DISPATCH"].includes(existing.status) &&
+      !["DRAFT", "READY_TO_DISPATCH", "CANCELLED"].includes(status)) {
+    throw new ProductionExecutionValidationError("Chuyến chưa xuất không thể chuyển thẳng sang giao hàng.");
+  }
   if (status === "CANCELLED" && !["DRAFT", "READY_TO_DISPATCH"].includes(existing.status)) {
     throw new ProductionExecutionValidationError("Chỉ có thể hủy chuyến ở trạng thái nháp hoặc sẵn sàng xuất.");
   }

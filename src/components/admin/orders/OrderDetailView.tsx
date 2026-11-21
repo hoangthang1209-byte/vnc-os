@@ -574,6 +574,9 @@ export default function OrderDetailView({ id }: Props) {
 
   return (
     <div className="admin-panel">
+      <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 8 }}>
+        <Link href={`/admin/orders/${encodeURIComponent(id)}/packing`} className="admin-btn admin-btn--secondary admin-btn--small">Packing / Carton</Link>
+      </div>
       {permissions.canViewCrm && order.customerId && (
         <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 12 }}>
           <Link href={`/admin/crm/customers/${encodeURIComponent(order.customerId)}`} className="admin-btn admin-btn--secondary admin-btn--small">

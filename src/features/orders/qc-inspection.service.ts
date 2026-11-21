@@ -304,6 +304,36 @@ export async function updateQcInspection(
     expectedQuantity,
   );
 
+  // The Lean Ops factory custody ledger is authoritative for physical receipt.
+  // Legacy orders without tracking continue through their existing QC workflow.
+  if (nextStatus === "PASSED" || nextStatus === "PASSED_WITH_NOTE") {
+    const trackings = await prisma.itemProductionTracking.findMany({
+      where: { orderItem: { orderId, ...(orderItemId ? { id: orderItemId } : {}) } },
+      select: {
+        orderItemId: true,
+        batches: { select: {
+          handoverEvents: { where: { type: "VNC_RECEIVE" }, select: { quantity: true } },
+        } },
+      },
+    });
+    if (trackings.length > 0) {
+      if (!orderItemId) {
+        throw new ProductionExecutionValidationError(
+          "Đơn sản xuất theo lô cần QC cho từng SKU; không thể duyệt QC tổng đơn.",
+        );
+      }
+      const physicallyReceived = trackings.reduce((total, tracking) =>
+        total + tracking.batches.reduce((sum, batch) =>
+          sum + batch.handoverEvents.reduce((q, event) => q + event.quantity, 0), 0), 0);
+      if (inspectedQuantity.gt(physicallyReceived) || passedQuantity.gt(physicallyReceived)) {
+        throw new ProductionExecutionValidationError(
+          `QC không được vượt số lượng VNC đã nhận lại từ xưởng (${physicallyReceived} sản phẩm).`,
+        );
+      }
+    }
+  }
+
+
   const data: Prisma.OrderQcInspectionUpdateInput = {
     inspectedQuantity,
     passedQuantity,
@@ -329,6 +359,33 @@ export async function updateQcInspection(
 
   const prevStatus = qc.status;
   const updated = await prisma.$transaction(async (tx) => {
+    await tx.$queryRaw`SELECT "id" FROM "Order" WHERE "id" = ${orderId} FOR UPDATE`;
+  // Do not revoke QC quantity that is already sealed or commercially dispatched.
+  // Both packing and shipping consume the approved SKU quantity.
+  if (orderItemId) {
+    const [sealed, dispatched] = await Promise.all([
+      tx.orderPackingCarton.aggregate({
+        where: { orderId, orderItemId, status: "SEALED" }, _sum: { quantity: true },
+      }),
+      tx.orderDeliveryExecutionItem.aggregate({
+        where: { orderItemId, deliveryExecution: {
+          orderId, status: { notIn: ["DRAFT", "READY_TO_DISPATCH", "CANCELLED"] },
+        } }, _sum: { dispatchedQuantity: true },
+      }),
+    ]);
+    const reserved = Math.max(
+      sealed._sum.quantity ?? 0,
+      Number(dispatched._sum.dispatchedQuantity ?? 0),
+    );
+    if (reserved > 0 &&
+        (!(nextStatus === "PASSED" || nextStatus === "PASSED_WITH_NOTE") ||
+          passedQuantity.lt(reserved))) {
+      throw new ProductionExecutionValidationError(
+        `Không thể giảm hoặc hủy QC đạt: đã có ${reserved} sản phẩm được đóng hoặc xuất.`,
+      );
+    }
+  }
+
     const row = await tx.orderQcInspection.update({
       where: { id: qc!.id },
       data,

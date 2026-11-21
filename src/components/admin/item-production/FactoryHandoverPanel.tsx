@@ -39,8 +39,11 @@ export default function FactoryHandoverPanel({ batchId, onClose }: { batchId: st
 
   useEffect(() => {
     let active = true;
-    void load().catch(e => { if (active) setError(e instanceof Error ? e.message : "Lỗi tải giao nhận"); })
-      .finally(() => { if (active) setLoading(false); });
+    queueMicrotask(() => {
+      if (!active) return;
+      void load().catch(e => { if (active) setError(e instanceof Error ? e.message : "Lỗi tải giao nhận"); })
+        .finally(() => { if (active) setLoading(false); });
+    });
     return () => { active = false; };
   }, [load]);
 
